@@ -373,6 +373,9 @@ abstract class FocusTraversalPolicy with Diagnosticable {
   @protected
   bool _moveFocus(FocusNode currentNode, {required bool forward}) {
     assert(forward != null);
+    if (currentNode.nearestScope == null) {
+      return false;
+    }
     final FocusScopeNode nearestScope = currentNode.nearestScope!;
     invalidateScopeData(nearestScope);
     final FocusNode? focusedChild = nearestScope.focusedChild;

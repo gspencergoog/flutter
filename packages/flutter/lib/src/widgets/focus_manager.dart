@@ -743,15 +743,41 @@ class FocusNode with DiagnosticableTreeMixin, ChangeNotifier {
   /// logical units.
   ///
   /// Rect is the rectangle of the transformed widget in global coordinates.
+  ///
+  /// Before calling this method, the [context] must not be null, and the
+  /// [context] must have a render object in it (i.e.
+  /// [BuildContext.findRenderObject] must not return null). In debug mode, it
+  /// will assert if these conditions aren't met, and in release mode it will
+  /// return [Rect.zero].
+  ///
+  /// This method will return [Rect.zero] if the render object found is a
+  /// [RenderBox], and has no size set yet (i.e. hasn't been laid out yet).
   Rect get rect {
     assert(
         context != null,
         "Tried to get the bounds of a focus node that didn't have its context set yet.\n"
         'The context needs to be set before trying to evaluate traversal policies. '
         'Setting the context is typically done with the attach method.');
-    final RenderObject object = context!.findRenderObject()!;
-    final Offset topLeft = MatrixUtils.transformPoint(object.getTransformTo(null), object.semanticBounds.topLeft);
-    final Offset bottomRight = MatrixUtils.transformPoint(object.getTransformTo(null), object.semanticBounds.bottomRight);
+    if (context == null) {
+      return Rect.zero;
+    }
+    final RenderObject? object = context!.findRenderObject();
+    assert(
+        object != null,
+        "Tried to get the bounds of a focus node using a context that didn't "
+        'have a render object yet.\n'
+        'The context render object needs to be available before trying to '
+        'evaluate traversal policies.');
+    if (object == null) {
+      return Rect.zero;
+    }
+    if (object is RenderBox && !object.hasSize) {
+      return Rect.zero;
+    }
+    final Offset topLeft = MatrixUtils.transformPoint(
+        object.getTransformTo(null), object.semanticBounds.topLeft);
+    final Offset bottomRight = MatrixUtils.transformPoint(
+        object.getTransformTo(null), object.semanticBounds.bottomRight);
     return Rect.fromLTRB(topLeft.dx, topLeft.dy, bottomRight.dx, bottomRight.dy);
   }
 
@@ -1147,13 +1173,23 @@ class FocusNode with DiagnosticableTreeMixin, ChangeNotifier {
   /// [FocusTraversalPolicy.next] method.
   ///
   /// Returns true if it successfully found a node and requested focus.
-  bool nextFocus() => FocusTraversalGroup.of(context!).next(this);
+  bool nextFocus() {
+    if (context == null) {
+      return false;
+    }
+    return FocusTraversalGroup.of(context!).next(this);
+  }
 
   /// Request to move the focus to the previous focus node, by calling the
   /// [FocusTraversalPolicy.previous] method.
   ///
   /// Returns true if it successfully found a node and requested focus.
-  bool previousFocus() => FocusTraversalGroup.of(context!).previous(this);
+  bool previousFocus() {
+    if (context == null) {
+      return false;
+    }
+    return FocusTraversalGroup.of(context!).previous(this);
+  }
 
   /// Request to move the focus to the nearest focus node in the given
   /// direction, by calling the [FocusTraversalPolicy.inDirection] method.
