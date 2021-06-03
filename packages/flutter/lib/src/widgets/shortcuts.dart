@@ -194,13 +194,13 @@ abstract class ShortcutActivator {
   /// event.
   ///
   /// For example, for `Ctrl-A`, it has to check if the event is a
-  /// [RawKeyDownEvent], if either side of the Ctrl key is pressed, and none of
+  /// [KeyDownEvent], if either side of the Ctrl key is pressed, and none of
   /// the Shift keys, Alt keys, or Meta keys are pressed; it doesn't have to
   /// check if KeyA is pressed, since it's already guaranteed.
   ///
   /// This method must not cause any side effects for the `state`. Typically
-  /// this is only used to query whether [RawKeyboard.keysPressed] contains
-  /// a key.
+  /// this is only used to query whether [HardwareKeyboard.logicalsPressed]
+  /// contains a key.
   ///
   /// Since [ShortcutActivator] accepts all event types, subclasses might want
   /// to check the event type in [accepts].
@@ -209,7 +209,7 @@ abstract class ShortcutActivator {
   ///
   ///  * [LogicalKeyboardKey.collapseSynonyms], which helps deciding whether a
   ///    modifier key is pressed when the side variation is not important.
-  bool accepts(RawKeyEvent event, RawKeyboard state);
+  bool accepts(KeyEvent event, HardwareKeyboard state);
 
   /// Returns a description of the key set that is short and readable.
   ///
@@ -313,12 +313,12 @@ class LogicalKeySet extends KeySet<LogicalKeyboardKey> with Diagnosticable
   ).toSet();
 
   @override
-  bool accepts(RawKeyEvent event, RawKeyboard state) {
+  bool accepts(KeyEvent event, HardwareKeyboard state) {
     final Set<LogicalKeyboardKey> collapsedRequired = LogicalKeyboardKey.collapseSynonyms(keys);
-    final Set<LogicalKeyboardKey> collapsedPressed = LogicalKeyboardKey.collapseSynonyms(state.keysPressed);
+    final Set<LogicalKeyboardKey> collapsedPressed = LogicalKeyboardKey.collapseSynonyms(state.logicalsPressed);
     final bool keysEqual = collapsedRequired.difference(collapsedPressed).isEmpty
       && collapsedRequired.length == collapsedPressed.length;
-    return event is RawKeyDownEvent && keysEqual;
+    return event is KeyDownEvent && keysEqual;
   }
 
   static final Set<LogicalKeyboardKey> _modifiers = <LogicalKeyboardKey>{
@@ -561,9 +561,9 @@ class SingleActivator with Diagnosticable implements ShortcutActivator {
   }
 
   @override
-  bool accepts(RawKeyEvent event, RawKeyboard state) {
-    final Set<LogicalKeyboardKey> pressed = state.keysPressed;
-    return event is RawKeyDownEvent
+  bool accepts(KeyEvent event, HardwareKeyboard state) {
+    final Set<LogicalKeyboardKey> pressed = state.logicalsPressed;
+    return event is KeyDownEvent
       && (control == (pressed.contains(LogicalKeyboardKey.controlLeft) || pressed.contains(LogicalKeyboardKey.controlRight)))
       && (shift == (pressed.contains(LogicalKeyboardKey.shiftLeft) || pressed.contains(LogicalKeyboardKey.shiftRight)))
       && (alt == (pressed.contains(LogicalKeyboardKey.altLeft) || pressed.contains(LogicalKeyboardKey.altRight)))
@@ -673,15 +673,15 @@ class CharacterActivator with Diagnosticable implements ShortcutActivator {
   ///
   /// See also:
   ///
-  ///  * [RawKeyEvent.character], the character of a key event.
+  ///  * [KeyEvent.character], the character of a key event.
   final String character;
 
   @override
   Iterable<LogicalKeyboardKey>? get triggers => null;
 
   @override
-  bool accepts(RawKeyEvent event, RawKeyboard state) {
-    return event is RawKeyDownEvent
+  bool accepts(KeyEvent event, HardwareKeyboard state) {
+    return event is KeyDownEvent
         && event.character == character;
   }
 
@@ -778,10 +778,10 @@ class ShortcutManager extends ChangeNotifier with Diagnosticable {
   ///
   /// Returns null if no intent matches the current set of pressed keys.
   ///
-  /// Defaults to a set derived from [RawKeyboard.keysPressed] if `keysPressed`
+  /// Defaults to a set derived from [HardwareKeyboard.logicalsPressed] if `keysPressed`
   /// is not supplied.
-  Intent? _find(RawKeyEvent event, RawKeyboard state) {
-    final List<_ActivatorIntentPair>? candidatesByKey = _indexedShortcuts[event.logicalKey];
+  Intent? _find(KeyEvent event, HardwareKeyboard state) {
+    final List<_ActivatorIntentPair>? candidatesByKey = _indexedShortcuts[event.logical];
     final List<_ActivatorIntentPair>? candidatesByNull = _indexedShortcuts[null];
     final List<_ActivatorIntentPair> candidates = <_ActivatorIntentPair>[
       if (candidatesByKey != null) ...candidatesByKey,
@@ -811,19 +811,18 @@ class ShortcutManager extends ChangeNotifier with Diagnosticable {
   /// returned), a pressed [KeySet] must be mapped to an [Intent], the [Intent]
   /// must be mapped to an [Action], and the [Action] must be enabled.
   @protected
-  KeyEventResult handleKeypress(BuildContext context, RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) {
+  KeyEventResult handleKeypress(BuildContext context, KeyEvent event) {
+    if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
     }
     assert(context != null);
     assert(
-      RawKeyboard.instance.keysPressed.isNotEmpty,
+      HardwareKeyboard.instance.physicalsPressed.isNotEmpty,
       'Received a key down event when no keys are in keysPressed. '
       "This state can occur if the key event being sent doesn't properly "
-      'set its modifier flags. This was the event: $event and its data: '
-      '${event.data}',
+      'set its modifier flags. This was the event: $event'
     );
-    final Intent? matchedIntent = _find(event, RawKeyboard.instance);
+    final Intent? matchedIntent = _find(event, HardwareKeyboard.instance);
     if (matchedIntent != null) {
       final BuildContext? primaryContext = primaryFocus?.context;
       if (primaryContext != null) {
@@ -1167,7 +1166,7 @@ class _ShortcutsState extends State<Shortcuts> {
     manager.shortcuts = widget.shortcuts;
   }
 
-  KeyEventResult _handleOnKey(FocusNode node, RawKeyEvent event) {
+  KeyEventResult _handleOnKeyEvent(FocusNode node, KeyEvent event) {
     if (node.context == null) {
       return KeyEventResult.ignored;
     }
@@ -1179,7 +1178,7 @@ class _ShortcutsState extends State<Shortcuts> {
     return Focus(
       debugLabel: '$Shortcuts',
       canRequestFocus: false,
-      onKey: _handleOnKey,
+      onKeyEvent: _handleOnKeyEvent,
       child: _ShortcutsMarker(
         manager: manager,
         child: widget.child,

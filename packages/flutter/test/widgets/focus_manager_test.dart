@@ -935,7 +935,7 @@ void main() {
       // Since none of the focused nodes handle this event, nothing should
       // receive it.
       expect(receivedAnEvent, isEmpty);
-    });
+    }, variant: KeySimulationVariant.allVehicles());
 
     testWidgets('Initial highlight mode guesses correctly.', (WidgetTester tester) async {
       FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic;

@@ -894,6 +894,8 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
     // tests.
     // ignore: invalid_use_of_visible_for_testing_member
     RawKeyboard.instance.clearKeysPressed();
+    // ignore: invalid_use_of_visible_for_testing_member
+    HardwareKeyboard.instance.clearState();
     assert(!RendererBinding.instance!.mouseTracker.mouseIsConnected,
         'The MouseTracker thinks that there is still a mouse connected, which indicates that a '
         'test has not removed the mouse pointer which it added. Call removePointer on the '

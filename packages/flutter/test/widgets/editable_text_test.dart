@@ -4795,7 +4795,7 @@ void main() {
     final String platform = targetPlatform.substring(targetPlatform.indexOf('.') + 1).toLowerCase();
     await testTextEditing(tester, platform: platform);
     // On web, using keyboard for selection is handled by the browser.
-  }, skip: kIsWeb, variant: TargetPlatformVariant.all());
+  }, skip: kIsWeb, variant: KeySimulationVariant.allPlatformsAndVehicles());
 
   testWidgets(
     'keyboard shortcuts respect read-only',
@@ -7447,7 +7447,7 @@ void main() {
       expect(controller.selection.isCollapsed, true);
       expect(controller.selection.baseOffset, 1);
     }
-  });
+  }, variant: KeySimulationVariant.allVehicles());
 
   testWidgets('the toolbar is disposed when selection changes and there is no selectionControls', (WidgetTester tester) async {
     late StateSetter setState;

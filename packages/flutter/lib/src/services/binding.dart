@@ -14,8 +14,24 @@ import 'package:flutter/scheduler.dart';
 
 import 'asset_bundle.dart';
 import 'binary_messenger.dart';
+import 'hardware_keyboard.dart';
+import 'raw_keyboard.dart';
 import 'restoration.dart';
 import 'system_channels.dart';
+
+class _ServiceHardwareKeyboard extends HardwareKeyboard {
+  bool dispatchKeyData(ui.KeyData data) {
+    return handleKeyData(data);
+  }
+
+  bool dispatchRawKeyEvent(RawKeyEvent rawEvent) {
+    return handleRawKeyEvent(rawEvent);
+  }
+
+  bool debugDispatchKeyEvent(KeyEvent event) {
+    return debugHandleKeyEvent(event);
+  }
+}
 
 /// Listens for platform messages and directs them to the [defaultBinaryMessenger].
 ///
@@ -30,6 +46,8 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
     _instance = this;
     _defaultBinaryMessenger = createBinaryMessenger();
     _restorationManager = createRestorationManager();
+    _initHardwareKeyboard();
+    window.onKeyData = (ui.KeyData keyData) => _hardwareKeyboard.dispatchKeyData(keyData);
     initLicenses();
     SystemChannels.system.setMessageHandler((dynamic message) => handleSystemMessage(message as Object));
     SystemChannels.lifecycle.setMessageHandler(_handleLifecycleMessage);
@@ -39,6 +57,29 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
   /// The current [ServicesBinding], if one has been created.
   static ServicesBinding? get instance => _instance;
   static ServicesBinding? _instance;
+
+  /// The global callback to handle key events.
+  KeyEventCallback? onKeyEvent;
+
+  /// The global singleton instance of [HardwareKeyboard], which can be used to
+  /// query keyboard states.
+  HardwareKeyboard get hardwareKeyboard => _hardwareKeyboard;
+  late final _ServiceHardwareKeyboard _hardwareKeyboard;
+
+  void _initHardwareKeyboard() {
+    _hardwareKeyboard = _ServiceHardwareKeyboard()
+      ..onEvent = (KeyEvent event) => onKeyEvent?.call(event) ?? false;
+    RawKeyboard.instance.addListener(_hardwareKeyboard.dispatchRawKeyEvent);
+  }
+
+  /// Dispatch a key event to the proper targets.
+  ///
+  /// This is only provided in debug mode, typically in unit tests, for subclasses
+  /// to simulate fake key events.
+  @mustCallSuper
+  bool debugDispatchKeyEvent(KeyEvent event) {
+    return _hardwareKeyboard.debugDispatchKeyEvent(event);
+  }
 
   /// The default instance of [BinaryMessenger].
   ///

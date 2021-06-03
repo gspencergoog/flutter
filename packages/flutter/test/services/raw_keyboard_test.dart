@@ -201,7 +201,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on macOS', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'macos',
         isDown: true,
@@ -226,7 +226,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on iOS', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'ios',
         isDown: true,
@@ -251,7 +251,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on Windows', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'windows',
         isDown: true,
@@ -276,7 +276,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on android', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'android',
         isDown: true,
@@ -301,7 +301,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on fuchsia', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'fuchsia',
         isDown: true,
@@ -326,7 +326,7 @@ void main() {
     testWidgets('keysPressed modifiers are synchronized with key events on Linux GLFW', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'linux',
         isDown: true,
@@ -359,7 +359,7 @@ void main() {
       // Generate the data for a regular key down event. Change the modifiers so
       // that they show the shift key as already down when this event is
       // received, but it's not in keysPressed yet.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'web',
         isDown: true,
@@ -383,7 +383,7 @@ void main() {
       // Generate the data for a regular key up event. Don't set the modifiers
       // for shift so that they show the shift key as already up when this event
       // is received, and it's in keysPressed.
-      final Map<String, dynamic> data2 = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data2 = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'web',
         isDown: false,
@@ -402,7 +402,7 @@ void main() {
       );
 
       // Press right modifier key
-      final Map<String, dynamic> data3 = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data3 = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.shiftRight,
         platform: 'web',
         isDown: true,
@@ -423,7 +423,7 @@ void main() {
       );
 
       // Release the key
-      final Map<String, dynamic> data4 = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data4 = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.shiftRight,
         platform: 'web',
         isDown: false,
@@ -445,7 +445,7 @@ void main() {
     testWidgets('sided modifiers without a side set return all sides on Android', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'android',
         isDown: true,
@@ -483,7 +483,7 @@ void main() {
     testWidgets('sided modifiers without a side set return all sides on macOS', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'macos',
         isDown: true,
@@ -521,7 +521,7 @@ void main() {
     testWidgets('sided modifiers without a side set return all sides on iOS', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'ios',
         isDown: true,
@@ -559,7 +559,7 @@ void main() {
     testWidgets('sided modifiers without a side set return all sides on Windows', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'windows',
         isDown: true,
@@ -595,7 +595,7 @@ void main() {
     testWidgets('sided modifiers without a side set return all sides on Linux GLFW', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'linux',
         isDown: true,
@@ -634,7 +634,7 @@ void main() {
     testWidgets('sided modifiers without a side set return left sides on web', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'web',
         isDown: true,
@@ -939,7 +939,7 @@ void main() {
     testWidgets('Key events are responded to correctly.', (WidgetTester tester) async {
       expect(RawKeyboard.instance.keysPressed, isEmpty);
       // Generate the data for a regular key down event.
-      final Map<String, dynamic> data = KeyEventSimulator.getKeyData(
+      final Map<String, dynamic> data = KeyEventSimulator.getRawKeyData(
         LogicalKeyboardKey.keyA,
         platform: 'android',
         isDown: true,

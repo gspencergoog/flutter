@@ -286,16 +286,20 @@ abstract class RawKeyEvent with Diagnosticable {
     final RawKeyEventData data;
     String? character;
 
-    if (kIsWeb) {
+    RawKeyEventData _dataFromWeb() {
       final String? key = message['key'] as String?;
-      data = RawKeyEventDataWeb(
-        code: message['code'] as String? ?? '',
-        key: key ?? '',
-        metaState: message['metaState'] as int? ?? 0,
-      );
       if (key != null && key.isNotEmpty) {
         character = key;
       }
+      return RawKeyEventDataWeb(
+        code: message['code'] as String? ?? '',
+        key: key ?? '',
+        location: message['location'] as int? ?? 0,
+        metaState: message['metaState'] as int? ?? 0,
+      );
+    }
+    if (kIsWeb) {
+      data = _dataFromWeb();
     } else {
       final String keymap = message['keymap'] as String;
       switch (keymap) {
@@ -372,15 +376,7 @@ abstract class RawKeyEvent with Diagnosticable {
           }
           break;
         case 'web':
-          final String? key = message['key'] as String?;
-          data = RawKeyEventDataWeb(
-            code: message['code'] as String? ?? '',
-            key: key ?? '',
-            metaState: message['metaState'] as int? ?? 0,
-          );
-          if (key != null && key.isNotEmpty) {
-            character = key;
-          }
+          data = _dataFromWeb();
           break;
         default:
           /// This exception would only be hit on platforms that haven't yet
@@ -628,7 +624,7 @@ class RawKeyboard {
   ///
   /// See also:
   ///
-  ///  * [Focus.onKey], a [Focus] callback attribute that will be given key
+  ///  * [Focus.onKeyEvent], a [Focus] callback attribute that will be given key
   ///    events distributed by the [FocusManager] based on the current primary
   ///    focus.
   ///  * [addListener], to add passive key event listeners that do not stop event

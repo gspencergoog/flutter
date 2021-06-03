@@ -5,8 +5,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'binding.dart';
 import 'test_async_utils.dart';
@@ -21,6 +23,11 @@ String _keyLabel(LogicalKeyboardKey key) {
   if (keyLabel.length == 1)
     return keyLabel.toLowerCase();
   return '';
+}
+
+enum KeyEventSimulationVehicle {
+  rawKeyEvent,
+  keyDataThenRawKeyEvent,
 }
 
 /// A class that serves as a namespace for a bunch of keyboard-key generation
@@ -149,7 +156,7 @@ class KeyEventSimulator {
     return result!;
   }
 
-  static PhysicalKeyboardKey _findPhysicalKey(LogicalKeyboardKey key, String platform) {
+  static PhysicalKeyboardKey _findPhysicalKeyByPlatform(LogicalKeyboardKey key, String platform) {
     assert(_osIsSupported(platform), 'Platform $platform not supported for key simulation');
     late Map<dynamic, PhysicalKeyboardKey> map;
     if (kIsWeb) {
@@ -192,7 +199,7 @@ class KeyEventSimulator {
   }
 
   /// Get a raw key data map given a [LogicalKeyboardKey] and a platform.
-  static Map<String, dynamic> getKeyData(
+  static Map<String, dynamic> getRawKeyData(
     LogicalKeyboardKey key, {
     required String platform,
     bool isDown = true,
@@ -204,7 +211,7 @@ class KeyEventSimulator {
     key = _getKeySynonym(key);
 
     // Find a suitable physical key if none was supplied.
-    physicalKey ??= _findPhysicalKey(key, platform);
+    physicalKey ??= _findPhysicalKeyByPlatform(key, platform);
 
     assert(key.debugName != null);
     final int keyCode = _getKeyCode(key, platform);
@@ -621,34 +628,12 @@ class KeyEventSimulator {
     return result;
   }
 
-  /// Simulates sending a hardware key down event through the system channel.
-  ///
-  /// This only simulates key presses coming from a physical keyboard, not from a
-  /// soft keyboard.
-  ///
-  /// Specify `platform` as one of the platforms allowed in
-  /// [Platform.operatingSystem] to make the event appear to be from that type of
-  /// system. Defaults to the operating system that the test is running on. Some
-  /// platforms (e.g. Windows, iOS) are not yet supported.
-  ///
-  /// Keys that are down when the test completes are cleared after each test.
-  ///
-  /// Returns true if the key event was handled by the framework.
-  ///
-  /// See also:
-  ///
-  ///  - [simulateKeyUpEvent] to simulate the corresponding key up event.
-  static Future<bool> simulateKeyDownEvent(LogicalKeyboardKey key, {String? platform, PhysicalKeyboardKey? physicalKey, String? character}) async {
+  static Future<bool> _simulateKeyEventByRawEvent(ValueGetter<Map<String, dynamic>> getRawKeyData) async {
     return TestAsyncUtils.guard<bool>(() async {
-      platform ??= Platform.operatingSystem;
-      assert(_osIsSupported(platform!), 'Platform $platform not supported for key simulation');
-
-
-      final Map<String, dynamic> data = getKeyData(key, platform: platform!, isDown: true, physicalKey: physicalKey, character: character);
       final Completer<bool> result = Completer<bool>();
       await TestDefaultBinaryMessengerBinding.instance!.defaultBinaryMessenger.handlePlatformMessage(
         SystemChannels.keyEvent.name,
-        SystemChannels.keyEvent.codec.encodeMessage(data),
+        SystemChannels.keyEvent.codec.encodeMessage(getRawKeyData()),
         (ByteData? data) {
           if (data == null) {
             result.complete(false);
@@ -662,6 +647,79 @@ class KeyEventSimulator {
     });
   }
 
+  static late final Map<String, PhysicalKeyboardKey> _debugNameToPhysicalKey = (() {
+    final Map<String, PhysicalKeyboardKey> result = <String, PhysicalKeyboardKey>{};
+    for (final PhysicalKeyboardKey key in PhysicalKeyboardKey.knownPhysicalKeys) {
+      final String? debugName = key.debugName;
+      if (debugName != null)
+        result[debugName] = key;
+    }
+    return result;
+  })();
+  static PhysicalKeyboardKey _findPhysicalKey(LogicalKeyboardKey key) {
+    final PhysicalKeyboardKey? result = _debugNameToPhysicalKey[key.debugName];
+    assert(result != null, 'Physical key for $key not found in known physical keys');
+    return result!;
+  }
+
+  /// The `vehicle` argument for [simulateKeyDownEvent], [simulateKeyUpEvent], and
+  /// [simulateKeyRepeatEvent] when null is provided.
+  ///
+  /// Setting [defaultVehicle] is a good way to make certain tests simulate the
+  /// behavior of different type of platforms in terms of their support for
+  /// keyboard API. In widget tests, it is often set with
+  /// [KeyEventSimulationModeVariant].
+  static KeyEventSimulationVehicle defaultVehicle = KeyEventSimulationVehicle.rawKeyEvent;
+
+  /// Simulates sending a hardware key down event.
+  ///
+  /// This only simulates key presses coming from a physical keyboard, not from a
+  /// soft keyboard.
+  ///
+  /// Specify `platform` as one of the platforms allowed in
+  /// [Platform.operatingSystem] to make the event appear to be from that type of
+  /// system. Defaults to the operating system that the test is running on. Some
+  /// platforms (e.g. Windows, iOS) are not yet supported.
+  ///
+  /// The `vehicle` defaults to [defaultVehicle].
+  ///
+  /// Keys that are down when the test completes are cleared after each test.
+  ///
+  /// Returns true if the key event was handled by the framework.
+  ///
+  /// See also:
+  ///
+  ///  - [simulateKeyUpEvent] to simulate the corresponding key up event.
+  static Future<bool> simulateKeyDownEvent(
+    LogicalKeyboardKey key, {
+    String? platform,
+    PhysicalKeyboardKey? physicalKey,
+    String? character,
+    KeyEventSimulationVehicle? vehicle,
+  }) async {
+    Future<bool> _simulateByRawEvent() {
+      return _simulateKeyEventByRawEvent(() {
+        platform ??= Platform.operatingSystem;
+        return getRawKeyData(key, platform: platform!, isDown: true, physicalKey: physicalKey, character: character);
+      });
+    }
+    switch (vehicle ?? defaultVehicle) {
+      case KeyEventSimulationVehicle.rawKeyEvent:
+        return _simulateByRawEvent();
+      case KeyEventSimulationVehicle.keyDataThenRawKeyEvent:
+        final LogicalKeyboardKey logicalKey = _getKeySynonym(key);
+        final bool resultByKeyEvent = ServicesBinding.instance!.debugDispatchKeyEvent(
+          KeyDownEvent(
+            physical: physicalKey ?? _findPhysicalKey(logicalKey),
+            logical: logicalKey,
+            timeStamp: Duration.zero,
+            character: character,
+          ),
+        );
+        return (await _simulateByRawEvent()) || resultByKeyEvent;
+    }
+  }
+
   /// Simulates sending a hardware key up event through the system channel.
   ///
   /// This only simulates key presses coming from a physical keyboard, not from a
@@ -672,33 +730,88 @@ class KeyEventSimulator {
   /// system. Defaults to the operating system that the test is running on. Some
   /// platforms (e.g. Windows, iOS) are not yet supported.
   ///
+  /// The `vehicle` defaults to [defaultVehicle].
+  ///
   /// Returns true if the key event was handled by the framework.
   ///
   /// See also:
   ///
   ///  - [simulateKeyDownEvent] to simulate the corresponding key down event.
-  static Future<bool> simulateKeyUpEvent(LogicalKeyboardKey key, {String? platform, PhysicalKeyboardKey? physicalKey}) async {
-    return TestAsyncUtils.guard<bool>(() async {
-      platform ??= Platform.operatingSystem;
-      assert(_osIsSupported(platform!), 'Platform $platform not supported for key simulation');
+  static Future<bool> simulateKeyUpEvent(
+    LogicalKeyboardKey key, {
+    String? platform,
+    PhysicalKeyboardKey? physicalKey,
+    KeyEventSimulationVehicle? vehicle,
+  }) async {
+    Future<bool> _simulateByRawEvent() {
+      return _simulateKeyEventByRawEvent(() {
+        platform ??= Platform.operatingSystem;
+        return getRawKeyData(key, platform: platform!, isDown: false, physicalKey: physicalKey);
+      });
+    }
+    switch (vehicle ?? defaultVehicle) {
+      case KeyEventSimulationVehicle.rawKeyEvent:
+        return _simulateByRawEvent();
+      case KeyEventSimulationVehicle.keyDataThenRawKeyEvent:
+        final LogicalKeyboardKey logicalKey = _getKeySynonym(key);
+        final bool resultByKeyEvent = ServicesBinding.instance!.debugDispatchKeyEvent(
+          KeyUpEvent(
+            physical: physicalKey ?? _findPhysicalKey(logicalKey),
+            logical: logicalKey,
+            timeStamp: Duration.zero,
+          ),
+        );
+        return (await _simulateByRawEvent()) || resultByKeyEvent;
+    }
+  }
 
-      final Map<String, dynamic> data = getKeyData(key, platform: platform!, isDown: false, physicalKey: physicalKey);
-      bool result = false;
-      await TestDefaultBinaryMessengerBinding.instance!.defaultBinaryMessenger.handlePlatformMessage(
-        SystemChannels.keyEvent.name,
-        SystemChannels.keyEvent.codec.encodeMessage(data),
-        (ByteData? data) {
-          if (data == null) {
-            return;
-          }
-          final Map<String, dynamic> decoded = SystemChannels.keyEvent.codec.decodeMessage(data) as Map<String, dynamic>;
-          if (decoded['handled'] as bool) {
-            result = true;
-          }
-        }
-      );
-      return result;
-    });
+  /// Simulates sending a hardware key repeat event through the system channel.
+  ///
+  /// This only simulates key presses coming from a physical keyboard, not from a
+  /// soft keyboard.
+  ///
+  /// Specify `platform` as one of the platforms allowed in
+  /// [Platform.operatingSystem] to make the event appear to be from that type of
+  /// system. Defaults to the operating system that the test is running on. Some
+  /// platforms (e.g. Windows, iOS) are not yet supported.
+  ///
+  /// The `vehicle` defaults to [defaultVehicle].  If `vehicle` is
+  /// [KeyEventSimulationVehicle.rawKeyEvent], then this is equivalent to
+  /// [simulateKeyDownEvent].
+  ///
+  /// Returns true if the key event was handled by the framework.
+  ///
+  /// See also:
+  ///
+  ///  - [simulateKeyDownEvent] to simulate the corresponding key down event.
+  static Future<bool> simulateKeyRepeatEvent(
+    LogicalKeyboardKey key, {
+    String? platform,
+    PhysicalKeyboardKey? physicalKey,
+    String? character,
+    KeyEventSimulationVehicle? vehicle,
+  }) async {
+    Future<bool> _simulateByRawEvent() {
+      return _simulateKeyEventByRawEvent(() {
+        platform ??= Platform.operatingSystem;
+        return getRawKeyData(key, platform: platform!, isDown: true, physicalKey: physicalKey, character: character);
+      });
+    }
+    switch (vehicle ?? defaultVehicle) {
+      case KeyEventSimulationVehicle.rawKeyEvent:
+        return _simulateByRawEvent();
+      case KeyEventSimulationVehicle.keyDataThenRawKeyEvent:
+        final LogicalKeyboardKey logicalKey = _getKeySynonym(key);
+        final bool resultByKeyEvent =  ServicesBinding.instance!.debugDispatchKeyEvent(
+          KeyRepeatEvent(
+            physical: physicalKey ?? _findPhysicalKey(logicalKey),
+            logical: logicalKey,
+            timeStamp: Duration.zero,
+            character: character,
+          ),
+        );
+        return (await _simulateByRawEvent()) || resultByKeyEvent;
+    }
   }
 }
 
@@ -715,15 +828,24 @@ class KeyEventSimulator {
 /// system. Defaults to the operating system that the test is running on. Some
 /// platforms (e.g. Windows, iOS) are not yet supported.
 ///
+/// The `vehicle` defaults to [defaultVehicle].
+///
 /// Keys that are down when the test completes are cleared after each test.
 ///
 /// Returns true if the key event was handled by the framework.
 ///
 /// See also:
 ///
-///  - [simulateKeyUpEvent] to simulate the corresponding key up event.
-Future<bool> simulateKeyDownEvent(LogicalKeyboardKey key, {String? platform, PhysicalKeyboardKey? physicalKey, String? character}) {
-  return KeyEventSimulator.simulateKeyDownEvent(key, platform: platform, physicalKey: physicalKey, character: character);
+///  - [simulateKeyUpEvent] and [simulateKeyRepeatEvent] to simulate the
+///    corresponding key up and repeat event.
+Future<bool> simulateKeyDownEvent(
+  LogicalKeyboardKey key, {
+  String? platform,
+  PhysicalKeyboardKey? physicalKey,
+  String? character,
+  KeyEventSimulationVehicle? vehicle,
+}) {
+  return KeyEventSimulator.simulateKeyDownEvent(key, platform: platform, physicalKey: physicalKey, character: character, vehicle: vehicle);
 }
 
 /// Simulates sending a hardware key up event through the system channel.
@@ -739,11 +861,170 @@ Future<bool> simulateKeyDownEvent(LogicalKeyboardKey key, {String? platform, Phy
 /// system. Defaults to the operating system that the test is running on. Some
 /// platforms (e.g. Windows, iOS) are not yet supported.
 ///
+/// The `vehicle` defaults to [defaultVehicle].
+///
 /// Returns true if the key event was handled by the framework.
 ///
 /// See also:
 ///
-///  - [simulateKeyDownEvent] to simulate the corresponding key down event.
-Future<bool> simulateKeyUpEvent(LogicalKeyboardKey key, {String? platform, PhysicalKeyboardKey? physicalKey}) {
-  return KeyEventSimulator.simulateKeyUpEvent(key, platform: platform, physicalKey: physicalKey);
+///  - [simulateKeyDownEvent] and [simulateKeyRepeatEvent] to simulate the
+///    corresponding key down and repeat event.
+Future<bool> simulateKeyUpEvent(
+  LogicalKeyboardKey key, {
+  String? platform,
+  PhysicalKeyboardKey? physicalKey,
+  KeyEventSimulationVehicle? vehicle,
+}) {
+  return KeyEventSimulator.simulateKeyUpEvent(key, platform: platform, physicalKey: physicalKey, vehicle: vehicle);
+}
+
+/// Simulates sending a hardware key repeat event through the system channel.
+///
+/// This only simulates key presses coming from a physical keyboard, not from a
+/// soft keyboard.
+///
+/// Specify `platform` as one of the platforms allowed in
+/// [Platform.operatingSystem] to make the event appear to be from that type of
+/// system. Defaults to the operating system that the test is running on. Some
+/// platforms (e.g. Windows, iOS) are not yet supported.
+///
+/// The `vehicle` defaults to [defaultVehicle].  If `vehicle` is
+/// [KeyEventSimulationVehicle.rawKeyEvent], this is equivalent to
+/// [simulateKeyDownEvent].
+///
+/// Returns true if the key event was handled by the framework.
+///
+/// See also:
+///
+///  - [simulateKeyDownEvent] and [simulateKeyUpEvent] to simulate the
+///    corresponding key down and up event.
+Future<bool> simulateKeyRepeatEvent(
+  LogicalKeyboardKey key, {
+  String? platform,
+  PhysicalKeyboardKey? physicalKey,
+  String? character,
+  KeyEventSimulationVehicle? vehicle,
+}) {
+  return KeyEventSimulator.simulateKeyRepeatEvent(key, platform: platform, physicalKey: physicalKey, character: character, vehicle: vehicle);
+}
+
+@immutable
+class KeySimulationSetting {
+  const KeySimulationSetting(this.vehicle, this.platform);
+
+  final KeyEventSimulationVehicle vehicle;
+  final TargetPlatform platform;
+
+  @override
+  int get hashCode => hashValues(vehicle, platform);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other))
+      return true;
+    return other is KeySimulationSetting
+        && vehicle == other.vehicle
+        && platform == other.platform;
+  }
+}
+
+/// The memento for [KeySimulationVariant], remembering the settings
+/// before the test.
+@immutable
+class KeySimulationVariantMemento {
+  /// Create a [KeySimulationVariantMemento].
+  const KeySimulationVariantMemento(this.vehicle, this.platform);
+
+  /// The [KeyEventSimulator.defaultVehicle] before the test.
+  final KeyEventSimulationVehicle vehicle;
+
+  /// The [debugDefaultTargetPlatformOverride] before the test.
+  final TargetPlatform? platform;
+}
+
+
+typedef _GetField<T> = T Function(KeySimulationSetting setting);
+
+/// A [TestVariant] that runs tests with [KeyEventSimulator.defaultVehicle]
+/// set to different values of [KeyEventSimulationVehicle].
+class KeySimulationVariant extends TestVariant<KeySimulationSetting> {
+  /// Creates a [KeySimulationVariant] that tests the given [values].
+  const KeySimulationVariant(this.values);
+
+  /// Creates a [KeyEventSimulationModeVariant] that includes one platform
+  /// for each [KeyEventSimulationVehicle] option.
+  KeySimulationVariant.allVehicles()
+    : values = <KeySimulationSetting>{
+        const KeySimulationSetting(KeyEventSimulationVehicle.rawKeyEvent, TargetPlatform.android),
+        const KeySimulationSetting(KeyEventSimulationVehicle.keyDataThenRawKeyEvent, TargetPlatform.android),
+      };
+
+  /// Creates a [KeyEventSimulationModeVariant] that tests
+  /// [KeyEventSimulationVehicle.rawKeyEvent] with all platforms,
+  /// and one platform (Android) for [KeyEventSimulationVehicle.keyDataThenRawKeyEvent].
+  KeySimulationVariant.allPlatformsAndVehicles([Iterable<TargetPlatform>? platforms])
+    : values = <KeySimulationSetting>{
+        for (final TargetPlatform platform in platforms ?? TargetPlatform.values)
+          KeySimulationSetting(KeyEventSimulationVehicle.rawKeyEvent, platform),
+        const KeySimulationSetting(KeyEventSimulationVehicle.keyDataThenRawKeyEvent, TargetPlatform.android),
+      };
+
+  @override
+  final Set<KeySimulationSetting> values;
+  // Whether all settings have the same vehicle.  If they do, then this field is
+  // omitted in [describeValue].
+  bool _variableVehicle() => _hasVariableValue<KeyEventSimulationVehicle>(values,
+    (KeySimulationSetting setting) => setting.vehicle);
+
+  // Whether all settings with the given vehicle have the same platform.  If
+  // they do, then this field is omitted in [describeValue].
+  bool _variablePlatformForVehicle(KeyEventSimulationVehicle vehicle) => _hasVariableValue<TargetPlatform>(
+    values.where((KeySimulationSetting setting) => setting.vehicle == vehicle),
+    (KeySimulationSetting setting) => setting.platform);
+
+  @override
+  String describeValue(KeySimulationSetting value) {
+    final List<String> descriptions = <String>[];
+    if (_variableVehicle()) {
+      switch (value.vehicle) {
+        case KeyEventSimulationVehicle.rawKeyEvent:
+          descriptions.add('RawKeyEvent');
+          break;
+        case KeyEventSimulationVehicle.keyDataThenRawKeyEvent:
+          descriptions.add('ui.KeyData then RawKeyEvent');
+          break;
+      }
+    }
+    if (_variablePlatformForVehicle(value.vehicle)) {
+      descriptions.add(value.platform.toString());
+    }
+    return descriptions.join(', ');
+  }
+
+  @override
+  Future<KeySimulationVariantMemento> setUp(KeySimulationSetting value) async {
+    final KeySimulationVariantMemento previousSetting = KeySimulationVariantMemento(
+      KeyEventSimulator.defaultVehicle,
+      debugDefaultTargetPlatformOverride,
+    );
+    KeyEventSimulator.defaultVehicle = value.vehicle;
+    debugDefaultTargetPlatformOverride = value.platform;
+    return previousSetting;
+  }
+
+  @override
+  Future<void> tearDown(KeySimulationSetting value, KeySimulationVariantMemento memento) async {
+    KeyEventSimulator.defaultVehicle = memento.vehicle;
+    debugDefaultTargetPlatformOverride = memento.platform;
+  }
+
+  static bool _hasVariableValue<T>(Iterable<KeySimulationSetting> settings, _GetField<T> getField) {
+    final T firstField = getField(settings.first);
+    for (final KeySimulationSetting setting in settings) {
+      if (getField(setting) != firstField) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
