@@ -2,10 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 void main() {
+  PlatformDispatcher.instance.onKeyData = _handleKeyData;
   runApp(MaterialApp(
     title: 'Hardware Key Demo',
     home: Scaffold(
@@ -17,6 +21,11 @@ void main() {
       ),
     ),
   ));
+}
+
+bool _handleKeyData(KeyData data) {
+  print('KeyData: ${data.toStringFull()}');
+  return false;
 }
 
 class RawKeyboardDemo extends StatefulWidget {
@@ -39,6 +48,7 @@ class _HardwareKeyDemoState extends State<RawKeyboardDemo> {
   KeyEventResult _handleKeyEvent(FocusNode node, RawKeyEvent event) {
     setState(() {
       _event = event;
+      print('Received $_event (${_event?.data})');
     });
     return KeyEventResult.ignored;
   }
@@ -73,7 +83,6 @@ class _HardwareKeyDemoState extends State<RawKeyboardDemo> {
           if (_event == null) {
             return Text('Press a key', style: textTheme.headline4);
           }
-
           final RawKeyEventData? data = _event?.data;
           final String? modifierList = data?.modifiersPressed.keys.map<String>(_getEnumName).join(', ').replaceAll('Modifier', '');
           final List<Widget> dataText = <Widget>[

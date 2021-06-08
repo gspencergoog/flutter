@@ -378,7 +378,7 @@ class RawKeyEventDataIos extends RawKeyEventData {
   @override
   String toString() {
     return '${objectRuntimeType(this, 'RawKeyEventDataIos')}(keyLabel: $keyLabel, keyCode: $keyCode, characters: $characters,'
-        ' unmodifiedCharacters: $charactersIgnoringModifiers, modifiers: $modifiers, '
+        ' unmodifiedCharacters: $charactersIgnoringModifiers, modifiers: 0x${modifiers.toRadixString(16)}, '
         'modifiers down: $modifiersPressed)';
   }
 }
