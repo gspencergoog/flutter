@@ -6,7 +6,6 @@ import 'dart:ui' show Color, lerpDouble;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-
 import 'app_bar_theme.dart';
 import 'banner_theme.dart';
 import 'bottom_app_bar_theme.dart';
@@ -33,6 +32,7 @@ import 'ink_well.dart' show InteractiveInkFeatureFactory;
 import 'input_decorator.dart';
 import 'list_tile.dart';
 import 'list_tile_theme.dart';
+import 'menu_bar_theme.dart';
 import 'navigation_bar_theme.dart';
 import 'navigation_rail_theme.dart';
 import 'outlined_button_theme.dart';
@@ -321,13 +321,13 @@ class ThemeData with Diagnosticable {
     IconThemeData? primaryIconTheme,
     // COMPONENT THEMES
     AppBarTheme? appBarTheme,
-    MaterialBannerThemeData? bannerTheme,
     BottomAppBarTheme? bottomAppBarTheme,
     BottomNavigationBarThemeData? bottomNavigationBarTheme,
     BottomSheetThemeData? bottomSheetTheme,
     ButtonBarThemeData? buttonBarTheme,
     ButtonThemeData? buttonTheme,
     CardTheme? cardTheme,
+    MenuBarThemeData? menuBarTheme,
     CheckboxThemeData? checkboxTheme,
     ChipThemeData? chipTheme,
     DataTableThemeData? dataTableTheme,
@@ -337,6 +337,7 @@ class ThemeData with Diagnosticable {
     ElevatedButtonThemeData? elevatedButtonTheme,
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     ListTileThemeData? listTileTheme,
+    MaterialBannerThemeData? bannerTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
     OutlinedButtonThemeData? outlinedButtonTheme,
@@ -538,6 +539,7 @@ class ThemeData with Diagnosticable {
     buttonBarTheme ??= const ButtonBarThemeData();
     cardTheme ??= const CardTheme();
     chipTheme ??= const ChipThemeData();
+    menuBarTheme ??= const MenuBarThemeData();
     checkboxTheme ??= const CheckboxThemeData();
     dataTableTheme ??= const DataTableThemeData();
     dialogTheme ??= const DialogTheme();
@@ -623,6 +625,7 @@ class ThemeData with Diagnosticable {
       buttonBarTheme: buttonBarTheme,
       buttonTheme: buttonTheme,
       cardTheme: cardTheme,
+      menuBarTheme: menuBarTheme,
       checkboxTheme: checkboxTheme,
       chipTheme: chipTheme,
       dataTableTheme: dataTableTheme,
@@ -726,6 +729,7 @@ class ThemeData with Diagnosticable {
     required this.buttonBarTheme,
     required this.buttonTheme,
     required this.cardTheme,
+    required this.menuBarTheme,
     required this.checkboxTheme,
     required this.chipTheme,
     required this.dataTableTheme,
@@ -860,6 +864,7 @@ class ThemeData with Diagnosticable {
        assert(buttonBarTheme != null),
        assert(buttonTheme != null),
        assert(cardTheme != null),
+       assert(menuBarTheme != null),
        assert(checkboxTheme != null),
        assert(chipTheme != null),
        assert(dataTableTheme != null),
@@ -1386,6 +1391,10 @@ class ThemeData with Diagnosticable {
   /// This is the value returned from [CardTheme.of].
   final CardTheme cardTheme;
 
+  /// A theme for customizing the color, shape, elevation, and text style of
+  /// cascading menus.
+  final MenuBarThemeData menuBarTheme;
+
   /// A theme for customizing the appearance and layout of [Checkbox] widgets.
   final CheckboxThemeData checkboxTheme;
 
@@ -1646,13 +1655,13 @@ class ThemeData with Diagnosticable {
     IconThemeData? primaryIconTheme,
     // COMPONENT THEMES
     AppBarTheme? appBarTheme,
-    MaterialBannerThemeData? bannerTheme,
     BottomAppBarTheme? bottomAppBarTheme,
     BottomNavigationBarThemeData? bottomNavigationBarTheme,
     BottomSheetThemeData? bottomSheetTheme,
     ButtonBarThemeData? buttonBarTheme,
     ButtonThemeData? buttonTheme,
     CardTheme? cardTheme,
+    MenuBarThemeData? menuBarTheme,
     CheckboxThemeData? checkboxTheme,
     ChipThemeData? chipTheme,
     DataTableThemeData? dataTableTheme,
@@ -1662,6 +1671,7 @@ class ThemeData with Diagnosticable {
     ElevatedButtonThemeData? elevatedButtonTheme,
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     ListTileThemeData? listTileTheme,
+    MaterialBannerThemeData? bannerTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
     OutlinedButtonThemeData? outlinedButtonTheme,
@@ -1782,6 +1792,7 @@ class ThemeData with Diagnosticable {
       buttonBarTheme: buttonBarTheme ?? this.buttonBarTheme,
       buttonTheme: buttonTheme ?? this.buttonTheme,
       cardTheme: cardTheme ?? this.cardTheme,
+      menuBarTheme: menuBarTheme ?? this.menuBarTheme,
       checkboxTheme: checkboxTheme ?? this.checkboxTheme,
       chipTheme: chipTheme ?? this.chipTheme,
       dataTableTheme: dataTableTheme ?? this.dataTableTheme,
@@ -1977,6 +1988,7 @@ class ThemeData with Diagnosticable {
       buttonBarTheme: ButtonBarThemeData.lerp(a.buttonBarTheme, b.buttonBarTheme, t)!,
       buttonTheme: t < 0.5 ? a.buttonTheme : b.buttonTheme,
       cardTheme: CardTheme.lerp(a.cardTheme, b.cardTheme, t),
+      menuBarTheme: MenuBarThemeData.lerp(a.menuBarTheme, b.menuBarTheme, t)!,
       checkboxTheme: CheckboxThemeData.lerp(a.checkboxTheme, b.checkboxTheme, t),
       chipTheme: ChipThemeData.lerp(a.chipTheme, b.chipTheme, t)!,
       dataTableTheme: DataTableThemeData.lerp(a.dataTableTheme, b.dataTableTheme, t),
@@ -2074,6 +2086,7 @@ class ThemeData with Diagnosticable {
         other.buttonBarTheme == buttonBarTheme &&
         other.buttonTheme == buttonTheme &&
         other.cardTheme == cardTheme &&
+        other.menuBarTheme == menuBarTheme &&
         other.checkboxTheme == checkboxTheme &&
         other.chipTheme == chipTheme &&
         other.dataTableTheme == dataTableTheme &&
@@ -2169,6 +2182,7 @@ class ThemeData with Diagnosticable {
       buttonBarTheme,
       buttonTheme,
       cardTheme,
+      menuBarTheme,
       checkboxTheme,
       chipTheme,
       dataTableTheme,
@@ -2263,6 +2277,7 @@ class ThemeData with Diagnosticable {
     properties.add(DiagnosticsProperty<ButtonBarThemeData>('buttonBarTheme', buttonBarTheme, defaultValue: defaultData.buttonBarTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ButtonThemeData>('buttonTheme', buttonTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<CardTheme>('cardTheme', cardTheme, level: DiagnosticLevel.debug));
+    properties.add(DiagnosticsProperty<MenuBarThemeData>('menuBarTheme', menuBarTheme, defaultValue: defaultData.menuBarTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<CheckboxThemeData>('checkboxTheme', checkboxTheme, defaultValue: defaultData.checkboxTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ChipThemeData>('chipTheme', chipTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<DataTableThemeData>('dataTableTheme', dataTableTheme, defaultValue: defaultData.dataTableTheme, level: DiagnosticLevel.debug));
