@@ -11,7 +11,8 @@ import 'material_state.dart';
 import 'menu_bar.dart';
 import 'theme.dart';
 
-/// Defines the visual properties of [MenuBar] and [MenuBarItem] widgets.
+/// Defines the visual properties of [MenuBar], [MenuBarSubMenu] and
+/// [MenuBarItem] widgets.
 ///
 /// Descendant widgets obtain the current [MenuBarThemeData] object
 /// using `MenuBarTheme.of(context)`. Instances of
@@ -34,61 +35,61 @@ import 'theme.dart';
 class MenuBarThemeData with Diagnosticable {
   /// Creates the set of properties used to configure [MenuBarTheme].
   const MenuBarThemeData({
-    this.backgroundColor,
     this.textStyle,
+    this.menuBarBackgroundColor,
     this.menuBarElevation,
-    this.menuBarColor,
     this.menuBarHeight,
+    this.menuBackgroundColor,
     this.menuElevation,
     this.menuShape,
     this.menuPadding,
   });
 
-  /// The background color of a [MenuBar] and its menus.
-  final MaterialStateProperty<Color?>? backgroundColor;
-
-  /// The text style of items in [MenuBarItem], and [MenuBar].
+  /// The text style of items in a [MenuBarItem].
   final MaterialStateProperty<TextStyle?>? textStyle;
+
+  /// The background color of the [MenuBar].
+  final MaterialStateProperty<Color?>? menuBarBackgroundColor;
 
   /// The Material elevation of the [MenuBar].
   final double? menuBarElevation;
 
-  /// The background color of the [MenuBar].
-  final MaterialStateProperty<Color?>? menuBarColor;
-
   /// The height of the menu bar.
   final double? menuBarHeight;
 
-  /// The Material elevation of the [MenuBar] menus.
+  /// The background color of a [MenuBarSubMenu].
+  final MaterialStateProperty<Color?>? menuBackgroundColor;
+
+  /// The Material elevation of the [MenuBarSubMenu].
   final double? menuElevation;
 
-  /// The shape around a [MenuBar] menu.
+  /// The shape around a [MenuBarSubMenu].
   final ShapeBorder? menuShape;
 
-  /// The padding around the outside of a [MenuBar] menu.
+  /// The padding around the outside of a [MenuBarSubMenu].
   final EdgeInsets? menuPadding;
 
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
   MenuBarThemeData copyWith({
-    MaterialStateProperty<Color?>? backgroundColor,
     MaterialStateTextStyle? textStyle,
+    MaterialStateProperty<Color?>? menuBarBackgroundColor,
     double? menuBarElevation,
-    MaterialStateProperty<Color?>? menuBarColor,
     double? menuBarHeight,
+    MaterialStateProperty<Color?>? menuBackgroundColor,
     double? menuElevation,
     ShapeBorder? menuShape,
     EdgeInsets? menuPadding,
   }) {
     return MenuBarThemeData(
-      backgroundColor: backgroundColor ?? this.backgroundColor,
       textStyle: textStyle ?? this.textStyle,
+      menuBarBackgroundColor: menuBarBackgroundColor ?? this.menuBarBackgroundColor,
       menuBarElevation: menuBarElevation ?? this.menuBarElevation,
-      menuBarColor: menuBarColor ?? this.menuBarColor,
       menuBarHeight: menuBarHeight ?? this.menuBarHeight,
+      menuBackgroundColor: menuBackgroundColor ?? this.menuBackgroundColor,
       menuElevation: menuElevation ?? this.menuElevation,
-      menuPadding: menuPadding ?? this.menuPadding,
       menuShape: menuShape ?? this.menuShape,
+      menuPadding: menuPadding ?? this.menuPadding,
     );
   }
 
@@ -102,13 +103,13 @@ class MenuBarThemeData with Diagnosticable {
     if (a == null && b == null)
       return null;
     return MenuBarThemeData(
-      backgroundColor: _lerpProperties<Color?>(a?.backgroundColor, b?.backgroundColor, t, Color.lerp),
-      menuShape: ShapeBorder.lerp(a?.menuShape, b?.menuShape, t),
-      menuElevation: lerpDouble(a?.menuElevation, b?.menuElevation, t),
-      menuBarElevation: lerpDouble(a?.menuBarElevation, b?.menuBarElevation, t),
       textStyle: _lerpProperties<TextStyle?>(a?.textStyle, b?.textStyle, t, TextStyle.lerp),
-      menuBarColor: _lerpProperties<Color?>(a?.menuBarColor, b?.menuBarColor, t, Color.lerp),
+      menuBarBackgroundColor: _lerpProperties<Color?>(a?.menuBarBackgroundColor, b?.menuBarBackgroundColor, t, Color.lerp),
+      menuBarElevation: lerpDouble(a?.menuBarElevation, b?.menuBarElevation, t),
       menuBarHeight: lerpDouble(a?.menuBarHeight, b?.menuBarHeight, t),
+      menuBackgroundColor: _lerpProperties<Color?>(a?.menuBackgroundColor, b?.menuBackgroundColor, t, Color.lerp),
+      menuElevation: lerpDouble(a?.menuElevation, b?.menuElevation, t),
+      menuShape: ShapeBorder.lerp(a?.menuShape, b?.menuShape, t),
       menuPadding: EdgeInsets.lerp(a?.menuPadding, b?.menuPadding, t),
     );
   }
@@ -128,12 +129,13 @@ class MenuBarThemeData with Diagnosticable {
   @override
   int get hashCode {
     return hashValues(
-      backgroundColor,
-      menuShape,
-      menuBarElevation,
       textStyle,
-      menuBarColor,
+      menuBarBackgroundColor,
+      menuBarElevation,
       menuBarHeight,
+      menuBackgroundColor,
+      menuElevation,
+      menuShape,
       menuPadding,
     );
   }
@@ -145,24 +147,26 @@ class MenuBarThemeData with Diagnosticable {
     if (other.runtimeType != runtimeType)
       return false;
     return other is MenuBarThemeData
-        && other.menuBarElevation == menuBarElevation
-        && other.backgroundColor == backgroundColor
-        && other.menuShape == menuShape
         && other.textStyle == textStyle
-        && other.menuBarColor == menuBarColor
+        && other.menuBarBackgroundColor == menuBarBackgroundColor
+        && other.menuBarElevation == menuBarElevation
         && other.menuBarHeight == menuBarHeight
+        && other.menuBackgroundColor == menuBackgroundColor
+        && other.menuElevation == menuElevation
+        && other.menuShape == menuShape
         && other.menuPadding == menuPadding;
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('color', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<ShapeBorder>('shape', menuShape, defaultValue: null));
-    properties.add(DoubleProperty('menuBarElevation', menuBarElevation, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('text style', textStyle, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBarColor', menuBarBackgroundColor, defaultValue: null));
+    properties.add(DoubleProperty('menuBarElevation', menuBarElevation, defaultValue: null));
     properties.add(DoubleProperty('menuBarHeight', menuBarHeight, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBarColor', menuBarColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', menuBackgroundColor, defaultValue: null));
+    properties.add(DoubleProperty('menuElevation', menuElevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<ShapeBorder>('shape', menuShape, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuPadding', menuPadding, defaultValue: null));
   }
 }
@@ -190,8 +194,10 @@ class _LerpProperties<T> implements MaterialStateProperty<T> {
 /// that are not given an explicit non-null value.
 ///
 /// See also:
+///  * [MenuBar], a widget that manages [MenuBarItem]s.
 ///  * [MenuBarItem], a widget that is a selectable item in a menu bar menu.
-///  * [MenuBar], a widget that manages top-level [MenuBarItem]s in a row.
+///  * [MenuBarSubMenu], a widget that specifies an item with a cascading
+///    submenu in a [MenuBar] menu.
 class MenuBarTheme extends InheritedTheme {
   /// Creates a theme that controls the configurations for [MenuBar] and
   /// [MenuBarItem] in its widget subtree.

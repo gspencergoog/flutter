@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late MenuBarController controller;
   String? currentPath;
-  final List<String> activated = <String>[];
+  final List<String> selected = <String>[];
   final List<String> opened = <String>[];
   final List<String> closed = <String>[];
   void collectPath() {
@@ -28,7 +28,7 @@ void main() {
   }
 
   void onSelected(String item) {
-    activated.add(item);
+    selected.add(item);
     collectPath();
   }
 
@@ -44,7 +44,7 @@ void main() {
 
   setUp(() {
     currentPath = null;
-    activated.clear();
+    selected.clear();
     opened.clear();
     closed.clear();
     controller = MenuBarController();
@@ -59,8 +59,8 @@ void main() {
     return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuBarMenu');
   }
 
-  Finder findMenuAppBar() {
-    return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuAppBar');
+  Finder findMenuTopLevelBar() {
+    return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuBarTopLevelBar');
   }
 
   Finder findMenuBarItemLabel() {
@@ -75,11 +75,22 @@ void main() {
         .last;
   }
 
-  Material getMenuBarBackground(WidgetTester tester) {
+  Material getMenuBarMaterial(WidgetTester tester) {
     return tester.widget<Material>(
       find
           .descendant(
-            of: findMenuAppBar(),
+            of: findMenuTopLevelBar(),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+  }
+
+  Material getSubMenuMaterial(WidgetTester tester) {
+    return tester.widget<Material>(
+      find
+          .descendant(
+            of: findMenuBarMenu(),
             matching: find.byType(Material),
           )
           .first,
@@ -193,10 +204,51 @@ void main() {
           ),
         ),
       );
-      expect(tester.getRect(findMenuAppBar()), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 50.0)));
-      final Material material = getMenuBarBackground(tester);
+      expect(tester.getRect(findMenuTopLevelBar()), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 50.0)));
+      final Material material = getMenuBarMaterial(tester);
       expect(material.elevation, equals(10));
       expect(material.color, equals(Colors.red));
+    });
+    testWidgets('theme is honored', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Builder(
+              builder: (BuildContext context) {
+                return MenuBarTheme(
+                  data: MenuBarTheme.of(context).copyWith(
+                    menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
+                    textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
+                    menuBarElevation: 20.0,
+                    menuBarHeight: 52.0,
+                    menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
+                    menuElevation: 15.0,
+                    menuShape: const StadiumBorder(),
+                    menuPadding: const EdgeInsets.all(10.0),
+                  ),
+                  child: MenuBar(
+                    body: const Center(child: Text('Body')),
+                    children: createTestMenus(onSelected: onSelected),
+                  ),
+                );
+              }
+            ),
+          ),
+        ),
+      );
+
+      // Open a test menu.
+      await tester.tap(find.text(mainMenu[1]));
+      await tester.pump();
+      expect(tester.getRect(findMenuTopLevelBar()), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 52.0)));
+      final Material menuBarMaterial = getMenuBarMaterial(tester);
+      expect(menuBarMaterial.elevation, equals(20));
+      expect(menuBarMaterial.color, equals(Colors.green));
+
+      final Material subMenuMaterial = getSubMenuMaterial(tester);
+      expect(tester.getRect(findMenuBarMenu()), equals(const Rect.fromLTRB(120.0, 50.0, 376.0, 230.0)));
+      expect(subMenuMaterial.elevation, equals(15));
+      expect(subMenuMaterial.color, equals(Colors.red));
     });
     testWidgets('open and close works', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -246,7 +298,7 @@ void main() {
       expect(opened, equals(<String>[mainMenu[0]]));
       expect(closed, equals(<String>[mainMenu[1], subMenu1[1]]));
     });
-    testWidgets('activate works', (WidgetTester tester) async {
+    testWidgets('select works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
@@ -273,12 +325,90 @@ void main() {
       await tester.tap(find.text(subSubMenu10[0]));
       await tester.pump();
 
-      expect(activated, equals(<String>[subSubMenu10[0]]));
+      expect(selected, equals(<String>[subSubMenu10[0]]));
 
-      // Activating a non-submenu item should close all the menus.
+      // Selecting a non-submenu item should close all the menus.
       expect(currentPath, isNull);
       expect(find.text(subSubMenu10[0]), findsNothing);
       expect(find.text(subMenu1[1]), findsNothing);
+    });
+    testWidgets('activation via shortcut works', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+                shortcuts: <String, ShortcutActivator>{
+                  subSubMenu10[0]: const SingleActivator(
+                    LogicalKeyboardKey.keyA,
+                    control: true,
+                  ),
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text(mainMenu[1]));
+      await tester.pump();
+
+      expect(currentPath, equals('1'));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+
+      expect(selected, equals(<String>[subSubMenu10[0]]));
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+      expect(currentPath, isNull);
+    });
+    testWidgets('having the same shortcut assigned to more than one menu item invokes all.', (WidgetTester tester) async {
+      const SingleActivator duplicateActivator = SingleActivator(
+        LogicalKeyboardKey.keyA,
+        control: true,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+                shortcuts: <String, ShortcutActivator>{
+                  subSubMenu10[0]: duplicateActivator,
+                  subSubMenu10[1]: duplicateActivator,
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text(mainMenu[1]));
+      await tester.pump();
+
+      expect(currentPath, equals('1'));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+
+      expect(selected, equals(<String>[subSubMenu10[0], subSubMenu10[1]]));
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+      expect(currentPath, isNull);
     });
     testWidgets('diagnostics', (WidgetTester tester) async {
       const MenuBarItem item = MenuBarItem(
@@ -321,84 +451,6 @@ void main() {
             'height: 40.0',
             'elevation: 10.0',
           ].join('\n')));
-    });
-    testWidgets('activation via shortcut works', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
-                onSelected: onSelected,
-                onOpen: onOpen,
-                onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
-                  subSubMenu10[0]: const SingleActivator(
-                    LogicalKeyboardKey.keyA,
-                    control: true,
-                  ),
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text(mainMenu[1]));
-      await tester.pump();
-
-      expect(currentPath, equals('1'));
-
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
-
-      expect(activated, equals(<String>[subSubMenu10[0]]));
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-
-      expect(currentPath, isNull);
-    });
-    testWidgets('Having the same shortcut assigned to more than one menu item invokes all.', (WidgetTester tester) async {
-      const SingleActivator duplicateActivator = SingleActivator(
-        LogicalKeyboardKey.keyA,
-        control: true,
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
-                onSelected: onSelected,
-                onOpen: onOpen,
-                onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
-                  subSubMenu10[0]: duplicateActivator,
-                  subSubMenu10[1]: duplicateActivator,
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text(mainMenu[1]));
-      await tester.pump();
-
-      expect(currentPath, equals('1'));
-
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
-
-      expect(activated, equals(<String>[subSubMenu10[0], subSubMenu10[1]]));
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-
-      expect(currentPath, isNull);
     });
   });
   group('MenuBarController', () {
@@ -476,7 +528,7 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
 
       // The menu should not handle shortcuts.
-      expect(activated, isEmpty);
+      expect(selected, isEmpty);
 
       await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
@@ -507,7 +559,7 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
 
       // The menu should now handle shortcuts.
-      expect(activated, equals(<String>[subSubMenu10[0]]));
+      expect(selected, equals(<String>[subSubMenu10[0]]));
 
       await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
@@ -695,26 +747,6 @@ void main() {
       expect(mnemonic2.data, equals('↵'));
       mnemonic3 = tester.widget(findMnemonic(subSubMenu10[3]));
       expect(mnemonic3.data, equals('Tab'));
-
-      // Try overriding the label with a LabeledShortcutActivator.
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              controller: controller,
-              body: const Center(child: Text('Body')),
-              children: createTestMenus(
-                shortcuts: <String, ShortcutActivator>{
-                  subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.escape),
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      mnemonic0 = tester.widget(findMnemonic(subSubMenu10[0]));
-      expect(mnemonic0.data, equals('Escape Key'));
     }, variant: TargetPlatformVariant.all());
 
     testWidgets('leadingIcon is used when set', (WidgetTester tester) async {

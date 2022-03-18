@@ -429,12 +429,9 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       textDirection: Directionality.of(menuButtonContext),
       top: menuSpacer.top,
       start: menuSpacer.width,
-      child: Theme(
-        data: Theme.of(menuButtonContext),
-        child: _PathWrapper(
-          path: menuButtonPath,
-          child: Builder(builder: menuBuilder),
-        ),
+      child: _PathWrapper(
+        path: menuButtonPath,
+        child: Builder(builder: menuBuilder),
       ),
     );
   }
@@ -443,7 +440,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // is relative to.
   Rect _calculateMenuRect(BuildContext menuButtonContext, _MenuPath menuButtonPath) {
     final TextDirection textDirection = Directionality.of(menuButtonContext);
-    final MenuBarThemeData cascadingMenuTheme = MenuBarTheme.of(menuButtonContext);
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(menuButtonContext);
     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
     final double verticalPadding = math.max(2, 8 + Theme.of(menuButtonContext).visualDensity.vertical * 2);
@@ -456,8 +453,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
-              Offset(-(cascadingMenuTheme.menuPadding?.right ?? 0),
-                  -(cascadingMenuTheme.menuPadding?.top ?? verticalPadding));
+              Offset(-(menuBarTheme.menuPadding?.right ?? 0),
+                  -(menuBarTheme.menuPadding?.top ?? verticalPadding));
         }
         break;
       case TextDirection.ltr:
@@ -467,7 +464,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
               Offset(
-                  cascadingMenuTheme.menuPadding?.left ?? 0, -(cascadingMenuTheme.menuPadding?.top ?? verticalPadding));
+                  menuBarTheme.menuPadding?.left ?? 0, -(menuBarTheme.menuPadding?.top ?? verticalPadding));
         }
         break;
     }
@@ -627,7 +624,7 @@ class MenuBar extends PlatformMenuBar {
 
   /// The background color of the menu bar.
   ///
-  /// Defaults to [MenuBarThemeData.menuBarColor] if not set.
+  /// Defaults to [MenuBarThemeData.menuBarBackgroundColor] if not set.
   final MaterialStateProperty<Color?>? backgroundColor;
 
   /// The preferred minimum height of the menu bar.
@@ -779,7 +776,7 @@ class _MenuBarState extends State<MenuBar> {
     final List<_MenuPath> components = <_MenuPath>[
       if (controller.openPath != null) ...controller.openPath!.components,
     ];
-    final MenuBarThemeData menuTheme = Theme.of(context).menuBarTheme;
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     return _MenuBarControllerMarker(
       controller: controller,
       child: CallbackShortcuts(
@@ -818,13 +815,13 @@ class _MenuBarState extends State<MenuBar> {
                           animation: controller,
                           builder: (BuildContext context, Widget? ignoredChild) {
                             return _MenuBarTopLevelBar(
-                              elevation: widget.elevation ?? menuTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
-                              height: widget.height ?? menuTheme.menuBarHeight,
+                              elevation: widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
+                              height: widget.height ?? menuBarTheme.menuBarHeight,
                               enabled: controller.enabled,
                               color: widget.backgroundColor ??
-                                  menuTheme.menuBarColor ??
+                                  menuBarTheme.menuBarBackgroundColor ??
                                   MaterialStateProperty.all(Colors.white),
-                              preferredHeight: widget.height ?? menuTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
+                              preferredHeight: widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
                               children: widget.children,
                             );
                           }),
@@ -1057,12 +1054,14 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
 
   // Used as the builder function to register with the controller.
   Widget _buildMenu(BuildContext context) {
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     final double verticalPadding = math.max(2, 8 + Theme.of(context).visualDensity.vertical * 2);
     return _MenuBarMenu(
-      elevation: widget.elevation ?? Theme.of(context).menuBarTheme.menuElevation ?? _kDefaultMenuBarMenuElevation,
-      shape: widget.shape,
+      elevation: widget.elevation ?? menuBarTheme.menuElevation ?? _kDefaultMenuBarMenuElevation,
+      shape: widget.shape ?? menuBarTheme.menuShape ??
+          const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
       backgroundColor: widget.backgroundColor,
-      menuPadding: Theme.of(context).menuBarTheme.menuPadding ?? EdgeInsets.symmetric(vertical: verticalPadding),
+      menuPadding: menuBarTheme.menuPadding ?? EdgeInsets.symmetric(vertical: verticalPadding),
       semanticLabel: widget.semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: Directionality.of(context),
       verticalDirection: VerticalDirection.down,
@@ -1901,10 +1900,11 @@ class _MenuBarMenuState extends State<_MenuBarMenu> {
   Widget build(BuildContext context) {
     int index = 0;
     final _MenuPath parentPath = _PathWrapper.of(context);
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     return Material(
-      color: (widget.backgroundColor ?? Theme.of(context).menuBarTheme.backgroundColor)?.resolve(<MaterialState>{}),
+      color: (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor)?.resolve(<MaterialState>{}),
       shape: widget.shape ??
-          Theme.of(context).menuBarTheme.menuShape ??
+          menuBarTheme.menuShape ??
           const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
       elevation: widget.elevation,
       child: _MenuBarMenuRenderWidget(
