@@ -2,7 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -12,19 +15,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late MenuBarController controller;
-  String? currentPath;
+  String? openPath;
+  String? focusedPath;
   final List<String> selected = <String>[];
   final List<String> opened = <String>[];
   final List<String> closed = <String>[];
+
   void collectPath() {
-    // ignore: avoid_dynamic_calls
-    final dynamic openPath = (controller as dynamic).openPath;
-    if (openPath == null) {
-      currentPath = null;
-      return;
-    }
-    // ignore: avoid_dynamic_calls
-    currentPath = openPath.toString();
+    openPath = controller.testingCurrentItem;
   }
 
   void onSelected(String item) {
@@ -42,14 +40,25 @@ void main() {
     collectPath();
   }
 
+  void handleFocusChange() {
+    focusedPath = controller.testingFocusedItem;
+  }
+
   setUp(() {
-    currentPath = null;
+    openPath = null;
+    focusedPath = null;
     selected.clear();
     opened.clear();
     closed.clear();
     controller = MenuBarController();
     collectPath();
+    focusedPath = controller.testingFocusedItem;
   });
+
+  void listenForFocusChanges() {
+    FocusManager.instance.addListener(handleFocusChange);
+    addTearDown(() => FocusManager.instance.removeListener(handleFocusChange));
+  }
 
   Finder findDivider() {
     return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuItemDivider');
@@ -73,6 +82,13 @@ void main() {
         .descendant(
             of: find.ancestor(of: find.text(label), matching: findMenuBarItemLabel()), matching: find.byType(Text))
         .last;
+  }
+
+  Future<TestGesture> hoverOver(WidgetTester tester, Finder finder) async {
+    final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.moveTo(tester.getCenter(finder));
+    await tester.pumpAndSettle();
+    return gesture;
   }
 
   Material getMenuBarMaterial(WidgetTester tester) {
@@ -213,26 +229,25 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
-            child: Builder(
-              builder: (BuildContext context) {
-                return MenuBarTheme(
-                  data: MenuBarTheme.of(context).copyWith(
-                    menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                    textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
-                    menuBarElevation: 20.0,
-                    menuBarHeight: 52.0,
-                    menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-                    menuElevation: 15.0,
-                    menuShape: const StadiumBorder(),
-                    menuPadding: const EdgeInsets.all(10.0),
-                  ),
-                  child: MenuBar(
-                    body: const Center(child: Text('Body')),
-                    children: createTestMenus(onSelected: onSelected),
-                  ),
-                );
-              }
-            ),
+            child: Builder(builder: (BuildContext context) {
+              return MenuBarTheme(
+                data: MenuBarTheme.of(context).copyWith(
+                  menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
+                  textStyle: MaterialStateTextStyle.resolveWith(
+                      (Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
+                  menuBarElevation: 20.0,
+                  menuBarHeight: 52.0,
+                  menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
+                  menuElevation: 15.0,
+                  menuShape: const StadiumBorder(),
+                  menuPadding: const EdgeInsets.all(10.0),
+                ),
+                child: MenuBar(
+                  body: const Center(child: Text('Body')),
+                  children: createTestMenus(onSelected: onSelected),
+                ),
+              );
+            }),
           ),
         ),
       );
@@ -263,40 +278,43 @@ void main() {
         ),
       );
 
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
       expect(opened, isEmpty);
       expect(closed, isEmpty);
 
       await tester.tap(find.text(mainMenu[1]));
       await tester.pump();
 
-      expect(currentPath, equals('1'));
+      expect(openPath, equals('Menu 1'));
       expect(opened, equals(<String>[mainMenu[1]]));
       expect(closed, isEmpty);
-
-      await tester.tap(find.text(subMenu1[1]));
-      await tester.pump();
-
-      // Not 1 > 1 because of the divider.
-      expect(currentPath, equals('1 > 2'));
-      expect(opened, equals(<String>[mainMenu[1], subMenu1[1]]));
-      expect(closed, isEmpty);
-
-      await tester.tap(find.text(subMenu1[1]));
-      await tester.pump();
-
-      expect(currentPath, equals('1 > 2'));
-      expect(opened, equals(<String>[mainMenu[1], subMenu1[1]]));
-      expect(closed, isEmpty);
-
       opened.clear();
       closed.clear();
+
+      await tester.tap(find.text(subMenu1[1]));
+      await tester.pump();
+
+      expect(openPath, equals('Menu 1 > Sub Menu 2'));
+      expect(opened, equals(<String>[subMenu1[1]]));
+      expect(closed, isEmpty);
+      opened.clear();
+      closed.clear();
+
+      await tester.tap(find.text(subMenu1[1]));
+      await tester.pump();
+
+      expect(openPath, equals('Menu 1'));
+      expect(opened, isEmpty);
+      expect(closed, equals(<String>[subMenu1[1]]));
+      opened.clear();
+      closed.clear();
+
       await tester.tap(find.text(mainMenu[0]));
       await tester.pump();
 
-      expect(currentPath, equals('0'));
+      expect(openPath, equals('0'));
       expect(opened, equals(<String>[mainMenu[0]]));
-      expect(closed, equals(<String>[mainMenu[1], subMenu1[1]]));
+      expect(closed, equals(<String>[mainMenu[1]]));
     });
     testWidgets('select works', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -311,8 +329,8 @@ void main() {
         ),
       );
 
-      expect(currentPath, isNull);
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
+      expect(openPath, isNull);
 
       await tester.tap(find.text(mainMenu[1]));
       await tester.pump();
@@ -320,7 +338,7 @@ void main() {
       await tester.tap(find.text(subMenu1[1]));
       await tester.pump();
 
-      expect(currentPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
 
       await tester.tap(find.text(subSubMenu10[0]));
       await tester.pump();
@@ -328,87 +346,50 @@ void main() {
       expect(selected, equals(<String>[subSubMenu10[0]]));
 
       // Selecting a non-submenu item should close all the menus.
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
       expect(find.text(subSubMenu10[0]), findsNothing);
       expect(find.text(subMenu1[1]), findsNothing);
     });
-    testWidgets('activation via shortcut works', (WidgetTester tester) async {
+    testWidgets('diagnostics toStringDeep', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
-                onSelected: onSelected,
-                onOpen: onOpen,
-                onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
-                  subSubMenu10[0]: const SingleActivator(
-                    LogicalKeyboardKey.keyA,
-                    control: true,
-                  ),
-                },
-              ),
+              body: const Center(child: Text('Body')),
+              children: <MenuItem>[
+                MenuBarSubMenu(
+                  shape: const RoundedRectangleBorder(),
+                  label: mainMenu[0],
+                  elevation: 10.0,
+                  backgroundColor: MaterialStateProperty.all(Colors.red),
+                  children: <MenuItem>[
+                    MenuItemGroup(
+                      members: <MenuItem>[
+                        MenuBarItem(
+                          label: subMenu0[0],
+                          semanticLabel: 'semanticLabel',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
       );
 
-      await tester.tap(find.text(mainMenu[1]));
+      await tester.tap(find.text(mainMenu[0]));
       await tester.pump();
 
-      expect(currentPath, equals('1'));
-
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
-
-      expect(selected, equals(<String>[subSubMenu10[0]]));
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-
-      expect(currentPath, isNull);
-    });
-    testWidgets('having the same shortcut assigned to more than one menu item invokes all.', (WidgetTester tester) async {
-      const SingleActivator duplicateActivator = SingleActivator(
-        LogicalKeyboardKey.keyA,
-        control: true,
+      final MenuBar menuBar = tester.widget(find.byType(MenuBar));
+      expect(
+        menuBar.toStringDeep(),
+        equalsIgnoringHashCodes('MenuBar(controller: _MenuBarController#00000)\n'
+            '└MenuBarSubMenu(label: "Menu 0", backgroundColor: MaterialStateProperty.all(MaterialColor(primary value: Color(0xfff44336))), shape: RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero), elevation: 10.0)\n'
+            ' └MenuItemGroup(members: [MenuBarItem(DISABLED, label: "Sub Menu 00", semanticLabel: "semanticLabel")])\n'),
       );
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
-                onSelected: onSelected,
-                onOpen: onOpen,
-                onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
-                  subSubMenu10[0]: duplicateActivator,
-                  subSubMenu10[1]: duplicateActivator,
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text(mainMenu[1]));
-      await tester.pump();
-
-      expect(currentPath, equals('1'));
-
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
-
-      expect(selected, equals(<String>[subSubMenu10[0], subSubMenu10[1]]));
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-
-      expect(currentPath, isNull);
     });
     testWidgets('diagnostics', (WidgetTester tester) async {
       const MenuBarItem item = MenuBarItem(
@@ -443,14 +424,505 @@ void main() {
           .toList();
 
       expect(
-          description.join('\n'),
-          equalsIgnoringHashCodes(<String>[
+        description.join('\n'),
+        equalsIgnoringHashCodes(
+          <String>[
+            'DISABLED',
             'controller: _MenuBarController#00000',
             'DISABLED',
             'backgroundColor: MaterialStateProperty.all(MaterialColor(primary value: Color(0xfff44336)))',
             'height: 40.0',
             'elevation: 10.0',
-          ].join('\n')));
+          ].join('\n'),
+        ),
+      );
+    });
+    testWidgets('activation via shortcut works', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+                shortcuts: <String, ShortcutActivator>{
+                  subSubMenu10[0]: const SingleActivator(
+                    LogicalKeyboardKey.keyA,
+                    control: true,
+                  ),
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text(mainMenu[1]));
+      await tester.pump();
+
+      expect(openPath, equals('1'));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+
+      expect(selected, equals(<String>[subSubMenu10[0]]));
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+      expect(openPath, isNull);
+    });
+    testWidgets('Having the same shortcut assigned to more than one menu item should throw an error.',
+        (WidgetTester tester) async {
+      const SingleActivator duplicateActivator = SingleActivator(
+        LogicalKeyboardKey.keyA,
+        control: true,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+                shortcuts: <String, ShortcutActivator>{
+                  subSubMenu10[0]: duplicateActivator,
+                  subSubMenu10[1]: duplicateActivator,
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      final dynamic exception = tester.takeException();
+      expect(exception, isFlutterError);
+      final FlutterError error = exception as FlutterError;
+      expect(
+        error.message,
+        contains(
+          RegExp(r'More than one menu item is bound to SingleActivator#.....'
+              r'\(keys: Control \+ Key A\), and they have different callbacks\.'),
+        ),
+      );
+    });
+    testWidgets(
+        'Having the same shortcut assigned to more than one menu item should not throw an error if they have the same callback.',
+        (WidgetTester tester) async {
+      const SingleActivator sameShortcut = SingleActivator(
+        LogicalKeyboardKey.keyA,
+        control: true,
+      );
+      void sameCallback() {}
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: <MenuItem>[
+                MenuBarSubMenu(
+                  label: mainMenu[0],
+                  children: <MenuItem>[
+                    MenuBarItem(
+                      label: subMenu1[0],
+                      onSelected: sameCallback,
+                      shortcut: sameShortcut,
+                    ),
+                    MenuBarItem(
+                      label: subMenu1[1],
+                      onSelected: sameCallback,
+                      shortcut: sameShortcut,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final dynamic exception = tester.takeException();
+      expect(exception, isNull);
+    });
+    testWidgets('keyboard tab traversal works', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      listenForFocusChanges();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('1'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('2'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('0'));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('2'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('1'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('2'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      expect(focusedPath, equals('1'));
+
+      // Test opening a menu with enter.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(focusedPath, equals('1'));
+      expect(openPath, equals('1'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(focusedPath, equals('1'));
+      expect(openPath, isNull);
+      // Leave the menu open.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(openPath, equals('1'));
+      await tester.pump();
+
+      // Start traversing open menus.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(openPath, equals('1'));
+      expect(focusedPath, equals('1 > 0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      // Skips the divider.
+      expect(focusedPath, equals('1 > 2'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('1 > 3'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      // Skips the disabled "2 > 0".
+      expect(focusedPath, equals('0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('0 > 0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focusedPath, equals('1'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedPath, equals('1 > 0'));
+    });
+    testWidgets('keyboard directional traversal works', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      listenForFocusChanges();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      expect(focusedPath, equals('0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      expect(focusedPath, equals('1'));
+      expect(openPath, isNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(focusedPath, equals('1'));
+      expect(openPath, equals('1'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 0'));
+      expect(openPath, equals('1'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 3'));
+      expect(openPath, equals('1 > 3'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 3'));
+      expect(openPath, equals('1 > 3'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Open the next submenu
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2 > 0'));
+      expect(openPath, equals('1 > 2'));
+
+      // Go back, close the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Move up, should close the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 0'));
+      expect(openPath, equals('1 > 0'));
+
+      // Move down, should reopen the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Open the next submenu again.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2 > 0'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 3'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 4'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 4'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      expect(openPath, equals('2'));
+
+      // Wrap around.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('0'));
+      expect(openPath, equals('0'));
+
+      // Wrap around the other way.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      expect(openPath, equals('2'));
+    });
+    testWidgets('keyboard directional traversal works in RTL mode', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Material(
+              child: MenuBar(
+                controller: controller,
+                body: const Center(child: Text('Body')),
+                children: createTestMenus(
+                  onSelected: onSelected,
+                  onOpen: onOpen,
+                  onClose: onClose,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      listenForFocusChanges();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      expect(focusedPath, equals('0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      expect(focusedPath, equals('1'));
+      expect(openPath, isNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(focusedPath, equals('1'));
+      expect(openPath, equals('1'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 0'));
+      expect(openPath, equals('1'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 3'));
+      expect(openPath, equals('1 > 3'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 3'));
+      expect(openPath, equals('1 > 3'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Open the next submenu
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2 > 0'));
+      expect(openPath, equals('1 > 2'));
+
+      // Go back, close the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Move up, should close the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 0'));
+      expect(openPath, equals('1 > 0'));
+
+      // Move down, should reopen the submenu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      // Open the next submenu again.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2 > 0'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 3'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 4'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(focusedPath, equals('1 > 2 > 4'));
+      expect(openPath, equals('1 > 2'));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      expect(openPath, equals('2'));
+
+      // Wrap around.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(focusedPath, equals('0'));
+      expect(openPath, equals('0'));
+
+      // Wrap around the other way.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      expect(openPath, equals('2'));
+    });
+    testWidgets('hover traversal works', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: createTestMenus(
+                onSelected: onSelected,
+                onOpen: onOpen,
+                onClose: onClose,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      listenForFocusChanges();
+
+      // Hovering when the menu is not yet open does nothing.
+      final TestGesture gesture = await hoverOver(tester, find.text(mainMenu[0]));
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      expect(focusedPath, isNull);
+      expect(openPath, isNull);
+
+      /// Open the first menu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(focusedPath, equals('0'));
+      expect(openPath, equals('0'));
+
+      // Hovering when the menu is already  open does nothing.
+      await hoverOver(tester, find.text(mainMenu[0]));
+      await tester.pump();
+      expect(focusedPath, equals('0'));
+      expect(openPath, equals('0'));
+
+      // Hovering over the other main menu items opens them now.
+      await hoverOver(tester, find.text(mainMenu[2]));
+      await tester.pump();
+      expect(focusedPath, equals('2'));
+      expect(openPath, equals('2'));
+
+      await hoverOver(tester, find.text(mainMenu[1]));
+      await tester.pump();
+      expect(focusedPath, equals('1'));
+      expect(openPath, equals('1'));
+
+      // Hovering over the menu items focuses them.
+      await hoverOver(tester, find.text(subMenu1[0]));
+      await tester.pump();
+      expect(focusedPath, equals('1 > 0'));
+      expect(openPath, equals('1'));
+
+      await hoverOver(tester, find.text(subMenu1[1]));
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
+
+      await hoverOver(tester, find.text(subSubMenu10[0]));
+      await tester.pump();
+      expect(focusedPath, equals('1 > 2 > 0'));
+      expect(openPath, equals('1 > 2'));
     });
   });
   group('MenuBarController', () {
@@ -485,7 +957,7 @@ void main() {
       await tester.pump();
       expect(opened, equals(<String>[mainMenu[1], subMenu1[1]]));
       opened.clear();
-      expect(currentPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
 
       // Disable the menu bar
       await tester.pumpWidget(
@@ -513,7 +985,7 @@ void main() {
       await tester.pump();
 
       // The menu should go away,
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
       expect(closed, equals(<String>[mainMenu[1], subMenu1[1]]));
       expect(opened, isEmpty);
       closed.clear();
@@ -522,7 +994,7 @@ void main() {
       await tester.pump();
 
       // The menu should not respond to the tap.
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
@@ -556,19 +1028,17 @@ void main() {
         ),
       );
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
 
       // The menu should now handle shortcuts.
       expect(selected, equals(<String>[subSubMenu10[0]]));
-
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
 
       // The menu should again accept taps.
       await tester.tap(find.text(mainMenu[2]));
       await tester.pump();
 
-      expect(currentPath, equals('2'));
+      expect(openPath, equals('2'));
       expect(closed, isEmpty);
       expect(opened, equals(<String>[mainMenu[2]]));
       // Item disabled by its parameter should still be disabled.
@@ -609,14 +1079,14 @@ void main() {
       await tester.pump();
       expect(opened, equals(<String>[mainMenu[1], subMenu1[1]]));
       opened.clear();
-      expect(currentPath, equals('1 > 2'));
+      expect(openPath, equals('1 > 2'));
 
       // Close menus using the controller
       controller.closeAll();
       await tester.pump();
 
       // The menu should go away,
-      expect(currentPath, isNull);
+      expect(openPath, isNull);
       expect(closed, equals(<String>[mainMenu[1], subMenu1[1]]));
       expect(opened, isEmpty);
     });
@@ -808,22 +1278,41 @@ void main() {
       expect(find.text('trailingIcon'), findsOneWidget);
     });
     testWidgets('diagnostics', (WidgetTester tester) async {
-      final MenuBarSubMenu childItem = MenuBarSubMenu(
-        label: 'label',
-        shape: const RoundedRectangleBorder(),
-        elevation: 10.0,
-        backgroundColor: MaterialStateProperty.all(Colors.red),
-      );
-      final MenuBarSubMenu item = MenuBarSubMenu(
-        label: 'label',
-        shape: const RoundedRectangleBorder(),
-        elevation: 10.0,
-        backgroundColor: MaterialStateProperty.all(Colors.red),
-        children: <MenuItem>[childItem],
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: MenuBar(
+              controller: controller,
+              body: const Center(child: Text('Body')),
+              children: <MenuItem>[
+                MenuBarSubMenu(
+                  shape: const RoundedRectangleBorder(),
+                  label: mainMenu[0],
+                  elevation: 10.0,
+                  backgroundColor: MaterialStateProperty.all(Colors.red),
+                  children: <MenuItem>[
+                    MenuItemGroup(
+                      members: <MenuItem>[
+                        MenuBarItem(
+                          label: subMenu0[0],
+                          semanticLabel: 'semanticLabel',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 
+      await tester.tap(find.text(mainMenu[0]));
+      await tester.pump();
+
+      final MenuBarSubMenu submenu = tester.widget(find.byType(MenuBarSubMenu));
       final DiagnosticPropertiesBuilder builder = DiagnosticPropertiesBuilder();
-      item.debugFillProperties(builder);
+      submenu.debugFillProperties(builder);
 
       final List<String> description = builder.properties
           .where((DiagnosticsNode node) => !node.isFiltered(DiagnosticLevel.info))
@@ -831,7 +1320,7 @@ void main() {
           .toList();
 
       expect(description, <String>[
-        'label: "label"',
+        'label: "Menu 0"',
         'backgroundColor: MaterialStateProperty.all(MaterialColor(primary value: Color(0xfff44336)))',
         'shape: RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero)',
         'elevation: 10.0'
