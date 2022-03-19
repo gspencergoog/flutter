@@ -80,12 +80,12 @@ class _HomeState extends State<Home> {
           data: theme.copyWith(visualDensity: density),
           child: MenuBarTheme(
             data: MenuBarTheme.of(context).copyWith(
-              menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-              textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
-              menuBarElevation: 20.0,
-              menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-              menuBarHeight: 52.0,
-              menuElevation: 15.0,
+              // menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
+              // textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
+              // menuBarElevation: 20.0,
+              // menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
+              // menuBarHeight: 52.0,
+              // menuElevation: 15.0,
               // menuShape: const StadiumBorder(),
               // menuPadding: const EdgeInsets.all(10.0),
             ),
