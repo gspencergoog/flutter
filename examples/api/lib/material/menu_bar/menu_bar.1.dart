@@ -84,7 +84,7 @@ class _HomeState extends State<Home> {
       children: <MenuItem>[
         MenuBarSubMenu(
           label: getLabel(MenuSelection.file),
-          children: <MenuItem>[
+          menus: <MenuItem>[
             if (hasAbout) const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
             MenuItemGroup(
               members: <MenuItem>[
@@ -129,7 +129,7 @@ class _HomeState extends State<Home> {
         ),
         MenuBarSubMenu(
           label: getLabel(MenuSelection.edit),
-          children: <MenuItem>[
+          menus: <MenuItem>[
             MenuBarItem(
               label: getLabel(MenuSelection.cut),
               shortcut: SingleActivator(

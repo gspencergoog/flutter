@@ -100,11 +100,11 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
         color: backgroundColor,
         child: Text(_showMessage ? 'Message' : 'Application Body'),
       ),
-      children: <PlatformSubMenu>[
+      children: <PlatformMenu>[
         MenuBarSubMenu(
           autofocus: true,
           label: 'Test App',
-          children: <MenuItem>[
+          menus: <MenuItem>[
             MenuBarItem(
               label: 'About',
               onSelected: () => _activate(MenuSelection.about),
@@ -127,7 +127,7 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
             ),
             MenuBarSubMenu(
               label: 'Background Color',
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuItemGroup(members: <MenuItem>[
                   MenuBarItem(
                     onSelected: () => _activate(MenuSelection.colorRed),

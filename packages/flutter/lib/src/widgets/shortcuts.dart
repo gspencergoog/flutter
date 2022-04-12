@@ -297,11 +297,6 @@ class LogicalKeySet extends KeySet<LogicalKeyboardKey> with Diagnosticable
     return keysEqual;
   }
 
-  @override
-  bool isActivatedBy(RawKeyEvent event, [RawKeyboard? state]) {
-    return triggers.contains(event.logicalKey) && accepts(event, state ?? RawKeyboard.instance);
-  }
-
   static final Set<LogicalKeyboardKey> _modifiers = <LogicalKeyboardKey>{
     LogicalKeyboardKey.alt,
     LogicalKeyboardKey.control,
@@ -507,11 +502,6 @@ class SingleActivator with Diagnosticable, MenuSerializableShortcut implements S
   }
 
   @override
-  bool isActivatedBy(RawKeyEvent event, [RawKeyboard? state]) {
-    return event.logicalKey == trigger && accepts(event, state ?? RawKeyboard.instance);
-  }
-
-  @override
   bool accepts(RawKeyEvent event, RawKeyboard state) {
     final Set<LogicalKeyboardKey> pressed = state.keysPressed;
     return event is RawKeyDownEvent
@@ -612,11 +602,6 @@ class CharacterActivator with Diagnosticable, MenuSerializableShortcut implement
   bool accepts(RawKeyEvent event, RawKeyboard state) {
     return event is RawKeyDownEvent
         && event.character == character;
-  }
-
-  @override
-  bool isActivatedBy(RawKeyEvent event, [RawKeyboard? state]) {
-    return accepts(event, state ?? RawKeyboard.instance);
   }
 
   @override

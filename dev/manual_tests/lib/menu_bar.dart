@@ -209,7 +209,7 @@ class _HomeState extends State<Home> {
                   onClose: () {
                     _closeItem(mainMenu[0]);
                   },
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuBarItem(
                         label: subMenu[0],
                         shortcut: const SingleActivator(
@@ -242,7 +242,7 @@ class _HomeState extends State<Home> {
                   onClose: () {
                     _closeItem(mainMenu[1]);
                   },
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuBarItem(
                       label: subMenu[2],
                       shortcut: const SingleActivator(
@@ -263,7 +263,7 @@ class _HomeState extends State<Home> {
                   onClose: () {
                     _closeItem(mainMenu[2]);
                   },
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     PlatformMenuItemGroup(members: <MenuItem>[
                       MenuBarItem(
                         label: subMenu[3],
@@ -280,7 +280,7 @@ class _HomeState extends State<Home> {
                       onClose: () {
                         _closeItem(subMenu[4]);
                       },
-                      children: <MenuItem>[
+                      menus: <MenuItem>[
                         PlatformMenuItemGroup(
                           members: <MenuItem>[
                             MenuBarItem(
