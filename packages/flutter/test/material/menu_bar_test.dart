@@ -363,7 +363,7 @@ void main() {
                   label: mainMenu[0],
                   elevation: 10.0,
                   backgroundColor: MaterialStateProperty.all(Colors.red),
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuItemGroup(
                       members: <MenuItem>[
                         MenuBarItem(
@@ -448,7 +448,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(
                     LogicalKeyboardKey.keyA,
                     control: true,
@@ -491,7 +491,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: duplicateActivator,
                   subSubMenu10[1]: duplicateActivator,
                 },
@@ -528,7 +528,7 @@ void main() {
               children: <MenuItem>[
                 MenuBarSubMenu(
                   label: mainMenu[0],
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuBarItem(
                       label: subMenu1[0],
                       onSelected: sameCallback,
@@ -937,7 +937,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(
                     LogicalKeyboardKey.keyA,
                     control: true,
@@ -971,7 +971,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(
                     LogicalKeyboardKey.keyA,
                     control: true,
@@ -1016,7 +1016,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(
                     LogicalKeyboardKey.keyA,
                     control: true,
@@ -1059,7 +1059,7 @@ void main() {
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(
                     LogicalKeyboardKey.keyA,
                     control: true,
@@ -1101,7 +1101,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: createTestMenus(
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.keyA, control: true),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.keyB, shift: true),
                   subSubMenu10[2]: const SingleActivator(LogicalKeyboardKey.keyC, alt: true),
@@ -1168,7 +1168,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: createTestMenus(
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.arrowRight),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.arrowLeft),
                   subSubMenu10[2]: const SingleActivator(LogicalKeyboardKey.arrowUp),
@@ -1197,7 +1197,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: createTestMenus(
-                shortcuts: <String, ShortcutActivator>{
+                shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.escape),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.f11),
                   subSubMenu10[2]: const SingleActivator(LogicalKeyboardKey.enter),
@@ -1230,7 +1230,7 @@ void main() {
               children: <MenuItem>[
                 MenuBarSubMenu(
                   label: mainMenu[0],
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuBarItem(
                       leadingIcon: const Text('leadingIcon'),
                       label: subMenu0[0],
@@ -1259,7 +1259,7 @@ void main() {
               children: <MenuItem>[
                 MenuBarSubMenu(
                   label: mainMenu[0],
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuBarItem(
                       label: subMenu0[0],
                       trailingIcon: const Text('trailingIcon'),
@@ -1290,7 +1290,7 @@ void main() {
                   label: mainMenu[0],
                   elevation: 10.0,
                   backgroundColor: MaterialStateProperty.all(Colors.red),
-                  children: <MenuItem>[
+                  menus: <MenuItem>[
                     MenuItemGroup(
                       members: <MenuItem>[
                         MenuBarItem(
@@ -1353,7 +1353,7 @@ void main() {
           expectedAlt = '⌥';
           break;
       }
-      final Map<ShortcutActivator, String> tests = <ShortcutActivator, String>{
+      final Map<MenuSerializableShortcut, String> tests = <MenuSerializableShortcut, String>{
         const SingleActivator(
           LogicalKeyboardKey.keyA,
           control: true,
@@ -1361,16 +1361,9 @@ void main() {
           shift: true,
           alt: true,
         ): '$expectedAlt $expectedCtrl $expectedMeta ⇧ A',
-        LogicalKeySet.fromSet(<LogicalKeyboardKey>{
-          LogicalKeyboardKey.keyA,
-          LogicalKeyboardKey.control,
-          LogicalKeyboardKey.shift,
-          LogicalKeyboardKey.alt,
-          LogicalKeyboardKey.meta,
-        }): '$expectedAlt $expectedCtrl $expectedMeta ⇧ A',
         const CharacterActivator('ñ'): 'ñ',
       };
-      for (final MapEntry<ShortcutActivator, String> test in tests.entries) {
+      for (final MapEntry<MenuSerializableShortcut, String> test in tests.entries) {
         expect(
           LocalizedShortcutLabeler.instance.getShortcutLabel(test.key, localizations),
           equals(test.value),
@@ -1411,7 +1404,7 @@ List<MenuItem> createTestMenus({
   void Function(String)? onSelected,
   void Function(String)? onOpen,
   void Function(String)? onClose,
-  Map<String, ShortcutActivator> shortcuts = const <String, ShortcutActivator>{},
+  Map<String, MenuSerializableShortcut> shortcuts = const <String, MenuSerializableShortcut>{},
   bool includeStandard = false,
 }) {
   final List<MenuItem> result = <MenuItem>[
@@ -1419,7 +1412,7 @@ List<MenuItem> createTestMenus({
       label: mainMenu[0],
       onOpen: onOpen != null ? () => onOpen(mainMenu[0]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[0]) : null,
-      children: <MenuItem>[
+      menus: <MenuItem>[
         MenuBarItem(
           label: subMenu0[0],
           onSelected: onSelected != null ? () => onSelected(subMenu0[0]) : null,
@@ -1431,7 +1424,7 @@ List<MenuItem> createTestMenus({
       label: mainMenu[1],
       onOpen: onOpen != null ? () => onOpen(mainMenu[1]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[1]) : null,
-      children: <MenuItem>[
+      menus: <MenuItem>[
         MenuItemGroup(
           members: <MenuItem>[
             MenuBarItem(
@@ -1445,7 +1438,7 @@ List<MenuItem> createTestMenus({
           label: subMenu1[1],
           onOpen: onOpen != null ? () => onOpen(subMenu1[1]) : null,
           onClose: onClose != null ? () => onClose(subMenu1[1]) : null,
-          children: <MenuItem>[
+          menus: <MenuItem>[
             MenuItemGroup(
               members: <MenuItem>[
                 MenuBarItem(
@@ -1483,7 +1476,7 @@ List<MenuItem> createTestMenus({
       label: mainMenu[2],
       onOpen: onOpen != null ? () => onOpen(mainMenu[2]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[2]) : null,
-      children: <MenuItem>[
+      menus: <MenuItem>[
         MenuBarItem(
           // Always disabled.
           label: subMenu2[0],
