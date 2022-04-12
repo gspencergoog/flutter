@@ -34,8 +34,8 @@ const double _kDefaultSubmenuIconSize = 24.0;
 class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   _Node({required this.item, this.parent}) : children = <_Node>[] {
     parent?.children.add(this);
-    if (item is PlatformSubMenu) {
-      for (final MenuItem child in (item as PlatformSubMenu).children) {
+    if (item is PlatformMenu) {
+      for (final MenuItem child in (item as PlatformMenu).menus) {
         // Will get automatically linked into the tree.
         _Node(item: child, parent: this);
       }
@@ -163,11 +163,11 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   // Used for testing.
   @override
   String toStringShort({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    if (item is PlatformMenuBarItem) {
-      return (item as PlatformMenuBarItem).label;
+    if (item is PlatformMenuItem) {
+      return (item as PlatformMenuItem).label;
     }
-    if (item is PlatformSubMenu) {
-      return (item as PlatformSubMenu).label;
+    if (item is PlatformMenu) {
+      return (item as PlatformMenu).label;
     }
     return item.toStringShort();
   }
@@ -247,7 +247,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   _MenuBarController() : super._();
 
   // The root of the menu tree.
-  _Node root = _Node(item: const PlatformSubMenu(label: 'root', children: <MenuItem>[]));
+  _Node root = _Node(item: const PlatformMenu(label: 'root', menus: <MenuItem>[]));
   // The map of focus nodes to menus. The reverse map of the
   // _registeredFocusNodes.
   final Map<FocusNode, _Node> _focusNodes = <FocusNode, _Node>{};
@@ -325,13 +325,13 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     debugPrint('Setting new menu to ${value?.toStringShort()}');
     _openMenu = value;
     oldMenu?.difference(_openMenu).forEach((_Node node) {
-      if (node.item is PlatformSubMenu) {
-        (node.item as PlatformSubMenu).onClose?.call();
+      if (node.item is PlatformMenu) {
+        (node.item as PlatformMenu).onClose?.call();
       }
     });
     _openMenu?.difference(oldMenu).forEach((_Node node) {
-      if (node.item is PlatformSubMenu) {
-        (node.item as PlatformSubMenu).onOpen?.call();
+      if (node.item is PlatformMenu) {
+        (node.item as PlatformMenu).onOpen?.call();
       }
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
@@ -382,7 +382,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     _previousFocus = null;
     _pendingFocusedMenu = null;
     for (final MenuItem item in topLevel) {
-      if (item is PlatformSubMenu) {
+      if (item is PlatformMenu) {
         _Node(
           item: item,
           parent: root,
@@ -797,7 +797,7 @@ class MenuBar extends PlatformMenuBar {
     this.isPlatformMenu = false,
     required Widget body,
     List<MenuItem> children = const <MenuItem>[],
-  }) : super(key: key, children: children, body: body);
+  }) : super(key: key, menus: children, body: body);
 
   /// Creates an adaptive [MenuBar] that renders using platform APIs on
   /// platforms that support it, and using Flutter on platforms that don't.
@@ -893,7 +893,7 @@ class MenuBar extends PlatformMenuBar {
   /// [MenuBarItem] inside it somewhere containing the menu item's attributes.
   @override
   // Overriding just to get a different docstring than the base class.
-  List<MenuItem> get children => super.children;
+  List<MenuItem> get menus => super.menus;
 
   /// Whether or not this should be rendered as a [PlatformMenuBar] or a
   /// Material [MenuBar].
@@ -913,7 +913,7 @@ class MenuBar extends PlatformMenuBar {
 
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
-    return <DiagnosticsNode>[...children.map<DiagnosticsNode>((MenuItem item) => item.toDiagnosticsNode())];
+    return <DiagnosticsNode>[...menus.map<DiagnosticsNode>((MenuItem item) => item.toDiagnosticsNode())];
   }
 
   @override
@@ -929,7 +929,7 @@ class MenuBar extends PlatformMenuBar {
 }
 
 class _MenuBarState extends State<MenuBar> {
-  late Map<ShortcutActivator, VoidCallback> shortcuts;
+  late Map<MenuSerializableShortcut, VoidCallback> shortcuts;
   late FocusNode focusNode;
   _MenuBarController? _controller;
   _MenuBarController get controller {
@@ -947,7 +947,7 @@ class _MenuBarState extends State<MenuBar> {
     focusNode = FocusNode(debugLabel: 'MenuBar');
     controller.menuBarContext = context;
     controller.menuBarFocusNode = focusNode;
-    controller.buildMenus(widget.children);
+    controller.buildMenus(widget.menus);
     controller.addListener(_markDirty);
     _updateShortcuts();
   }
@@ -955,8 +955,8 @@ class _MenuBarState extends State<MenuBar> {
   @override
   void didUpdateWidget(MenuBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.children != oldWidget.children) {
-      controller.buildMenus(widget.children);
+    if (widget.menus != oldWidget.menus) {
+      controller.buildMenus(widget.menus);
     }
     _updateShortcuts();
     controller.enabled = widget.enabled;
@@ -968,21 +968,21 @@ class _MenuBarState extends State<MenuBar> {
   }
 
   void _updateShortcuts() {
-    shortcuts = <ShortcutActivator, VoidCallback>{};
-    _addChildShortcuts(widget.children);
+    shortcuts = <MenuSerializableShortcut, VoidCallback>{};
+    _addChildShortcuts(widget.menus);
     // Now wrap each shortcut in a call to _doSelect so that selecting them
     // will close the menus. We didn't do this when building the map because it
     // would preclude duplicate testing.
-    shortcuts = shortcuts.map((ShortcutActivator key, VoidCallback value) {
-      return MapEntry<ShortcutActivator, VoidCallback>(key, () => _doSelect(value));
+    shortcuts = shortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
+      return MapEntry<MenuSerializableShortcut, VoidCallback>(key, () => _doSelect(value));
     });
   }
 
   void _addChildShortcuts(List<MenuItem> children) {
     for (final MenuItem child in children) {
-      if (child is PlatformSubMenu) {
-        _addChildShortcuts(child.children);
-      } else if (child is PlatformMenuBarItem) {
+      if (child is PlatformMenu) {
+        _addChildShortcuts(child.menus);
+      } else if (child is PlatformMenuItem) {
         if (child.shortcut != null && child.onSelected != null) {
           if (shortcuts.containsKey(child.shortcut) && shortcuts[child.shortcut!] != child.onSelected) {
             throw FlutterError(
@@ -1021,7 +1021,7 @@ class _MenuBarState extends State<MenuBar> {
   @override
   Widget build(BuildContext context) {
     if (widget.isPlatformMenu) {
-      return PlatformMenuBar(body: widget.body, children: widget.children);
+      return PlatformMenuBar(body: widget.body, menus: widget.menus);
     }
     final List<_Node> components = <_Node>[
       if (controller.openMenu != null) controller.openMenu!,
@@ -1040,7 +1040,7 @@ class _MenuBarState extends State<MenuBar> {
         },
         child: CallbackShortcuts(
           // Handles user shortcuts.
-          bindings: controller.enabled ? shortcuts : const <ShortcutActivator, VoidCallback>{},
+          bindings: controller.enabled ? shortcuts.cast<ShortcutActivator, VoidCallback>() : const <ShortcutActivator, VoidCallback>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Stack(
@@ -1086,7 +1086,7 @@ class _MenuBarState extends State<MenuBar> {
                                     MaterialStateProperty.all(Colors.white),
                                 preferredHeight:
                                 widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
-                                children: widget.children,
+                                children: widget.menus,
                               );
                             }),
                       ),
@@ -1141,7 +1141,7 @@ class _MenuBarState extends State<MenuBar> {
 ///    Flutter-rendered widgets in a Material Design style.
 ///  * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///    [PlatformMenuBarItem] using platform-native APIs.
-class MenuBarSubMenu extends StatefulWidget implements PlatformSubMenu {
+class MenuBarSubMenu extends StatefulWidget implements PlatformMenu {
   /// Creates a const [MenuBarItem].
   ///
   /// The [label] attribute is required.
@@ -1152,14 +1152,13 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformSubMenu {
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
-    this.enabled = true,
     this.autofocus = false,
     this.backgroundColor,
     this.shape,
     this.elevation,
     this.onOpen,
     this.onClose,
-    this.children = const <MenuItem>[],
+    this.menus = const <MenuItem>[],
   }) : super(key: key);
 
   /// A required label displayed on the entry for this item in the menu.
@@ -1184,9 +1183,6 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformSubMenu {
 
   /// The semantic label to use for this menu item for its [Semantics].
   final String? semanticLabel;
-
-  @override
-  final bool enabled;
 
   /// If true, will request focus when first built if nothing else has focus.
   final bool autofocus;
@@ -1221,23 +1217,26 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformSubMenu {
   final VoidCallback? onClose;
 
   @override
-  final List<MenuItem> children;
+  VoidCallback? get onSelected => null;
+
+  @override
+  final List<MenuItem> menus;
 
   @override
   State<MenuBarSubMenu> createState() => _MenuBarSubMenuState();
 
   @override
-  Map<String, Object?> toChannelRepresentation(DefaultPlatformMenuDelegate delegate) {
-    return PlatformSubMenu.serialize(this, delegate);
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
+    return <Map<String, Object?>>[PlatformMenu.serialize(this, delegate, getId)];
   }
 
   @override
-  List<MenuItem> get descendants => PlatformSubMenu.getDescendants(this);
+  List<MenuItem> get descendants => PlatformMenu.getDescendants(this);
 
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
     return <DiagnosticsNode>[
-      ...children.map<DiagnosticsNode>((MenuItem child) {
+      ...menus.map<DiagnosticsNode>((MenuItem child) {
         return child.toDiagnosticsNode();
       })
     ];
@@ -1250,7 +1249,6 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformSubMenu {
     properties.add(StringProperty('label', label));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(StringProperty('semanticLabel', semanticLabel, defaultValue: null));
-    properties.add(FlagProperty('enabled', value: enabled, ifFalse: 'DISABLED'));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DiagnosticsProperty<ShapeBorder>('shape', shape, defaultValue: null));
@@ -1294,7 +1292,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
       newController.registerMenu(
         menuContext: context,
         node: _MenuNodeWrapper.of(context),
-        menuBuilder: widget.children.isNotEmpty ? _buildMenu : null,
+        menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
         buttonFocus: focusNode,
       );
     }
@@ -1306,7 +1304,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
     controller!.registerMenu(
       menuContext: context,
       node: _MenuNodeWrapper.of(context),
-      menuBuilder: widget.children.isNotEmpty ? _buildMenu : null,
+      menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
       buttonFocus: focusNode,
     );
   }
@@ -1314,7 +1312,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
   List<Widget> _expandGroups() {
     final List<Widget> expanded = <Widget>[];
     bool lastWasGroup = false;
-    for (final MenuItem item in widget.children) {
+    for (final MenuItem item in widget.menus) {
       if (lastWasGroup) {
         expanded.add(const _MenuItemDivider());
       }
@@ -1347,7 +1345,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
     );
   }
 
-  bool get enabled => controller!.enabled && widget.enabled;
+  bool get enabled => controller!.enabled && widget.menus.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1364,7 +1362,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
           leadingIcon: widget.leadingIcon,
           label: widget.labelWidget ?? Text(widget.label),
           trailingIcon: widget.trailingIcon,
-          hasSubmenu: widget.children.isNotEmpty,
+          hasSubmenu: widget.menus.isNotEmpty,
         ),
       ),
     );
@@ -1438,7 +1436,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
 ///    Flutter-rendered widgets in a Material Design style.
 ///  * [PlatformMenuBar], a class that renders similar menu bar items from a
 ///    [PlatformMenuBarItem] using platform-native APIs.
-class MenuBarItem extends StatefulWidget implements PlatformMenuBarItem {
+class MenuBarItem extends StatefulWidget implements PlatformMenuItem {
   /// Creates a const [MenuBarItem].
   ///
   /// The [label] attribute is required.
@@ -1462,10 +1460,19 @@ class MenuBarItem extends StatefulWidget implements PlatformMenuBarItem {
   final Widget? labelWidget;
 
   @override
-  final ShortcutActivator? shortcut;
+  final MenuSerializableShortcut? shortcut;
 
   @override
   final VoidCallback? onSelected;
+
+  @override
+  VoidCallback? get onOpen => null;
+
+  @override
+  VoidCallback? get onClose => null;
+
+  @override
+  List<MenuItem> get descendants => const <MenuItem>[];
 
   /// If true, will request focus when first built if nothing else has focus.
   final bool autofocus;
@@ -1483,8 +1490,8 @@ class MenuBarItem extends StatefulWidget implements PlatformMenuBarItem {
   State<MenuBarItem> createState() => _MenuBarItemState();
 
   @override
-  Map<String, Object?> toChannelRepresentation(DefaultPlatformMenuDelegate delegate) {
-    return PlatformMenuBarItem.serialize(this, delegate);
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
+    return <Map<String, Object?>>[PlatformMenuItem.serialize(this, delegate, getId)];
   }
 
   @override
@@ -1597,7 +1604,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
   }
 }
 
-class _MenuItemDivider extends StatelessWidget implements PlatformMenuBarItem {
+class _MenuItemDivider extends StatelessWidget implements PlatformMenuItem {
   /// Creates a [_MenuItemDivider].
   const _MenuItemDivider({Key? key}) : super(key: key);
 
@@ -1613,10 +1620,19 @@ class _MenuItemDivider extends StatelessWidget implements PlatformMenuBarItem {
   VoidCallback? get onSelected => null;
 
   @override
-  ShortcutActivator? get shortcut => null;
+  VoidCallback? get onOpen => null;
 
   @override
-  Map<String, Object?> toChannelRepresentation(DefaultPlatformMenuDelegate delegate) {
+  VoidCallback? get onClose => null;
+
+  @override
+  List<MenuItem> get descendants => const <MenuItem>[];
+
+  @override
+  MenuSerializableShortcut? get shortcut => null;
+
+  @override
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
     // This method shouldn't get called, since DefaultPlatformMenuDelegate._expandGroups in
     // platform_menu_bar.dart should skip it.
     throw UnimplementedError('Unexpected call of toChannelRepresentation for _MenuItemDivider');
@@ -1634,6 +1650,18 @@ class MenuItemGroup extends StatelessWidget implements PlatformMenuItemGroup {
   /// The [members] attribute is required.
   const MenuItemGroup({Key? key, required this.members}) : super(key: key);
 
+  @override
+  VoidCallback? get onSelected => null;
+
+  @override
+  VoidCallback? get onOpen => null;
+
+  @override
+  VoidCallback? get onClose => null;
+
+  @override
+  List<MenuItem> get descendants => const <MenuItem>[];
+
   /// The members of this [MenuItemGroup].
   ///
   /// It empty, then this group will not appear in the menu.
@@ -1646,7 +1674,7 @@ class MenuItemGroup extends StatelessWidget implements PlatformMenuItemGroup {
   /// This is used by [PlatformMenuBar] (or when [MenuBar.isPlatformMenu] is
   /// true) when rendering this [MenuItemGroup] using platform APIs.
   @override
-  Map<String, Object?> toChannelRepresentation(DefaultPlatformMenuDelegate delegate) {
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
     // This method shouldn't get called, since DefaultPlatformMenuDelegate._expandGroups in
     // platform_menu_bar.dart should skip it.
     throw UnimplementedError('Unexpected call of toChannelRepresentation for MenuItemGroup');
@@ -1764,7 +1792,7 @@ class _MenuBarItemLabel extends StatelessWidget {
 
   /// The shortcut for this label, so that it can generate a string describing
   /// the shortcut.
-  final ShortcutActivator? shortcut;
+  final MenuSerializableShortcut? shortcut;
 
   /// Whether or not this menu item should appear to be enabled.
   final bool enabled;
@@ -2042,8 +2070,8 @@ class LocalizedShortcutLabeler {
   /// [TargetPlatform.iOS], [LogicalKeyboardKey.meta] the default implementation
   /// will show as '⌘', [LogicalKeyboardKey.control] will show as '˄', and
   /// [LogicalKeyboardKey.alt] will show as '⌥'.
-  String getShortcutLabel(ShortcutActivator shortcut, MaterialLocalizations localizations) {
-    final ShortcutActivator localShortcut = shortcut;
+  String getShortcutLabel(MenuSerializableShortcut shortcut, MaterialLocalizations localizations) {
+    final MenuSerializableShortcut localShortcut = shortcut;
     if (localShortcut is SingleActivator) {
       final List<String> modifiers = <String>[];
       final LogicalKeyboardKey trigger = localShortcut.trigger;
@@ -2076,33 +2104,6 @@ class LocalizedShortcutLabeler {
         ...modifiers,
         if (shortcutTrigger.isNotEmpty) shortcutTrigger,
       ].join(' ');
-    }
-    if (localShortcut is LogicalKeySet) {
-      final List<LogicalKeyboardKey> sortedKeys = localShortcut.keys.toList()
-        ..sort((LogicalKeyboardKey a, LogicalKeyboardKey b) {
-          // Put the modifiers first.
-          final bool aIsModifier = _modifiers.contains(a);
-          final bool bIsModifier = _modifiers.contains(b);
-          if (aIsModifier && !bIsModifier) {
-            return -1;
-          } else if (bIsModifier && !aIsModifier) {
-            return 1;
-          }
-          return a.keyLabel.compareTo(b.keyLabel);
-        });
-      return sortedKeys.map<String>((LogicalKeyboardKey trigger) {
-        if (_modifiers.contains(trigger)) {
-          return _getModifierLabel(trigger, localizations);
-        }
-        final int logicalKeyId = trigger.keyId;
-        if (_shortcutGraphicEquivalents.containsKey(trigger)) {
-          return _shortcutGraphicEquivalents[trigger]!;
-        } else if (logicalKeyId & LogicalKeyboardKey.planeMask == 0x0) {
-          return String.fromCharCode(logicalKeyId & LogicalKeyboardKey.valueMask).toUpperCase();
-        } else {
-          return _getLocalizedName(trigger, localizations);
-        }
-      }).join(' ');
     }
     if (localShortcut is CharacterActivator) {
       return localShortcut.character;
