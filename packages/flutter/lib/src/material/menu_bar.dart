@@ -273,8 +273,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     _menuBarContext = rootContext;
   }
 
-  late FocusNode menuBarFocusNode;
-
   /// Whether or not the menu bar is enabled for input. This is set by setting
   /// [MenuBar.enabled] on the menu bar widget, and the menu children listen for
   /// it to change.
@@ -930,7 +928,6 @@ class MenuBar extends PlatformMenuBar {
 
 class _MenuBarState extends State<MenuBar> {
   late Map<MenuSerializableShortcut, VoidCallback> shortcuts;
-  late FocusNode focusNode;
   _MenuBarController? _controller;
   _MenuBarController get controller {
     // Make our own controller if the user didn't provide one.
@@ -944,9 +941,7 @@ class _MenuBarState extends State<MenuBar> {
   @override
   void initState() {
     super.initState();
-    focusNode = FocusNode(debugLabel: 'MenuBar');
     controller.menuBarContext = context;
-    controller.menuBarFocusNode = focusNode;
     controller.buildMenus(widget.menus);
     controller.addListener(_markDirty);
     _updateShortcuts();
@@ -1005,7 +1000,6 @@ class _MenuBarState extends State<MenuBar> {
 
   @override
   void dispose() {
-    focusNode.dispose();
     controller.removeListener(_markDirty);
     _controller?.dispose();
     super.dispose();
@@ -1049,47 +1043,42 @@ class _MenuBarState extends State<MenuBar> {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Focus(
-                      canRequestFocus: false,
-                      skipTraversal: true,
-                      focusNode: focusNode,
-                      child: Shortcuts(
-                        // Make sure that these override any shortcut bindings
-                        // from the menu items when a menu is open. If someone
-                        // wants to bind an arrow or tab to a menu item, it would
-                        // otherwise override the default traversal keys. We want
-                        // their shortcut to apply everywhere but in the menu
-                        // itself, since there we have to do some special work for
-                        // traversing menus.
-                        shortcuts: const <ShortcutActivator, Intent>{
-                          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-                          SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
-                          SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                          SingleActivator(LogicalKeyboardKey.arrowDown):
-                              DirectionalFocusIntent(TraversalDirection.down),
-                          SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                          SingleActivator(LogicalKeyboardKey.arrowLeft):
-                              DirectionalFocusIntent(TraversalDirection.left),
-                          SingleActivator(LogicalKeyboardKey.arrowRight):
-                              DirectionalFocusIntent(TraversalDirection.right),
-                        },
-                        child: AnimatedBuilder(
-                            animation: controller,
-                            builder: (BuildContext context, Widget? ignoredChild) {
-                              return _MenuBarTopLevelBar(
-                                elevation:
-                                widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
-                                height: widget.height ?? menuBarTheme.menuBarHeight,
-                                enabled: controller.enabled,
-                                color: widget.backgroundColor ??
-                                    menuBarTheme.menuBarBackgroundColor ??
-                                    MaterialStateProperty.all(Colors.white),
-                                preferredHeight:
-                                widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
-                                children: widget.menus,
-                              );
-                            }),
-                      ),
+                    Shortcuts(
+                      // Make sure that these override any shortcut bindings
+                      // from the menu items when a menu is open. If someone
+                      // wants to bind an arrow or tab to a menu item, it would
+                      // otherwise override the default traversal keys. We want
+                      // their shortcut to apply everywhere but in the menu
+                      // itself, since there we have to do some special work for
+                      // traversing menus.
+                      shortcuts: const <ShortcutActivator, Intent>{
+                        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+                        SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+                        SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
+                        SingleActivator(LogicalKeyboardKey.arrowDown):
+                            DirectionalFocusIntent(TraversalDirection.down),
+                        SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+                        SingleActivator(LogicalKeyboardKey.arrowLeft):
+                            DirectionalFocusIntent(TraversalDirection.left),
+                        SingleActivator(LogicalKeyboardKey.arrowRight):
+                            DirectionalFocusIntent(TraversalDirection.right),
+                      },
+                      child: AnimatedBuilder(
+                          animation: controller,
+                          builder: (BuildContext context, Widget? ignoredChild) {
+                            return _MenuBarTopLevelBar(
+                              elevation:
+                              widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
+                              height: widget.height ?? menuBarTheme.menuBarHeight,
+                              enabled: controller.enabled,
+                              color: widget.backgroundColor ??
+                                  menuBarTheme.menuBarBackgroundColor ??
+                                  MaterialStateProperty.all(Colors.white),
+                              preferredHeight:
+                              widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
+                              children: widget.menus,
+                            );
+                          }),
                     ),
                     Expanded(
                       child: Stack(
