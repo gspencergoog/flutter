@@ -32,7 +32,7 @@ const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
 
 class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
-  _Node({required this.item, this.parent}) : children = <_Node>[] {
+  _Node({required this.item, this.parent}) : children = <_Node>[], isGroup = false {
     parent?.children.add(this);
     if (item is PlatformMenu) {
       for (final MenuItem child in (item as PlatformMenu).menus) {
@@ -47,6 +47,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   _Node? parent;
   List<_Node> children;
   WidgetBuilder? builder;
+  bool isGroup;
 
   bool get hasSubmenu => children.isNotEmpty;
 
@@ -76,6 +77,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
     return ancestors.first;
   }
 
+  // Returns the index of this in the parent.
   int get parentIndex {
     if (parent == null) {
       // Root node has no parent index.
@@ -719,6 +721,47 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 }
 
+// Provides default implementation for MenuItem in a StatefulWidget, to serve
+// as a base class for the MenuBarItem, MenuItemGroup and MenuBarMenu classes.
+abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMenuItem {
+  const _MenuBarItemDefaults({super.key, required this.label, this.labelWidget});
+
+  /// A required label displayed on the entry for this item in the menu.
+  ///
+  /// This is typically a [Text] widget containing the name for the menu item.
+  ///
+  /// This label is also used as the default [semanticLabel].
+  ///
+  /// The label appearance can be overridden by using a [labelWidget].
+  @override
+  final String label;
+
+  /// An optional widget that will be displayed in place of the default [Text]
+  /// widget containing the [label].
+  final Widget? labelWidget;
+
+  @override
+  MenuSerializableShortcut? get shortcut => null;
+
+  @override
+  List<MenuItem> get children => const <MenuItem>[];
+
+  @override
+  List<MenuItem> get descendants => const <MenuItem>[];
+
+  @override
+  VoidCallback? get onSelected => null;
+
+  @override
+  VoidCallback? get onOpen => null;
+
+  @override
+  VoidCallback? get onClose => null;
+
+  @override
+  List<MenuItem> get members => const <MenuItem>[];
+}
+
 /// A menu bar with cascading child menus.
 ///
 /// This is a Material Design menu bar that resides above the main body of an
@@ -779,9 +822,6 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
 ///    separated from other menu items by a divider.
 ///  * [MenuBarItem], a leaf menu item which displays the label, an optional
 ///    shortcut label, and optional leading and trailing icons.
-///  * [MenuBarBuilderItem], a leaf menu item which allows customization of the
-///    menu item by allowing a [MenuBarCustomItemBuilder] to generate the
-///    contents of the menu item.
 ///  * [MenuBarController], a class that allows closing of menus from outside of
 ///    the menu bar.
 ///  * [PlatformMenuBar], which creates a menu bar that is rendered by the host
@@ -980,24 +1020,22 @@ class _MenuBarState extends State<MenuBar> {
 
   void _addChildShortcuts(List<MenuItem> children) {
     for (final MenuItem child in children) {
-      if (child is PlatformMenu) {
-        _addChildShortcuts(child.menus);
-      } else if (child is PlatformMenuItem) {
-        if (child.shortcut != null && child.onSelected != null) {
-          if (shortcuts.containsKey(child.shortcut) && shortcuts[child.shortcut!] != child.onSelected) {
-            throw FlutterError(
-              'More than one menu item is bound to ${child.shortcut}, and they have '
-              'different callbacks.\n'
-              "A ${child.runtimeType} (i.e. a MenuItem) can't contain the same "
-              'shortcut as another menu item if it triggers a different callback. '
-              'If your application needs to allow this, assign all the duplicated '
-              'shortcuts to the same callback which can then disambiguate which '
-              'action to take (or do them all).',
-            );
-          }
-          shortcuts[child.shortcut!] = child.onSelected!;
+      if (child.children.isNotEmpty) {
+        _addChildShortcuts(child.children);
+      } else if (child.shortcut != null && child.onSelected != null) {
+        if (shortcuts.containsKey(child.shortcut) && shortcuts[child.shortcut!] != child.onSelected) {
+          throw FlutterError(
+            'More than one menu item is bound to ${child.shortcut}, and they have '
+            'different callbacks.\n'
+            "A ${child.runtimeType} (i.e. a MenuItem) can't contain the same "
+            'shortcut as another menu item if it triggers a different callback. '
+            'If your application needs to allow this, assign all the duplicated '
+            'shortcuts to the same callback which can then disambiguate which '
+            'action to take (or do them all).',
+          );
         }
-      } else if (child is PlatformMenuItemGroup) {
+        shortcuts[child.shortcut!] = child.onSelected!;
+      } else if (child.members.isNotEmpty) {
         _addChildShortcuts(child.members);
       }
     }
@@ -1135,14 +1173,14 @@ class _MenuBarState extends State<MenuBar> {
 ///    Flutter-rendered widgets in a Material Design style.
 ///  * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///    [PlatformMenuBarItem] using platform-native APIs.
-class MenuBarMenu extends StatefulWidget implements PlatformMenu {
+class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   /// Creates a const [MenuBarItem].
   ///
   /// The [label] attribute is required.
   const MenuBarMenu({
-    Key? key,
-    required this.label,
-    this.labelWidget,
+    super.key,
+    required super.label,
+    super.labelWidget,
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
@@ -1153,21 +1191,7 @@ class MenuBarMenu extends StatefulWidget implements PlatformMenu {
     this.onOpen,
     this.onClose,
     this.menus = const <MenuItem>[],
-  }) : super(key: key);
-
-  /// A required label displayed on the entry for this item in the menu.
-  ///
-  /// This is typically a [Text] widget containing the name for the menu item.
-  ///
-  /// This label is also used as the default [semanticLabel].
-  ///
-  /// The label appearance can be overridden by using a [labelWidget].
-  @override
-  final String label;
-
-  /// An optional widget that will be displayed instead of the default label
-  /// widget.
-  final Widget? labelWidget;
+  });
 
   /// An optional icon to display before the label text.
   final Widget? leadingIcon;
@@ -1209,9 +1233,6 @@ class MenuBarMenu extends StatefulWidget implements PlatformMenu {
 
   @override
   final VoidCallback? onClose;
-
-  @override
-  VoidCallback? get onSelected => null;
 
   @override
   final List<MenuItem> menus;
@@ -1316,7 +1337,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       if (lastWasGroup) {
         expanded.add(const _MenuItemDivider());
       }
-      if (item is PlatformMenuItemGroup) {
+      if (item.members.isNotEmpty) {
         expanded.addAll(item.members.cast<Widget>());
         lastWasGroup = true;
       } else {
@@ -1436,43 +1457,27 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
 ///    Flutter-rendered widgets in a Material Design style.
 ///  * [PlatformMenuBar], a class that renders similar menu bar items from a
 ///    [PlatformMenuBarItem] using platform-native APIs.
-class MenuBarItem extends StatefulWidget implements PlatformMenuItem {
+class MenuBarItem extends _MenuBarItemDefaults {
   /// Creates a const [MenuBarItem].
   ///
   /// The [label] attribute is required.
   const MenuBarItem({
-    Key? key,
-    required this.label,
-    this.labelWidget,
+    super.key,
+    required super.label,
+    super.labelWidget,
     this.shortcut,
     this.onSelected,
     this.autofocus = false,
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
-  }) : super(key: key);
-
-  @override
-  final String label;
-
-  /// An optional widget that will be displayed in place of the default [Text]
-  /// widget containing the [label].
-  final Widget? labelWidget;
+  });
 
   @override
   final MenuSerializableShortcut? shortcut;
 
   @override
   final VoidCallback? onSelected;
-
-  @override
-  VoidCallback? get onOpen => null;
-
-  @override
-  VoidCallback? get onClose => null;
-
-  @override
-  List<MenuItem> get descendants => const <MenuItem>[];
 
   /// If true, will request focus when first built if nothing else has focus.
   final bool autofocus;
@@ -1507,7 +1512,7 @@ class MenuBarItem extends StatefulWidget implements PlatformMenuItem {
 
 class _MenuBarItemState extends State<MenuBarItem> {
   bool get isOpen => controller.openMenu == menu;
-  late _Node menu;
+  _Node? menu;
   late _MenuBarController controller;
   bool registered = false;
   Timer? hoverTimer;
@@ -1523,14 +1528,13 @@ class _MenuBarItemState extends State<MenuBarItem> {
   void dispose() {
     hoverTimer?.cancel();
     hoverTimer = null;
-    controller.unregisterMenu(menu);
+    controller.unregisterMenu(menu!);
     focusNode.dispose();
     super.dispose();
   }
 
   @override
   void didChangeDependencies() {
-    debugPrint('MenuBarItem.didChangeDependencies(${menu.toStringShort()})');
     final _Node newMenu = _MenuNodeWrapper.of(context);
     final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
     if (newMenu != menu || newController != controller) {
@@ -1538,10 +1542,11 @@ class _MenuBarItemState extends State<MenuBarItem> {
       controller = newController;
       controller.registerMenu(
         menuContext: context,
-        node: menu,
+        node: menu!,
         buttonFocus: focusNode,
       );
     }
+    debugPrint('MenuBarItem.didChangeDependencies(${menu!.toStringShort()})');
     super.didChangeDependencies();
   }
 
@@ -1554,7 +1559,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
       controller = newController;
       controller.registerMenu(
         menuContext: context,
-        node: menu,
+        node: menu!,
         buttonFocus: focusNode,
       );
     }
@@ -1574,7 +1579,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
   Widget build(BuildContext context) {
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
-      order: _MenuFocusOrder(menu),
+      order: _MenuFocusOrder(menu!),
       child: TextButton(
         autofocus: widget.autofocus,
         style: TextButton.styleFrom(padding: EdgeInsets.zero),
@@ -1598,7 +1603,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
     // Don't open the top level menu bar buttons on hover unless something else
     // is already open. This means that the user has to first open the menu bar
     // before hovering allows them to traverse it.
-    if (menu.parent == controller.root && controller.openMenu == null) {
+    if (menu!.parent == controller.root && controller.openMenu == null) {
       return;
     }
 
@@ -1615,38 +1620,13 @@ class _MenuBarItemState extends State<MenuBarItem> {
   }
 }
 
-class _MenuItemDivider extends StatelessWidget implements PlatformMenuItem {
+class _MenuItemDivider extends StatelessWidget {
   /// Creates a [_MenuItemDivider].
-  const _MenuItemDivider({Key? key}) : super(key: key);
+  const _MenuItemDivider();
 
   @override
   Widget build(BuildContext context) {
     return Divider(height: math.max(2, 16 + Theme.of(context).visualDensity.vertical * 4));
-  }
-
-  @override
-  String get label => '';
-
-  @override
-  VoidCallback? get onSelected => null;
-
-  @override
-  VoidCallback? get onOpen => null;
-
-  @override
-  VoidCallback? get onClose => null;
-
-  @override
-  List<MenuItem> get descendants => const <MenuItem>[];
-
-  @override
-  MenuSerializableShortcut? get shortcut => null;
-
-  @override
-  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
-    // This method shouldn't get called, since DefaultPlatformMenuDelegate._expandGroups in
-    // platform_menu_bar.dart should skip it.
-    throw UnimplementedError('Unexpected call of toChannelRepresentation for _MenuItemDivider');
   }
 }
 
@@ -1655,23 +1635,11 @@ class _MenuItemDivider extends StatelessWidget implements PlatformMenuItem {
 ///
 /// It inserts dividers as necessary before and after the group, only inserting
 /// them if there are other menu items before or after this group.
-class MenuItemGroup extends StatelessWidget implements PlatformMenuItemGroup {
+class MenuItemGroup extends StatelessWidget implements MenuItem {
   /// Creates a const [MenuItemGroup].
   ///
   /// The [members] attribute is required.
-  const MenuItemGroup({Key? key, required this.members}) : super(key: key);
-
-  @override
-  VoidCallback? get onSelected => null;
-
-  @override
-  VoidCallback? get onOpen => null;
-
-  @override
-  VoidCallback? get onClose => null;
-
-  @override
-  List<MenuItem> get descendants => const <MenuItem>[];
+  const MenuItemGroup({super.key, required this.members});
 
   /// The members of this [MenuItemGroup].
   ///
@@ -1685,18 +1653,39 @@ class MenuItemGroup extends StatelessWidget implements PlatformMenuItemGroup {
   /// This is used by [PlatformMenuBar] (or when [MenuBar.isPlatformMenu] is
   /// true) when rendering this [MenuItemGroup] using platform APIs.
   @override
-  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
-    // This method shouldn't get called, since DefaultPlatformMenuDelegate._expandGroups in
-    // platform_menu_bar.dart should skip it.
-    throw UnimplementedError('Unexpected call of toChannelRepresentation for MenuItemGroup');
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, { required int Function(MenuItem) getId }) {
+    return PlatformMenuItemGroup.serialize(this, delegate, getId: getId);
   }
 
   @override
+  MenuSerializableShortcut? get shortcut => null;
+
+  @override
+  List<MenuItem> get children => const <MenuItem>[];
+
+  @override
+  List<MenuItem> get descendants => const <MenuItem>[];
+
+  @override
+  VoidCallback? get onSelected => null;
+
+  @override
+  VoidCallback? get onOpen => null;
+
+  @override
+  VoidCallback? get onClose => null;
+
+  @override
   Widget build(BuildContext context) {
+    final _Node menu = _MenuNodeWrapper.of(context);
+    final bool hasDividerBefore = menu.parentIndex != 0 && !menu.parent!.children[menu.parentIndex - 1].isGroup;
+    final bool hasDividerAfter = menu.parentIndex != (menu.parent!.children.length - 1);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        if (hasDividerBefore) const Divider(),
         ...members.cast<Widget>(),
+        if (hasDividerAfter) const Divider(),
       ],
     );
   }

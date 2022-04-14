@@ -152,6 +152,17 @@ abstract class MenuItem with Diagnosticable {
     required MenuItemSerializableIdGenerator getId,
   });
 
+  /// The optional shortcut that selects this [MenuItem].
+  ///
+  /// This shortcut is only enabled when [onSelected] is set.
+  MenuSerializableShortcut? get shortcut => null;
+
+  /// Returns any child [MenuItem]s of this item.
+  ///
+  /// Returns an empty list if this type of menu item doesn't have
+  /// children.
+  List<MenuItem> get children => const <MenuItem>[];
+
   /// Returns all descendant [MenuItem]s of this item.
   ///
   /// Returns an empty list if this type of menu item doesn't have
@@ -181,6 +192,12 @@ abstract class MenuItem with Diagnosticable {
   ///
   /// The default implementation returns null.
   VoidCallback? get onClose => null;
+
+  /// Returns the list of group members if this menu item is a "grouping" menu
+  /// item, such as [PlatformMenuItemGroup].
+  ///
+  /// Defaults to an empty list.
+  List<MenuItem> get members => const <MenuItem>[];
 }
 
 /// An abstract delegate class that can be used to set
@@ -646,6 +663,7 @@ class PlatformMenuItemGroup extends MenuItem {
   /// The [MenuItem]s that are members of this menu item group.
   ///
   /// An assertion will be thrown if there isn't at least one member of the group.
+  @override
   final List<MenuItem> members;
 
   @override
@@ -654,19 +672,32 @@ class PlatformMenuItemGroup extends MenuItem {
     required MenuItemSerializableIdGenerator getId,
   }) {
     assert(members.isNotEmpty, 'There must be at least one member in a PlatformMenuItemGroup');
+    return serialize(this, delegate, getId: getId);
+  }
+
+  /// Converts the supplied object to the correct channel representation for the
+  /// 'flutter/menu' channel.
+  ///
+  /// This API is supplied so that implementers of [PlatformMenuItemGroup] can share
+  /// this implementation.
+  static Iterable<Map<String, Object?>> serialize(
+    MenuItem group,
+    PlatformMenuDelegate delegate, {
+    required MenuItemSerializableIdGenerator getId,
+  }) {
     final List<Map<String, Object?>> result = <Map<String, Object?>>[];
     result.add(<String, Object?>{
-      _kIdKey: getId(this),
+      _kIdKey: getId(group),
       _kIsDividerKey: true,
     });
-    for (final MenuItem item in members) {
+    for (final MenuItem item in group.members) {
       result.addAll(item.toChannelRepresentation(
         delegate,
         getId: getId,
       ));
     }
     result.add(<String, Object?>{
-      _kIdKey: getId(this),
+      _kIdKey: getId(group),
       _kIsDividerKey: true,
     });
     return result;
@@ -705,6 +736,7 @@ class PlatformMenuItem extends MenuItem {
   /// The optional shortcut that selects this [PlatformMenuItem].
   ///
   /// This shortcut is only enabled when [onSelected] is set.
+  @override
   final MenuSerializableShortcut? shortcut;
 
   /// An optional callback that is called when this [PlatformMenuItem] is
