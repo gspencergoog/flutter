@@ -35,7 +35,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   _Node({required this.item, this.parent}) : children = <_Node>[], isOpenMenu = false {
     parent?.children.add(this);
     if (item is PlatformMenu) {
-      for (final MenuItem child in (item as PlatformMenu).menus) {
+      for (final MenuItem child in item.menus) {
         // Will get automatically linked into the tree.
         _Node(item: child, parent: this);
       }
@@ -59,28 +59,33 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
       return result;
     }
     _Node? node = parent;
-    while (node?.parent != null) {
-      result.add(node!);
+    while (node != null && node.parent != null) {
+      result.insert(0, node);
       node = node.parent;
     }
     return result;
   }
+
+  bool get isTopLevel => parent?.parent == null;
+
+  bool get isRoot => parent == null;
 
   _Node? get topLevel {
     if (parent == null) {
       // Root doesn't have a top level node.
       return null;
     }
-    if (parent!.parent == null) {
+    if (isTopLevel == null) {
       // Top level nodes are their own topLevel.
       return this;
     }
+    assert(ancestors.first.isTopLevel);
     return ancestors.first;
   }
 
   // Returns the index of this in the parent.
   int get parentIndex {
-    if (parent == null) {
+    if (isRoot) {
       // Root node has no parent index.
       return -1;
     }
@@ -90,7 +95,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   }
 
   _Node? get nextSibling {
-    if (parent == null) {
+    if (isRoot) {
       // No next sibling for root.
       return null;
     }
@@ -113,15 +118,15 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
 
    @override
   int compareTo(_Node other) {
-    if (parent == null && other.parent == null) {
+    if (isRoot && other.isRoot) {
       // root menus are equal.
       return 0;
     } else {
-      if (parent == null) {
+      if (isRoot) {
         // Other menu has ancestors, but this one is the root.
         return 1;
       }
-      if (other.parent == null) {
+      if (other.isRoot) {
         // This menu has ancestors, but the other one is root.
         return -1;
       }
@@ -166,12 +171,6 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   // Used for testing.
   @override
   String toStringShort({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    if (item is PlatformMenuItem) {
-      return (item as PlatformMenuItem).label;
-    }
-    if (item is PlatformMenu) {
-      return (item as PlatformMenu).label;
-    }
     return item.toStringShort();
   }
 
@@ -358,7 +357,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         value.focusNode!.requestFocus();
       }
     }
-    SchedulerBinding.instance.scheduleTask(notifyListeners, Priority.touch);
+    notifyListeners();
   }
 
   @override
@@ -537,7 +536,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final Iterable<FocusNode> focusedItems = _focusNodes.keys.where((FocusNode node) => node.hasFocus);
     assert(
         focusedItems.length <= 1,
-        'The same focus node is registered to more than one MenuBar '
+        'The same focus node is registered to more than one MenuItem '
         'menu:\n  ${focusedItems.first}');
     return focusedItems.isNotEmpty ? _focusNodes[focusedItems.first] : null;
   }
@@ -632,8 +631,10 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     if (focusedItem == null) {
       return false;
     }
+    // Back moves between siblings on the top level menu.
     // Wraps around if there is no previous.
-    final _Node? previous = focusedItem.previousSibling;
+    // _Node? previous;e
+    final _Node? previous = focusedItem.parent == controller.root ? focusedItem.previousSibling : focusedItem.topLevel?.previousSibling;
     if (previous != null) {
       controller.openMenu = previous;
     } else {
@@ -643,6 +644,9 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 
   bool _moveUp() {
+    if (controller.openMenu == null) {
+      return false;
+    }
     final _Node? focusedItem = controller.focusedItem;
     if (focusedItem == null) {
       return false;
@@ -658,6 +662,9 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     }
     if (previousFocusable != null) {
       controller.openMenu = previousFocusable;
+    } else if (focusedItem.parent?.parent == controller.root) {
+      // If you press up on a next-to-top level menu, then move to the parent.
+      controller.openMenu = focusedItem.parent;
     }
     return true;
   }
@@ -757,8 +764,12 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
   @override
   MenuSerializableShortcut? get shortcut => null;
 
+  /// The list of top-level menu items to show in the [MenuBar].
+  ///
+  /// Each entry in this list will become a top level menu item, and must have a
+  /// [MenuBarItem] inside it somewhere containing the menu item's attributes.
   @override
-  List<MenuItem> get children => const <MenuItem>[];
+  List<MenuItem> get menus => const <MenuItem>[];
 
   @override
   List<MenuItem> get descendants => const <MenuItem>[];
@@ -944,19 +955,11 @@ class MenuBar extends PlatformMenuBar {
   // Overriding just to get a different docstring than the base class.
   Widget get body => super.body;
 
-  /// The list of top-level menu items to show in the [MenuBar].
-  ///
-  /// Each entry in this list will become a top level menu item, and must have a
-  /// [MenuBarItem] inside it somewhere containing the menu item's attributes.
-  @override
-  // Overriding just to get a different docstring than the base class.
-  List<MenuItem> get menus => super.menus;
-
   /// Whether or not this should be rendered as a [PlatformMenuBar] or a
   /// Material [MenuBar].
   ///
   /// If true, then a [PlatformMenuBar] will be substituted with the same
-  /// [children], [body], and [enabled] but none of the visual attributes will
+  /// [menus], [body], and [enabled] but none of the visual attributes will
   /// be passed along.
   ///
   /// See also:
@@ -1034,8 +1037,8 @@ class _MenuBarState extends State<MenuBar> {
 
   void _addChildShortcuts(List<MenuItem> children) {
     for (final MenuItem child in children) {
-      if (child.children.isNotEmpty) {
-        _addChildShortcuts(child.children);
+      if (child.menus.isNotEmpty) {
+        _addChildShortcuts(child.menus);
       } else if (child.shortcut != null && child.onSelected != null) {
         if (shortcuts.containsKey(child.shortcut) && shortcuts[child.shortcut!] != child.onSelected) {
           throw FlutterError(
@@ -1223,14 +1226,14 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   /// If true, will request focus when first built if nothing else has focus.
   final bool autofocus;
 
-  /// The background color of the cascading menu, if there are [children]
+  /// The background color of the cascading menu, if there are [menus]
   /// specified.
   ///
   /// Defaults to the value of [MenuBarThemeData.color] value of the
   /// ambient [MenuBarTheme].
   final MaterialStateProperty<Color?>? backgroundColor;
 
-  /// The shape of the cascading menu, if there are [children] specified.
+  /// The shape of the cascading menu, if there are [menus] specified.
   ///
   /// Defaults to the value of [MenuBarThemeData.menuShape] value of the
   /// ambient [MenuBarTheme].
@@ -1675,7 +1678,7 @@ class MenuItemGroup extends StatelessWidget implements MenuItem {
   MenuSerializableShortcut? get shortcut => null;
 
   @override
-  List<MenuItem> get children => const <MenuItem>[];
+  List<MenuItem> get menus => const <MenuItem>[];
 
   @override
   List<MenuItem> get descendants => const <MenuItem>[];
