@@ -139,7 +139,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
 
   // Returns the list of node ancestors with any of the ancestors that appear in
   // the other's ancestors removed. Includes this in the results.
-  List<_Node> difference(_Node? other) {
+  List<_Node> ancestorDifference(_Node? other) {
     final List<_Node> myAncestors = <_Node>[...ancestors, this];
     final List<_Node> otherAncestors = <_Node>[
       ...other?.ancestors ?? <_Node>[],
@@ -300,6 +300,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   _Node? get openMenu => _openMenu;
   _Node? _openMenu;
   set openMenu(_Node? value) {
+    debugPrint('Attempting to set new menu to ${value?.toStringShort()}.');
+
     if (_openMenu == value) {
       // Nothing changed.
       return;
@@ -322,15 +324,11 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final _Node? oldMenu = _openMenu;
     debugPrint('Setting new menu to ${value?.toStringShort()}');
     _openMenu = value;
-    oldMenu?.difference(_openMenu).forEach((_Node node) {
-      if (node.item is PlatformMenu) {
-        (node.item as PlatformMenu).onClose?.call();
-      }
+    oldMenu?.ancestorDifference(_openMenu).forEach((_Node node) {
+      node.item.onClose?.call();
     });
-    _openMenu?.difference(oldMenu).forEach((_Node node) {
-      if (node.item is PlatformMenu) {
-        (node.item as PlatformMenu).onOpen?.call();
-      }
+    _openMenu?.ancestorDifference(oldMenu).forEach((_Node node) {
+      node.item.onOpen?.call();
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
       // Request focus on the new thing that is now open, if any, so that
@@ -344,11 +342,12 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         value.focusNode!.requestFocus();
       }
     }
-    notifyListeners();
+    SchedulerBinding.instance.scheduleTask(notifyListeners, Priority.touch);
   }
 
   @override
   void closeAll() {
+    debugPrint('Closing all Menus.');
     openMenu = null;
   }
 
@@ -363,6 +362,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       return;
     }
     if (openMenu == node) {
+      debugPrint('Closing menu ${openMenu?.toStringShort()}.');
       // Don't call onClose, notifyListeners, etc, here, because set openMenu
       // will call them if needed.
       if (node.parent == root) {
@@ -375,6 +375,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   // Build the node hierarchy for the static part of the menus (the widgets).
   void buildMenus(List<MenuItem> topLevel) {
+    debugPrint('Rebuilding Menus');
     root.children.clear();
     _focusNodes.clear();
     _previousFocus = null;
@@ -400,6 +401,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     WidgetBuilder? menuBuilder,
     FocusNode? buttonFocus,
   }) {
+    debugPrint('Registering ${node.toStringShort()}');
+
     if (menuBuilder != null) {
       node.builder = (BuildContext context) {
         // Capture the correct context for the menu.
@@ -427,16 +430,17 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   ///
   /// If the given context corresponds to the currently open menu, then close
   /// it.
-  void unregisterMenu(_Node menu) {
-    menu.focusNode?.removeListener(_handleItemFocus);
-    menu.focusNode = null;
-    menu.builder = null;
-    _focusNodes.remove(menu.focusNode);
-    if (menu == _pendingFocusedMenu) {
+  void unregisterMenu(_Node node) {
+    debugPrint('Unregistering ${node.toStringShort()}');
+    node.focusNode?.removeListener(_handleItemFocus);
+    node.focusNode = null;
+    node.builder = null;
+    _focusNodes.remove(node.focusNode);
+    if (node == _pendingFocusedMenu) {
       _pendingFocusedMenu = null;
     }
-    if (openMenu == menu) {
-      close(menu);
+    if (openMenu == node) {
+      close(node);
     }
   }
 
@@ -499,6 +503,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
     final _Node? focused = focusedItem;
     if (focused != null && openMenu != focused) {
+      debugPrint('Switching opened menu to $openMenu because it is focused.');
       openMenu = focused;
     }
   }
@@ -735,8 +740,8 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
 /// When a menu item with a submenu is clicked on, it toggles the visibility of
 /// the submenu. When the menu item is hovered over, the submenu will open after
 /// a slight delay, and hovering over other items will close that menu and open
-/// the newly hovered one. When those occur, [MenuBarSubMenu.onOpen], and
-/// [MenuBarSubMenu.onClose] are called, respectively.
+/// the newly hovered one. When those occur, [MenuBarMenu.onOpen], and
+/// [MenuBarMenu.onClose] are called, respectively.
 ///
 /// The [body] is where the body of the application with the menu bar resides.
 /// When a menu is open, the `MenuBar` places a [ModalBarrier] over the body so
@@ -769,7 +774,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
 ///
 /// See also:
 ///
-///  * [MenuBarSubMenu], a menu item which manages a submenu.
+///  * [MenuBarMenu], a menu item which manages a submenu.
 ///  * [MenuItemGroup], a menu item which collects its members into a group
 ///    separated from other menu items by a divider.
 ///  * [MenuBarItem], a leaf menu item which displays the label, an optional
@@ -1130,11 +1135,11 @@ class _MenuBarState extends State<MenuBar> {
 ///    Flutter-rendered widgets in a Material Design style.
 ///  * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///    [PlatformMenuBarItem] using platform-native APIs.
-class MenuBarSubMenu extends StatefulWidget implements PlatformMenu {
+class MenuBarMenu extends StatefulWidget implements PlatformMenu {
   /// Creates a const [MenuBarItem].
   ///
   /// The [label] attribute is required.
-  const MenuBarSubMenu({
+  const MenuBarMenu({
     Key? key,
     required this.label,
     this.labelWidget,
@@ -1212,7 +1217,7 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformMenu {
   final List<MenuItem> menus;
 
   @override
-  State<MenuBarSubMenu> createState() => _MenuBarSubMenuState();
+  State<MenuBarMenu> createState() => _MenuBarMenuState();
 
   @override
   Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
@@ -1245,9 +1250,9 @@ class MenuBarSubMenu extends StatefulWidget implements PlatformMenu {
   }
 }
 
-class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
-  bool get isOpen => controller!.openMenu == menu!;
+class _MenuBarMenuState extends State<MenuBarMenu> {
   _Node? menu;
+  bool get isOpen => controller!.openMenu == menu! || (controller!.openMenu?.ancestors.contains(menu) ?? false);
   _MenuBarController? controller;
   bool registered = false;
   Timer? hoverTimer;
@@ -1258,7 +1263,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
   @override
   void initState() {
     super.initState();
-    focusNode = FocusNode(debugLabel: 'MenuBarSubMenu(${widget.label})');
+    focusNode = FocusNode(debugLabel: 'MenuBarMenu(${widget.label})');
   }
 
   @override
@@ -1272,7 +1277,6 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
 
   @override
   void didChangeDependencies() {
-    super.didChangeDependencies();
     final _Node newMenu = _MenuNodeWrapper.of(context);
     final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
     if (newMenu != menu || newController != controller) {
@@ -1285,17 +1289,24 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
         buttonFocus: focusNode,
       );
     }
+    super.didChangeDependencies();
   }
 
   @override
-  void didUpdateWidget(MenuBarSubMenu oldWidget) {
+  void didUpdateWidget(MenuBarMenu oldWidget) {
+    final _Node newMenu = _MenuNodeWrapper.of(context);
+    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
+    if (newMenu != menu || newController != controller) {
+      controller = newController;
+      menu = newMenu;
+      controller!.registerMenu(
+        menuContext: context,
+        node: newMenu,
+        menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
+        buttonFocus: focusNode,
+      );
+    }
     super.didUpdateWidget(oldWidget);
-    controller!.registerMenu(
-      menuContext: context,
-      node: _MenuNodeWrapper.of(context),
-      menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
-      buttonFocus: focusNode,
-    );
   }
 
   List<Widget> _expandGroups() {
@@ -1320,7 +1331,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
   Widget _buildMenu(BuildContext context) {
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     final double verticalPadding = math.max(2, 8 + Theme.of(context).visualDensity.vertical * 2);
-    return _MenuBarMenu(
+    return _MenuBarMenuList(
       elevation: widget.elevation ?? menuBarTheme.menuElevation ?? _kDefaultMenuBarMenuElevation,
       shape: widget.shape ??
           menuBarTheme.menuShape ??
@@ -1419,7 +1430,7 @@ class _MenuBarSubMenuState extends State<MenuBarSubMenu> {
 ///
 /// See also:
 ///
-///  * [MenuBarSubMenu], a class that represents a sub menu in a [MenuBar] that
+///  * [MenuBarMenu], a class that represents a sub menu in a [MenuBar] that
 ///    contains other [MenuItem]s.
 ///  * [MenuBar], a class that renders data in a [MenuBarItem] using
 ///    Flutter-rendered widgets in a Material Design style.
@@ -1519,24 +1530,35 @@ class _MenuBarItemState extends State<MenuBarItem> {
 
   @override
   void didChangeDependencies() {
+    debugPrint('MenuBarItem.didChangeDependencies(${menu.toStringShort()})');
+    final _Node newMenu = _MenuNodeWrapper.of(context);
+    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
+    if (newMenu != menu || newController != controller) {
+      menu = newMenu;
+      controller = newController;
+      controller.registerMenu(
+        menuContext: context,
+        node: menu,
+        buttonFocus: focusNode,
+      );
+    }
     super.didChangeDependencies();
-    menu = _MenuNodeWrapper.of(context);
-    controller = MenuBarController.of(context) as _MenuBarController;
-    controller.registerMenu(
-      menuContext: context,
-      node: _MenuNodeWrapper.of(context),
-      buttonFocus: focusNode,
-    );
   }
 
   @override
   void didUpdateWidget(MenuBarItem oldWidget) {
+    final _Node newMenu = _MenuNodeWrapper.of(context);
+    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
+    if (newMenu != menu || newController != controller) {
+      menu = newMenu;
+      controller = newController;
+      controller.registerMenu(
+        menuContext: context,
+        node: menu,
+        buttonFocus: focusNode,
+      );
+    }
     super.didUpdateWidget(oldWidget);
-    controller.registerMenu(
-      menuContext: context,
-      node: _MenuNodeWrapper.of(context),
-      buttonFocus: focusNode,
-    );
   }
 
   bool get enabled {
@@ -1628,7 +1650,7 @@ class _MenuItemDivider extends StatelessWidget implements PlatformMenuItem {
   }
 }
 
-/// A widget that groups [MenuItem]s (e.g. [MenuBarItem]s and [MenuBarSubMenu]s)
+/// A widget that groups [MenuItem]s (e.g. [MenuBarItem]s and [MenuBarMenu]s)
 /// into sections delineated by a [Divider].
 ///
 /// It inserts dividers as necessary before and after the group, only inserting
@@ -1716,7 +1738,7 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
 
   /// The list of widgets to use as children of this menu bar.
   ///
-  /// These are the top level [MenuBarSubMenu]s.
+  /// These are the top level [MenuBarMenu]s.
   final List<MenuItem> children;
 
   @override
@@ -1750,11 +1772,11 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
 }
 
 /// A label widget that is used as the default label for a [MenuBarItem] or
-/// [MenuBarSubMenu].
+/// [MenuBarMenu].
 ///
-/// It not only shows the [MenuBarSubMenu.label] or [MenuBarItem.label], but if
+/// It not only shows the [MenuBarMenu.label] or [MenuBarItem.label], but if
 /// there is a shortcut associated with the [MenuBarItem], it will display a
-/// mnemonic for the shortcut. For [MenuBarSubMenu]s, it will display a visual
+/// mnemonic for the shortcut. For [MenuBarMenu]s, it will display a visual
 /// indicator that there is a submenu.
 class _MenuBarItemLabel extends StatelessWidget {
   /// Creates a const [_MenuBarItemLabel].
@@ -2108,12 +2130,12 @@ class LocalizedShortcutLabeler {
 /// child, and then forces all the other children to be that same width. It
 /// adopts a height large enough to accommodate all the children.
 ///
-/// It is used by [MenuBarSubMenu] to render its child items.
-class _MenuBarMenu extends StatefulWidget {
-  /// Create a const [_MenuBarMenu].
+/// It is used by [MenuBarMenu] to render its child items.
+class _MenuBarMenuList extends StatefulWidget {
+  /// Create a const [_MenuBarMenuList].
   ///
   /// All parameters except `key` and [shape] are required.
-  const _MenuBarMenu({
+  const _MenuBarMenuList({
     Key? key,
     this.backgroundColor,
     this.shape,
@@ -2156,10 +2178,10 @@ class _MenuBarMenu extends StatefulWidget {
   final List<Widget> children;
 
   @override
-  State<_MenuBarMenu> createState() => _MenuBarMenuState();
+  State<_MenuBarMenuList> createState() => _MenuBarMenuListState();
 }
 
-class _MenuBarMenuState extends State<_MenuBarMenu> {
+class _MenuBarMenuListState extends State<_MenuBarMenuList> {
   @override
   void initState() {
     super.initState();
@@ -2171,7 +2193,7 @@ class _MenuBarMenuState extends State<_MenuBarMenu> {
   }
 
   @override
-  void didUpdateWidget(covariant _MenuBarMenu oldWidget) {
+  void didUpdateWidget(covariant _MenuBarMenuList oldWidget) {
     super.didUpdateWidget(oldWidget);
   }
 

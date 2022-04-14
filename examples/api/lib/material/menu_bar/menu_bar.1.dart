@@ -82,7 +82,7 @@ class _HomeState extends State<Home> {
       enabled: enabled,
       body: const Center(child: Text('Body')),
       children: <MenuItem>[
-        MenuBarSubMenu(
+        MenuBarMenu(
           label: getLabel(MenuSelection.file),
           menus: <MenuItem>[
             if (hasAbout) const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
@@ -127,7 +127,7 @@ class _HomeState extends State<Home> {
             if (hasQuit) const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),
           ],
         ),
-        MenuBarSubMenu(
+        MenuBarMenu(
           label: getLabel(MenuSelection.edit),
           menus: <MenuItem>[
             MenuBarItem(

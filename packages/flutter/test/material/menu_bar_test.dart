@@ -358,7 +358,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   shape: const RoundedRectangleBorder(),
                   label: mainMenu[0],
                   elevation: 10.0,
@@ -526,7 +526,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
                     MenuBarItem(
@@ -1228,7 +1228,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
                     MenuBarItem(
@@ -1257,7 +1257,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
                     MenuBarItem(
@@ -1285,7 +1285,7 @@ void main() {
               controller: controller,
               body: const Center(child: Text('Body')),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   shape: const RoundedRectangleBorder(),
                   label: mainMenu[0],
                   elevation: 10.0,
@@ -1310,7 +1310,7 @@ void main() {
       await tester.tap(find.text(mainMenu[0]));
       await tester.pump();
 
-      final MenuBarSubMenu submenu = tester.widget(find.byType(MenuBarSubMenu));
+      final MenuBarMenu submenu = tester.widget(find.byType(MenuBarMenu));
       final DiagnosticPropertiesBuilder builder = DiagnosticPropertiesBuilder();
       submenu.debugFillProperties(builder);
 
@@ -1408,7 +1408,7 @@ List<MenuItem> createTestMenus({
   bool includeStandard = false,
 }) {
   final List<MenuItem> result = <MenuItem>[
-    MenuBarSubMenu(
+    MenuBarMenu(
       label: mainMenu[0],
       onOpen: onOpen != null ? () => onOpen(mainMenu[0]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[0]) : null,
@@ -1420,7 +1420,7 @@ List<MenuItem> createTestMenus({
         ),
       ],
     ),
-    MenuBarSubMenu(
+    MenuBarMenu(
       label: mainMenu[1],
       onOpen: onOpen != null ? () => onOpen(mainMenu[1]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[1]) : null,
@@ -1434,7 +1434,7 @@ List<MenuItem> createTestMenus({
             ),
           ],
         ),
-        MenuBarSubMenu(
+        MenuBarMenu(
           label: subMenu1[1],
           onOpen: onOpen != null ? () => onOpen(subMenu1[1]) : null,
           onClose: onClose != null ? () => onClose(subMenu1[1]) : null,
@@ -1472,7 +1472,7 @@ List<MenuItem> createTestMenus({
         ),
       ],
     ),
-    MenuBarSubMenu(
+    MenuBarMenu(
       label: mainMenu[2],
       onOpen: onOpen != null ? () => onOpen(mainMenu[2]) : null,
       onClose: onClose != null ? () => onClose(mainMenu[2]) : null,
