@@ -141,8 +141,8 @@ abstract class MenuItem with Diagnosticable {
   ///
   /// The `delegate` is the [PlatformMenuDelegate] that is requesting the
   /// serialization. The `index` is the position of this menu item in the list
-  /// of children of the [PlatformMenu] it belongs to, and `count` is the number
-  /// of children in the [PlatformMenu] it belongs to.
+  /// of [menus] of the [PlatformMenu] it belongs to, and `count` is the number
+  /// of [menus] in the [PlatformMenu] it belongs to.
   ///
   /// The `getId` parameter is a [MenuItemSerializableIdGenerator] function that
   /// generates a unique ID for each menu item, which is to be returned in the
@@ -161,7 +161,7 @@ abstract class MenuItem with Diagnosticable {
   ///
   /// Returns an empty list if this type of menu item doesn't have
   /// children.
-  List<MenuItem> get children => const <MenuItem>[];
+  List<MenuItem> get menus => const <MenuItem>[];
 
   /// Returns all descendant [MenuItem]s of this item.
   ///
@@ -564,6 +564,7 @@ class PlatformMenu extends MenuItem with DiagnosticableTreeMixin {
   /// The menu items in the submenu opened by this menu item.
   ///
   /// If this is an empty list, this [PlatformMenu] will be disabled.
+  @override
   final List<MenuItem> menus;
 
   /// Returns all descendant [MenuItem]s of this item.
