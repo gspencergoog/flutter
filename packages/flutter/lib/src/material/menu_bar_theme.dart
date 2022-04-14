@@ -11,7 +11,7 @@ import 'material_state.dart';
 import 'menu_bar.dart';
 import 'theme.dart';
 
-/// Defines the visual properties of [MenuBar], [MenuBarSubMenu] and
+/// Defines the visual properties of [MenuBar], [MenuBarMenu] and
 /// [MenuBarItem] widgets.
 ///
 /// Descendant widgets obtain the current [MenuBarThemeData] object
@@ -57,16 +57,16 @@ class MenuBarThemeData with Diagnosticable {
   /// The height of the menu bar.
   final double? menuBarHeight;
 
-  /// The background color of a [MenuBarSubMenu].
+  /// The background color of a [MenuBarMenu].
   final MaterialStateProperty<Color?>? menuBackgroundColor;
 
-  /// The Material elevation of the [MenuBarSubMenu].
+  /// The Material elevation of the [MenuBarMenu].
   final double? menuElevation;
 
-  /// The shape around a [MenuBarSubMenu].
+  /// The shape around a [MenuBarMenu].
   final ShapeBorder? menuShape;
 
-  /// The padding around the outside of a [MenuBarSubMenu].
+  /// The padding around the outside of a [MenuBarMenu].
   final EdgeInsets? menuPadding;
 
   /// Creates a copy of this object with the given fields replaced with the new
@@ -196,7 +196,7 @@ class _LerpProperties<T> implements MaterialStateProperty<T> {
 /// See also:
 ///  * [MenuBar], a widget that manages [MenuBarItem]s.
 ///  * [MenuBarItem], a widget that is a selectable item in a menu bar menu.
-///  * [MenuBarSubMenu], a widget that specifies an item with a cascading
+///  * [MenuBarMenu], a widget that specifies an item with a cascading
 ///    submenu in a [MenuBar] menu.
 class MenuBarTheme extends InheritedTheme {
   /// Creates a theme that controls the configurations for [MenuBar] and

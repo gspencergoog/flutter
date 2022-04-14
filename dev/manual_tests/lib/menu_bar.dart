@@ -22,6 +22,7 @@ const List<String> subMenu = <String>[
   'Sub Menu 5',
   'Sub Menu 6',
   'Sub Menu 7',
+  'Sub Menu 7',
 ];
 
 const List<String> subSubMenu = <String>[
@@ -201,7 +202,7 @@ class _HomeState extends State<Home> {
                 ),
               ),
               children: <MenuItem>[
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[0],
                   onOpen: () {
                     _openItem(mainMenu[0]);
@@ -234,7 +235,7 @@ class _HomeState extends State<Home> {
                     ),
                   ],
                 ),
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[1],
                   onOpen: () {
                     _openItem(mainMenu[1]);
@@ -255,7 +256,7 @@ class _HomeState extends State<Home> {
                     ),
                   ],
                 ),
-                MenuBarSubMenu(
+                MenuBarMenu(
                   label: mainMenu[2],
                   onOpen: () {
                     _openItem(mainMenu[2]);
@@ -272,7 +273,7 @@ class _HomeState extends State<Home> {
                         },
                       ),
                     ]),
-                    MenuBarSubMenu(
+                    MenuBarMenu(
                       label: subMenu[4],
                       onOpen: () {
                         _openItem(subMenu[4]);
@@ -281,19 +282,15 @@ class _HomeState extends State<Home> {
                         _closeItem(subMenu[4]);
                       },
                       menus: <MenuItem>[
-                        PlatformMenuItemGroup(
-                          members: <MenuItem>[
-                            MenuBarItem(
-                              label: subSubMenu[0],
-                              shortcut: const SingleActivator(
-                                LogicalKeyboardKey.f11,
-                                control: true,
-                              ),
-                              onSelected: () {
-                                _itemSelected(subSubMenu[0]);
-                              },
-                            )
-                          ],
+                        MenuBarItem(
+                          label: subSubMenu[0],
+                          shortcut: const SingleActivator(
+                            LogicalKeyboardKey.f11,
+                            control: true,
+                          ),
+                          onSelected: () {
+                            _itemSelected(subSubMenu[0]);
+                          },
                         ),
                         MenuBarItem(
                           label: subSubMenu[1],
