@@ -32,7 +32,7 @@ const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
 
 class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
-  _Node({required this.item, this.parent}) : children = <_Node>[], isGroup = false {
+  _Node({required this.item, this.parent}) : children = <_Node>[], isOpenMenu = false {
     parent?.children.add(this);
     if (item is PlatformMenu) {
       for (final MenuItem child in (item as PlatformMenu).menus) {
@@ -47,7 +47,8 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   _Node? parent;
   List<_Node> children;
   WidgetBuilder? builder;
-  bool isGroup;
+  bool get isGroup => item.members.isNotEmpty;
+  bool isOpenMenu;
 
   bool get hasSubmenu => children.isNotEmpty;
 
@@ -184,6 +185,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
+    properties.add(FlagProperty('isOpenMenu', value: isOpenMenu, ifTrue: 'OPEN'));
     properties.add(DiagnosticsProperty<MenuItem>('item', item));
     properties.add(DiagnosticsProperty<WidgetBuilder>('builder', builder, defaultValue: null));
     properties.add(DiagnosticsProperty<_Node>('parent', parent, defaultValue: null));
@@ -293,6 +295,14 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
   }
 
+  // Returns true if this menu or one of its ancestors is open.
+  bool isAnOpenMenu(_Node menu) {
+    if (_openMenu == null) {
+      return false;
+    }
+    return _openMenu == menu || _openMenu!.ancestors.contains(menu);
+  }
+
   /// Sets and gets currently open menu.
   ///
   /// When the menu is set, then it will notify all listeners that something has
@@ -303,7 +313,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   _Node? _openMenu;
   set openMenu(_Node? value) {
     debugPrint('Attempting to set new menu to ${value?.toStringShort()}.');
-
     if (_openMenu == value) {
       // Nothing changed.
       return;
@@ -325,11 +334,16 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
     final _Node? oldMenu = _openMenu;
     debugPrint('Setting new menu to ${value?.toStringShort()}');
+    oldMenu?.isOpenMenu = false;
     _openMenu = value;
+    _openMenu?.isOpenMenu = true;
+    debugPrint('New Menu Tree:\n${root.toStringDeep()}');
     oldMenu?.ancestorDifference(_openMenu).forEach((_Node node) {
+      debugPrint('Closing ${node.toStringShort()}');
       node.item.onClose?.call();
     });
     _openMenu?.ancestorDifference(oldMenu).forEach((_Node node) {
+      debugPrint('Opening ${node.toStringShort()}');
       node.item.onOpen?.call();
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
@@ -364,7 +378,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       return;
     }
     if (openMenu == node) {
-      debugPrint('Closing menu ${openMenu?.toStringShort()}.');
+      debugPrint('Closing ${openMenu?.toStringShort()}.');
       // Don't call onClose, notifyListeners, etc, here, because set openMenu
       // will call them if needed.
       if (node.parent == root) {
@@ -504,7 +518,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       return;
     }
     final _Node? focused = focusedItem;
-    if (focused != null && openMenu != focused) {
+    if (focused != null && !isAnOpenMenu(focused)) {
       debugPrint('Switching opened menu to $openMenu because it is focused.');
       openMenu = focused;
     }
@@ -1061,8 +1075,8 @@ class _MenuBarState extends State<MenuBar> {
       return PlatformMenuBar(body: widget.body, menus: widget.menus);
     }
     final List<_Node> components = <_Node>[
-      if (controller.openMenu != null) controller.openMenu!,
       if (controller.openMenu != null) ...controller.openMenu!.ancestors,
+      if (controller.openMenu != null) controller.openMenu!,
     ];
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     return _MenuBarControllerMarker(
@@ -1145,8 +1159,12 @@ class _MenuBarState extends State<MenuBar> {
                 ),
                 // Build all of the visible submenus.
                 ...components.where((_Node menu) => menu.builder != null).map<Widget>((_Node menu) {
-                  return Builder(builder: menu.builder!);
-                }).toList()
+                  debugPrint('Built menu ${menu.toStringShort()}');
+                  // This Builder needs to have a key, otherwise the Builder
+                  // gets reused for all the menus, since the builder function
+                  // is likely to be the same among the menus.
+                  return Builder(key: ValueKey<_Node>(menu), builder: menu.builder!);
+                }).toList(),
               ],
             ),
           ),
@@ -1273,13 +1291,16 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
 
 class _MenuBarMenuState extends State<MenuBarMenu> {
   _Node? menu;
-  bool get isOpen => controller!.openMenu == menu! || (controller!.openMenu?.ancestors.contains(menu) ?? false);
   _MenuBarController? controller;
   bool registered = false;
   Timer? hoverTimer;
   Timer? clickBanTimer;
   bool clickBan = false;
   late FocusNode focusNode;
+
+  bool get isAnOpenMenu {
+    return controller!.isAnOpenMenu(menu!);
+  }
 
   @override
   void initState() {
@@ -1296,8 +1317,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
+  void updateMenuRegistration() {
     final _Node newMenu = _MenuNodeWrapper.of(context);
     final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
     if (newMenu != menu || newController != controller) {
@@ -1305,28 +1325,22 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       menu = newMenu;
       newController.registerMenu(
         menuContext: context,
-        node: _MenuNodeWrapper.of(context),
-        menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
-        buttonFocus: focusNode,
-      );
-    }
-    super.didChangeDependencies();
-  }
-
-  @override
-  void didUpdateWidget(MenuBarMenu oldWidget) {
-    final _Node newMenu = _MenuNodeWrapper.of(context);
-    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
-    if (newMenu != menu || newController != controller) {
-      controller = newController;
-      menu = newMenu;
-      controller!.registerMenu(
-        menuContext: context,
         node: newMenu,
         menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
         buttonFocus: focusNode,
       );
     }
+  }
+  
+  @override
+  void didChangeDependencies() {
+    updateMenuRegistration();
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(MenuBarMenu oldWidget) {
+    updateMenuRegistration();
     super.didUpdateWidget(oldWidget);
   }
 
@@ -1398,7 +1412,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       return;
     }
 
-    if (isOpen) {
+    if (isAnOpenMenu) {
       controller!.close(menu!);
     } else {
       controller!.openMenu = menu;
@@ -1420,7 +1434,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
     }
 
     hoverTimer?.cancel();
-    if (hovering && !(controller!.openMenu?.ancestors.contains(menu) ?? false) && controller!.openMenu != menu) {
+    if (hovering && !isAnOpenMenu) {
       // Introduce a small delay in switching to a new sub menu, to prevent menus
       // from flashing up and down crazily as the user traverses them.
       hoverTimer = Timer(_kMenuHoverOpenDelay, () {

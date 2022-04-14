@@ -2,10 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 const List<String> mainMenu = <String>[
   'Menu 1',
@@ -54,15 +52,15 @@ class _HomeState extends State<Home> {
   bool checked = false;
 
   void _itemSelected(String item) {
-    debugPrint('Selected item $item');
+    debugPrint('App: Selected item $item');
   }
 
   void _openItem(String item) {
-    debugPrint('Opened item $item');
+    debugPrint('App: Opened item $item');
   }
 
   void _closeItem(String item) {
-    debugPrint('Closed item $item');
+    debugPrint('App: Closed item $item');
   }
 
   @override
