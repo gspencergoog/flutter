@@ -75,10 +75,11 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
       // Root doesn't have a top level node.
       return null;
     }
-    if (isTopLevel == null) {
+    if (isTopLevel) {
       // Top level nodes are their own topLevel.
       return this;
     }
+    assert(ancestors.isNotEmpty);
     assert(ancestors.first.isTopLevel);
     return ancestors.first;
   }
@@ -633,8 +634,16 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     }
     // Back moves between siblings on the top level menu.
     // Wraps around if there is no previous.
-    // _Node? previous;e
-    final _Node? previous = focusedItem.parent == controller.root ? focusedItem.previousSibling : focusedItem.topLevel?.previousSibling;
+    _Node? previous;
+    if (focusedItem.isTopLevel) {
+      previous = focusedItem.previousSibling;
+    } else {
+      if (focusedItem.parent!.isTopLevel) {
+        previous = focusedItem.parent!.previousSibling;
+      } else {
+        previous = focusedItem.parent;
+      }
+    }
     if (previous != null) {
       controller.openMenu = previous;
     } else {
@@ -785,6 +794,9 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 
   @override
   List<MenuItem> get members => const <MenuItem>[];
+
+  @override
+  String toStringShort() => '$runtimeType($label)';
 }
 
 /// A menu bar with cascading child menus.

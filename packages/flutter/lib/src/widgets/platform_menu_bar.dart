@@ -775,6 +775,9 @@ class PlatformMenuItem extends MenuItem {
   }
 
   @override
+  String toStringShort() => label;
+
+  @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(StringProperty('label', label));
