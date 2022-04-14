@@ -101,7 +101,7 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
         child: Text(_showMessage ? 'Message' : 'Application Body'),
       ),
       children: <PlatformMenu>[
-        MenuBarSubMenu(
+        MenuBarMenu(
           autofocus: true,
           label: 'Test App',
           menus: <MenuItem>[
@@ -125,7 +125,7 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
                 showMessage = !showMessage;
               },
             ),
-            MenuBarSubMenu(
+            MenuBarMenu(
               label: 'Background Color',
               menus: <MenuItem>[
                 MenuItemGroup(members: <MenuItem>[
