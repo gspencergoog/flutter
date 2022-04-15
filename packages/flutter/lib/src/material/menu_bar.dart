@@ -11,6 +11,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'button_style.dart';
 import 'colors.dart';
 import 'divider.dart';
 import 'icons.dart';
@@ -32,7 +33,8 @@ const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
 
 class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
-  _Node({required this.item, this.parent}) : children = <_Node>[], isOpenMenu = false {
+  _Node({required this.item, this.parent})
+      : children = <_Node>[] {
     parent?.children.add(this);
     if (item is PlatformMenu) {
       for (final MenuItem child in item.menus) {
@@ -48,7 +50,6 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   List<_Node> children;
   WidgetBuilder? builder;
   bool get isGroup => item.members.isNotEmpty;
-  bool isOpenMenu;
 
   bool get hasSubmenu => children.isNotEmpty;
 
@@ -117,7 +118,7 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
     }
   }
 
-   @override
+  @override
   int compareTo(_Node other) {
     if (isRoot && other.isRoot) {
       // root menus are equal.
@@ -185,7 +186,6 @@ class _Node with Diagnosticable, DiagnosticableTreeMixin, Comparable<_Node> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(FlagProperty('isOpenMenu', value: isOpenMenu, ifTrue: 'OPEN'));
     properties.add(DiagnosticsProperty<MenuItem>('item', item));
     properties.add(DiagnosticsProperty<WidgetBuilder>('builder', builder, defaultValue: null));
     properties.add(DiagnosticsProperty<_Node>('parent', parent, defaultValue: null));
@@ -334,9 +334,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
     final _Node? oldMenu = _openMenu;
     debugPrint('Setting new menu to ${value?.toStringShort()}');
-    oldMenu?.isOpenMenu = false;
     _openMenu = value;
-    _openMenu?.isOpenMenu = true;
     debugPrint('New Menu Tree:\n${root.toStringDeep()}');
     oldMenu?.ancestorDifference(_openMenu).forEach((_Node node) {
       debugPrint('Closing ${node.toStringShort()}');
@@ -1106,7 +1104,9 @@ class _MenuBarState extends State<MenuBar> {
         },
         child: CallbackShortcuts(
           // Handles user shortcuts.
-          bindings: controller.enabled ? shortcuts.cast<ShortcutActivator, VoidCallback>() : const <ShortcutActivator, VoidCallback>{},
+          bindings: controller.enabled
+              ? shortcuts.cast<ShortcutActivator, VoidCallback>()
+              : const <ShortcutActivator, VoidCallback>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Stack(
@@ -1127,11 +1127,9 @@ class _MenuBarState extends State<MenuBar> {
                         SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
                         SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
                         SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                        SingleActivator(LogicalKeyboardKey.arrowDown):
-                            DirectionalFocusIntent(TraversalDirection.down),
+                        SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
                         SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                        SingleActivator(LogicalKeyboardKey.arrowLeft):
-                            DirectionalFocusIntent(TraversalDirection.left),
+                        SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
                         SingleActivator(LogicalKeyboardKey.arrowRight):
                             DirectionalFocusIntent(TraversalDirection.right),
                       },
@@ -1139,15 +1137,13 @@ class _MenuBarState extends State<MenuBar> {
                           animation: controller,
                           builder: (BuildContext context, Widget? ignoredChild) {
                             return _MenuBarTopLevelBar(
-                              elevation:
-                              widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
+                              elevation: widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
                               height: widget.height ?? menuBarTheme.menuBarHeight,
                               enabled: controller.enabled,
                               color: widget.backgroundColor ??
                                   menuBarTheme.menuBarBackgroundColor ??
                                   MaterialStateProperty.all(Colors.white),
-                              preferredHeight:
-                              widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
+                              preferredHeight: widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
                               children: widget.menus,
                             );
                           }),
@@ -1274,7 +1270,8 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   State<MenuBarMenu> createState() => _MenuBarMenuState();
 
   @override
-  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate,
+      {required int Function(MenuItem) getId}) {
     return <Map<String, Object?>>[PlatformMenu.serialize(this, delegate, getId)];
   }
 
@@ -1346,7 +1343,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       );
     }
   }
-  
+
   @override
   void didChangeDependencies() {
     updateMenuRegistration();
@@ -1524,7 +1521,8 @@ class MenuBarItem extends _MenuBarItemDefaults {
   State<MenuBarItem> createState() => _MenuBarItemState();
 
   @override
-  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, {required int Function(MenuItem) getId}) {
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate,
+      {required int Function(MenuItem) getId}) {
     return <Map<String, Object?>>[PlatformMenuItem.serialize(this, delegate, getId)];
   }
 
@@ -1606,10 +1604,12 @@ class _MenuBarItemState extends State<MenuBarItem> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isOpen = controller.openMenu?.ancestors.contains(menu) ?? false;
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
       order: _MenuFocusOrder(menu!),
-      child: TextButton(
+      child: _SelectableButton(
+        selected: isOpen,
         autofocus: widget.autofocus,
         style: TextButton.styleFrom(padding: EdgeInsets.zero),
         focusNode: focusNode,
@@ -1682,7 +1682,8 @@ class MenuItemGroup extends StatelessWidget implements MenuItem {
   /// This is used by [PlatformMenuBar] (or when [MenuBar.isPlatformMenu] is
   /// true) when rendering this [MenuItemGroup] using platform APIs.
   @override
-  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate, { required int Function(MenuItem) getId }) {
+  Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate,
+      {required int Function(MenuItem) getId}) {
     return PlatformMenuItemGroup.serialize(this, delegate, getId: getId);
   }
 
@@ -2607,5 +2608,37 @@ class _MenuNodeWrapper extends InheritedWidget {
   @override
   bool updateShouldNotify(_MenuNodeWrapper oldWidget) {
     return oldWidget.menu != menu || oldWidget.child != child;
+  }
+}
+
+class _SelectableButton extends StatelessWidget {
+  const _SelectableButton({
+    this.selected = false,
+    required this.onPressed,
+    this.onHover,
+    this.focusNode,
+    this.style,
+    this.autofocus = false,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback? onPressed;
+  final ValueChanged<bool>? onHover;
+  final FocusNode? focusNode;
+  final ButtonStyle? style;
+  final bool autofocus;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      onHover: onHover,
+      style: style?.copyWith(overlayColor: selected ? MaterialStateProperty.all<Color?>(Colors.red) : null),
+      focusNode: focusNode,
+      autofocus: autofocus,
+      child: child,
+    );
   }
 }
