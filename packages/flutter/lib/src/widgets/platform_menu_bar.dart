@@ -816,7 +816,7 @@ class PlatformProvidedMenuItem extends PlatformMenuItem {
     required this.type,
     this.enabled = true,
   }) : super(
-          label: '', // The label is ignored for standard menus.
+          label: '', // The label is ignored for platform provided menus.
         );
 
   /// The type of default menu this is.
@@ -868,7 +868,7 @@ class PlatformProvidedMenuItem extends PlatformMenuItem {
     assert(() {
       if (!hasMenu(type)) {
         throw ArgumentError(
-          'Platform ${defaultTargetPlatform.name} has no standard menu for '
+          'Platform ${defaultTargetPlatform.name} has no platform provided menu for '
           '$type. Call PlatformProvidedMenuItem.hasMenu to determine this before '
           'instantiating one.',
         );
@@ -892,7 +892,8 @@ class PlatformProvidedMenuItem extends PlatformMenuItem {
   }
 }
 
-/// The list of possible standard, prebuilt menus for use in a [PlatformMenuBar].
+/// The list of possible platform provided, prebuilt menus for use in a
+/// [PlatformMenuBar].
 ///
 /// These are menus that the platform typically provides that cannot be
 /// reproduced in Flutter without calling platform functions, but are standard
@@ -906,7 +907,7 @@ class PlatformProvidedMenuItem extends PlatformMenuItem {
 /// Add these to your [PlatformMenuBar] using the [PlatformProvidedMenuItem]
 /// class.
 ///
-/// You can tell if the platform supports the given standard menu using the
+/// You can tell if the platform provides the given menu using the
 /// [PlatformProvidedMenuItem.hasMenu] method.
 // Must be kept in sync with the plugin code's enum of the same name.
 enum PlatformProvidedMenuItemType {
