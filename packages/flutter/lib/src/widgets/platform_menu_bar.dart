@@ -44,6 +44,7 @@ class ShortcutSerialization {
   /// This is used by a [CharacterActivator] to serialize itself.
   ShortcutSerialization.character(String character)
       : _internal = <String, Object?>{_kShortcutCharacter: character},
+        _character = character,
         assert(character.length == 1);
 
   /// Creates a [ShortcutSerialization] representing a specific
@@ -70,6 +71,11 @@ class ShortcutSerialization {
                trigger != LogicalKeyboardKey.metaRight,
                'Specifying a modifier key as a trigger is not allowed. '
                'Use provided boolean parameters instead.'),
+        _trigger = trigger,
+        _control = control,
+        _shift = shift,
+        _alt = alt,
+        _meta = meta,
         _internal = <String, Object?>{
           _kShortcutTrigger: trigger.keyId,
           _kShortcutModifiers: (control ? _shortcutModifierControl : 0) |
@@ -79,6 +85,18 @@ class ShortcutSerialization {
         };
 
   final Map<String, Object?> _internal;
+  LogicalKeyboardKey? get trigger => _trigger;
+  LogicalKeyboardKey? _trigger;
+  String? get character => _character;
+  String? _character;
+  bool? get control => _control;
+  bool? _control;
+  bool? get shift => _shift;
+  bool? _shift;
+  bool? get alt => _alt;
+  bool? _alt;
+  bool? get meta => _meta;
+  bool? _meta;
 
   /// The bit mask for the [LogicalKeyboardKey.meta] key (or it's left/right
   /// equivalents) being down.

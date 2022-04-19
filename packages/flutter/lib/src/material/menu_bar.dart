@@ -9,9 +9,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/src/material/button_style.dart';
 import 'package:flutter/widgets.dart';
 
-import 'button_style.dart';
+import 'button_style_button.dart';
 import 'colors.dart';
 import 'divider.dart';
 import 'icons.dart';
@@ -20,6 +21,7 @@ import 'material_localizations.dart';
 import 'material_state.dart';
 import 'menu_bar_theme.dart';
 import 'text_button.dart';
+import 'text_button_theme.dart';
 import 'theme.dart';
 import 'theme_data.dart';
 
@@ -33,8 +35,7 @@ const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
 
 class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNode> {
-  _MenuNode({required this.item, this.parent})
-      : children = <_MenuNode>[] {
+  _MenuNode({required this.item, this.parent}) : children = <_MenuNode>[] {
     parent?.children.add(this);
     if (item is PlatformMenu) {
       for (final MenuItem child in item.menus) {
@@ -312,7 +313,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   _MenuNode? get openMenu => _openMenu;
   _MenuNode? _openMenu;
   set openMenu(_MenuNode? value) {
-    debugPrint('Attempting to set new menu to ${value?.toStringShort()}.');
     if (_openMenu == value) {
       // Nothing changed.
       return;
@@ -333,15 +333,11 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       });
     }
     final _MenuNode? oldMenu = _openMenu;
-    debugPrint('Setting new menu to ${value?.toStringShort()}');
     _openMenu = value;
-    debugPrint('New Menu Tree:\n${root.toStringDeep()}');
     oldMenu?.ancestorDifference(_openMenu).forEach((_MenuNode node) {
-      debugPrint('Closing ${node.toStringShort()}');
       node.item.onClose?.call();
     });
     _openMenu?.ancestorDifference(oldMenu).forEach((_MenuNode node) {
-      debugPrint('Opening ${node.toStringShort()}');
       node.item.onOpen?.call();
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
@@ -361,7 +357,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   @override
   void closeAll() {
-    debugPrint('Closing all Menus.');
     openMenu = null;
   }
 
@@ -376,7 +371,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       return;
     }
     if (openMenu == node) {
-      debugPrint('Closing ${openMenu?.toStringShort()}.');
       // Don't call onClose, notifyListeners, etc, here, because set openMenu
       // will call them if needed.
       if (node.parent == root) {
@@ -389,7 +383,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   // Build the node hierarchy for the static part of the menus (the widgets).
   void buildMenus(List<MenuItem> topLevel) {
-    debugPrint('Rebuilding Menus');
     root.children.clear();
     _focusNodes.clear();
     _previousFocus = null;
@@ -415,8 +408,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     WidgetBuilder? menuBuilder,
     FocusNode? buttonFocus,
   }) {
-    debugPrint('Registering ${node.toStringShort()}');
-
     if (menuBuilder != null) {
       node.builder = (BuildContext context) {
         // Capture the correct context for the menu.
@@ -445,7 +436,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   /// If the given context corresponds to the currently open menu, then close
   /// it.
   void unregisterMenu(_MenuNode node) {
-    debugPrint('Unregistering ${node.toStringShort()}');
     node.focusNode?.removeListener(_handleItemFocus);
     node.focusNode = null;
     node.builder = null;
@@ -517,7 +507,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
     final _MenuNode? focused = focusedItem;
     if (focused != null && !isAnOpenMenu(focused)) {
-      debugPrint('Switching opened menu to $openMenu because it is focused.');
       openMenu = focused;
     }
   }
@@ -547,8 +536,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     if (openMenu == null) {
       return null;
     }
-    return <String>[...openMenu!.ancestors.map<String>((_MenuNode node) => node.toStringShort()), openMenu!.toStringShort()]
-        .join(' > ');
+    return <String>[
+      ...openMenu!.ancestors.map<String>((_MenuNode node) => node.toStringShort()),
+      openMenu!.toStringShort()
+    ].join(' > ');
   }
 
   // A testing method used to provide access to the currently focused menu in
@@ -1169,7 +1160,6 @@ class _MenuBarState extends State<MenuBar> {
                 ),
                 // Build all of the visible submenus.
                 ...components.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
-                  debugPrint('Built menu ${menu.toStringShort()}');
                   // This Builder needs to have a key, otherwise the Builder
                   // gets reused for all the menus, since the builder function
                   // is likely to be the same among the menus.
@@ -1310,22 +1300,28 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   late FocusNode focusNode;
 
   bool get isAnOpenMenu {
-    return controller!.isAnOpenMenu(menu!);
+    return menu != null && controller!.isAnOpenMenu(menu!);
   }
 
   @override
   void initState() {
     super.initState();
     focusNode = FocusNode(debugLabel: 'MenuBarMenu(${widget.label})');
+    focusNode.addListener(markDirty);
   }
 
   @override
   void dispose() {
+    focusNode.removeListener(markDirty);
     if (menu != null) {
       controller?.unregisterMenu(menu!);
     }
     focusNode.dispose();
     super.dispose();
+  }
+
+  void markDirty() {
+    setState(() {});
   }
 
   void updateMenuRegistration() {
@@ -1397,9 +1393,13 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   Widget build(BuildContext context) {
     return FocusTraversalOrder(
       order: _MenuFocusOrder(menu!),
-      child: TextButton(
+      child: _SelectableButton(
+        selected: isAnOpenMenu,
         autofocus: widget.autofocus,
-        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
+          padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
+          backgroundColor: MenuBarTheme.of(context).menuItemBackgroundColor,
+        ),
         focusNode: focusNode,
         onHover: enabled ? _handleMenuHover : null,
         onPressed: enabled ? _maybeToggleShowMenu : null,
@@ -1496,6 +1496,7 @@ class MenuBarItem extends _MenuBarItemDefaults {
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
+    this.backgroundColor,
   });
 
   @override
@@ -1516,6 +1517,9 @@ class MenuBarItem extends _MenuBarItemDefaults {
   /// The semantic label to use for this menu item for its [Semantics].
   final String? semanticLabel;
 
+  /// The background color for this [MenuBarItem].
+  final MaterialStateProperty<Color?>? backgroundColor;
+
   @override
   State<MenuBarItem> createState() => _MenuBarItemState();
 
@@ -1533,6 +1537,8 @@ class MenuBarItem extends _MenuBarItemDefaults {
     properties.add(StringProperty('label', label));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(StringProperty('semanticLabel', semanticLabel, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
   }
 }
 
@@ -1572,7 +1578,6 @@ class _MenuBarItemState extends State<MenuBarItem> {
         buttonFocus: focusNode,
       );
     }
-    debugPrint('MenuBarItem.didChangeDependencies(${menu!.toStringShort()})');
     super.didChangeDependencies();
   }
 
@@ -1603,14 +1608,17 @@ class _MenuBarItemState extends State<MenuBarItem> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isOpen = controller.openMenu?.ancestors.contains(menu) ?? false;
+    final bool isOpen = menu != null && controller.isAnOpenMenu(menu!);
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
       order: _MenuFocusOrder(menu!),
       child: _SelectableButton(
         selected: isOpen,
         autofocus: widget.autofocus,
-        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
+          padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
+          backgroundColor: MenuBarTheme.of(context).menuItemBackgroundColor,
+        ),
         focusNode: focusNode,
         onHover: enabled ? _handleMenuHover : null,
         onPressed: enabled ? _handleSelect : null,
@@ -1735,7 +1743,7 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
     required this.color,
     required double preferredHeight,
     required this.children,
-  })  : preferredSize = Size.fromHeight(preferredHeight);
+  }) : preferredSize = Size.fromHeight(preferredHeight);
 
   /// Whether or not this [_MenuBarTopLevelBar] is enabled.
   final bool enabled;
@@ -2097,21 +2105,21 @@ class LocalizedShortcutLabeler {
   /// will show as '⌘', [LogicalKeyboardKey.control] will show as '˄', and
   /// [LogicalKeyboardKey.alt] will show as '⌥'.
   String getShortcutLabel(MenuSerializableShortcut shortcut, MaterialLocalizations localizations) {
-    final MenuSerializableShortcut localShortcut = shortcut;
-    if (localShortcut is SingleActivator) {
+    final ShortcutSerialization serialized = shortcut.serializeForMenu();
+    if (serialized.trigger != null) {
       final List<String> modifiers = <String>[];
-      final LogicalKeyboardKey trigger = localShortcut.trigger;
+      final LogicalKeyboardKey trigger = serialized.trigger!;
       // These should be in this order, to match the LogicalKeySet version.
-      if (localShortcut.alt) {
+      if (serialized.alt!) {
         modifiers.add(_getModifierLabel(LogicalKeyboardKey.alt, localizations));
       }
-      if (localShortcut.control) {
+      if (serialized.control!) {
         modifiers.add(_getModifierLabel(LogicalKeyboardKey.control, localizations));
       }
-      if (localShortcut.meta) {
+      if (serialized.meta!) {
         modifiers.add(_getModifierLabel(LogicalKeyboardKey.meta, localizations));
       }
-      if (localShortcut.shift) {
+      if (serialized.shift!) {
         modifiers.add(_getModifierLabel(LogicalKeyboardKey.shift, localizations));
       }
       String shortcutTrigger = '';
@@ -2130,12 +2138,11 @@ class LocalizedShortcutLabeler {
         ...modifiers,
         if (shortcutTrigger.isNotEmpty) shortcutTrigger,
       ].join(' ');
+    } else if (serialized.character != null) {
+      return serialized.character!;
     }
-    if (localShortcut is CharacterActivator) {
-      return localShortcut.character;
-    }
-    throw UnimplementedError('Shortcut labels for ShortcutActivators that are not '
-        'SingleActivator, CharacterActivator, or LogicalKeySet are not yet supported.');
+    throw UnimplementedError('Shortcut labels for ShortcutActivators that do not implement '
+        'MenuSerializableShortcut (e.g. SingleActivator or CharacterActivator) are not supported.');
   }
 }
 
@@ -2604,34 +2611,27 @@ class _MenuNodeWrapper extends InheritedWidget {
   }
 }
 
-class _SelectableButton extends StatelessWidget {
+@immutable
+class _SelectableButton extends TextButton {
   const _SelectableButton({
-    this.selected = false,
-    required this.onPressed,
-    this.onHover,
-    this.focusNode,
-    this.style,
-    this.autofocus = false,
-    required this.child,
+    required super.onPressed,
+    super.onHover,
+    super.style,
+    super.focusNode,
+    super.autofocus = false,
+    required this.selected,
+    required super.child,
   });
 
   final bool selected;
-  final VoidCallback? onPressed;
-  final ValueChanged<bool>? onHover;
-  final FocusNode? focusNode;
-  final ButtonStyle? style;
-  final bool autofocus;
-  final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: onPressed,
-      onHover: onHover,
-      style: style?.copyWith(overlayColor: selected ? MaterialStateProperty.all<Color?>(Colors.red) : null),
-      focusNode: focusNode,
-      autofocus: autofocus,
-      child: child,
-    );
+  ButtonStyleButtonState<_SelectableButton> createState() => _SelectableButtonState();
+}
+
+class _SelectableButtonState extends ButtonStyleButtonState<_SelectableButton> {
+  @override
+  Set<MaterialState> get materialStates {
+    return <MaterialState>{if (widget.selected) MaterialState.selected, ...super.materialStates};
   }
 }

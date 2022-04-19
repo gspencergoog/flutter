@@ -37,7 +37,7 @@ void main() {
 }
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
@@ -79,14 +79,27 @@ class _HomeState extends State<Home> {
           data: theme.copyWith(visualDensity: density),
           child: MenuBarTheme(
             data: MenuBarTheme.of(context).copyWith(
-              // menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-              // textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
+              menuItemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
+                if (state.contains(MaterialState.selected)) {
+                  return theme.focusColor;
+                }
+                if (state.contains(MaterialState.disabled)) {
+                  return theme.disabledColor;
+                }
+                return null;
+              }),
+              // textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
+              //   if (states.contains(MaterialState.disabled)) {
+              //     return Theme.of(context).textTheme.titleMedium!.copyWith(color: theme.disabledColor);
+              //   }
+              //   return Theme.of(context).textTheme.titleMedium!;
+              // }),
               // menuBarElevation: 20.0,
               // menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
               // menuBarHeight: 52.0,
               // menuElevation: 15.0,
               // menuShape: const StadiumBorder(),
-              // menuPadding: const EdgeInsets.all(10.0),
+              menuPadding: EdgeInsets.zero,
             ),
             child: MenuBar.adaptive(
               targetPlatform: isPlatformMenu ? TargetPlatform.macOS : TargetPlatform.windows,
