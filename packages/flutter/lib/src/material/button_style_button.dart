@@ -138,7 +138,7 @@ abstract class ButtonStyleButton extends StatefulWidget {
   bool get enabled => onPressed != null || onLongPress != null;
 
   @override
-  State<ButtonStyleButton> createState() => _ButtonStyleState();
+  State<ButtonStyleButton> createState() => ButtonStyleButtonState<ButtonStyleButton>();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -191,7 +191,7 @@ abstract class ButtonStyleButton extends StatefulWidget {
 ///  * [TextButton], a simple button without a shadow.
 ///  * [ElevatedButton], a filled button whose material elevates when pressed.
 ///  * [OutlinedButton], similar to [TextButton], but with an outline.
-class _ButtonStyleState extends State<ButtonStyleButton> with MaterialStateMixin, TickerProviderStateMixin {
+class ButtonStyleButtonState<T extends ButtonStyleButton> extends State<T> with MaterialStateMixin, TickerProviderStateMixin {
   AnimationController? _controller;
   double? _elevation;
   Color? _backgroundColor;
@@ -209,7 +209,7 @@ class _ButtonStyleState extends State<ButtonStyleButton> with MaterialStateMixin
   }
 
   @override
-  void didUpdateWidget(ButtonStyleButton oldWidget) {
+  void didUpdateWidget(T oldWidget) {
     super.didUpdateWidget(oldWidget);
     setMaterialState(MaterialState.disabled, !widget.enabled);
     // If the button is disabled while a press gesture is currently ongoing,
@@ -228,14 +228,14 @@ class _ButtonStyleState extends State<ButtonStyleButton> with MaterialStateMixin
     final ButtonStyle defaultStyle = widget.defaultStyleOf(context);
     assert(defaultStyle != null);
 
-    T? effectiveValue<T>(T? Function(ButtonStyle? style) getProperty) {
-      final T? widgetValue  = getProperty(widgetStyle);
-      final T? themeValue   = getProperty(themeStyle);
-      final T? defaultValue = getProperty(defaultStyle);
+    U? effectiveValue<U>(U? Function(ButtonStyle? style) getProperty) {
+      final U? widgetValue  = getProperty(widgetStyle);
+      final U? themeValue   = getProperty(themeStyle);
+      final U? defaultValue = getProperty(defaultStyle);
       return widgetValue ?? themeValue ?? defaultValue;
     }
 
-    T? resolve<T>(MaterialStateProperty<T>? Function(ButtonStyle? style) getProperty) {
+    U? resolve<U>(MaterialStateProperty<U>? Function(ButtonStyle? style) getProperty) {
       return effectiveValue(
         (ButtonStyle? style) => getProperty(style)?.resolve(materialStates),
       );
