@@ -43,6 +43,7 @@ class MenuBarThemeData with Diagnosticable {
     this.menuElevation,
     this.menuShape,
     this.menuPadding,
+    this.menuItemBackgroundColor,
   });
 
   /// The text style of items in a [MenuBarItem].
@@ -69,6 +70,9 @@ class MenuBarThemeData with Diagnosticable {
   /// The padding around the outside of a [MenuBarMenu].
   final EdgeInsets? menuPadding;
 
+  /// The background color of a [MenuBarItem].
+  final MaterialStateProperty<Color?>? menuItemBackgroundColor;
+
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
   MenuBarThemeData copyWith({
@@ -80,6 +84,7 @@ class MenuBarThemeData with Diagnosticable {
     double? menuElevation,
     ShapeBorder? menuShape,
     EdgeInsets? menuPadding,
+    MaterialStateProperty<Color?>? menuItemBackgroundColor,
   }) {
     return MenuBarThemeData(
       textStyle: textStyle ?? this.textStyle,
@@ -90,6 +95,7 @@ class MenuBarThemeData with Diagnosticable {
       menuElevation: menuElevation ?? this.menuElevation,
       menuShape: menuShape ?? this.menuShape,
       menuPadding: menuPadding ?? this.menuPadding,
+      menuItemBackgroundColor: menuItemBackgroundColor ?? this.menuItemBackgroundColor,
     );
   }
 
@@ -111,6 +117,7 @@ class MenuBarThemeData with Diagnosticable {
       menuElevation: lerpDouble(a?.menuElevation, b?.menuElevation, t),
       menuShape: ShapeBorder.lerp(a?.menuShape, b?.menuShape, t),
       menuPadding: EdgeInsets.lerp(a?.menuPadding, b?.menuPadding, t),
+      menuItemBackgroundColor: _lerpProperties<Color?>(a?.menuItemBackgroundColor, b?.menuItemBackgroundColor, t, Color.lerp),
     );
   }
 
@@ -137,6 +144,7 @@ class MenuBarThemeData with Diagnosticable {
       menuElevation,
       menuShape,
       menuPadding,
+      menuItemBackgroundColor,
     );
   }
 
@@ -154,20 +162,22 @@ class MenuBarThemeData with Diagnosticable {
         && other.menuBackgroundColor == menuBackgroundColor
         && other.menuElevation == menuElevation
         && other.menuShape == menuShape
-        && other.menuPadding == menuPadding;
+        && other.menuPadding == menuPadding
+        && other.menuItemBackgroundColor == menuItemBackgroundColor;
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('text style', textStyle, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBarColor', menuBarBackgroundColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBarBackgroundColor', menuBarBackgroundColor, defaultValue: null));
     properties.add(DoubleProperty('menuBarElevation', menuBarElevation, defaultValue: null));
     properties.add(DoubleProperty('menuBarHeight', menuBarHeight, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', menuBackgroundColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBackgroundColor', menuBackgroundColor, defaultValue: null));
     properties.add(DoubleProperty('menuElevation', menuElevation, defaultValue: null));
-    properties.add(DiagnosticsProperty<ShapeBorder>('shape', menuShape, defaultValue: null));
+    properties.add(DiagnosticsProperty<ShapeBorder>('menuShape', menuShape, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuPadding', menuPadding, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuItemBarColor', menuItemBackgroundColor, defaultValue: null));
   }
 }
 
@@ -202,10 +212,10 @@ class MenuBarTheme extends InheritedTheme {
   /// Creates a theme that controls the configurations for [MenuBar] and
   /// [MenuBarItem] in its widget subtree.
   const MenuBarTheme({
-    Key? key,
+    super.key,
     required this.data,
-    required Widget child,
-  }) : assert(data != null), super(key: key, child: child);
+    required super.child,
+  }) : assert(data != null);
 
   /// The properties for [MenuBar] and [MenuBarItem] in this widget's
   /// descendants.
