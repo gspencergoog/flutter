@@ -36,10 +36,15 @@ const double _kDefaultSubmenuIconSize = 24.0;
 
 class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNode> {
   _MenuNode({required this.item, this.parent}) : children = <_MenuNode>[] {
-    parent?.children.add(this);
-    if (item is PlatformMenu) {
+    if (item.members.isNotEmpty) {
+      for (final MenuItem member in item.members) {
+        _MenuNode(item: member, parent: parent);
+      }
+      // Don't add groups to the parent, just the members of the group.
+    } else {
+      parent?.children.add(this);
       for (final MenuItem child in item.menus) {
-        // Will get automatically linked into the tree.
+        // Will get automatically linked into the tree by creating them.
         _MenuNode(item: child, parent: this);
       }
     }
@@ -388,12 +393,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     _previousFocus = null;
     _pendingFocusedMenu = null;
     for (final MenuItem item in topLevel) {
-      if (item is PlatformMenu) {
-        _MenuNode(
-          item: item,
-          parent: root,
-        );
-      }
+      _MenuNode(
+        item: item,
+        parent: root,
+      );
     }
     assert(root.children.length == topLevel.length);
   }
@@ -2218,10 +2221,36 @@ class _MenuBarMenuListState extends State<_MenuBarMenuList> {
     super.didUpdateWidget(oldWidget);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  List<Widget> _expandGroups() {
     int index = 0;
     final _MenuNode parentMenu = _MenuNodeWrapper.of(context);
+    final List<Widget> expanded = <Widget>[];
+    for (final Widget child in widget.children) {
+      if (child is! MenuItem) {
+        // If it's not a menu item, then it's probably a _MenuItemDivider. Don't
+        // increment the index, or wrap non-MenuItems with _MenuNodeWrapper:
+        // they're not represented in the node tree.
+        expanded.add(child);
+        continue;
+      }
+      final MenuItem childMenuItem = child as MenuItem;
+      if (childMenuItem.members.isEmpty) {
+        expanded.add(_MenuNodeWrapper(menu: parentMenu.children[index], child: child));
+        index += 1;
+      } else {
+        // Groups are expanded in the node tree, so expand them here too.
+        expanded.addAll(childMenuItem.members.map<Widget>((MenuItem member) {
+          final Widget wrapper = _MenuNodeWrapper(menu: parentMenu.children[index], child: child);
+          index += 1;
+          return wrapper;
+        }));
+      }
+    }
+    return expanded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     return Material(
       color: (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor)?.resolve(<MaterialState>{}),
@@ -2234,16 +2263,7 @@ class _MenuBarMenuListState extends State<_MenuBarMenuList> {
         semanticLabel: widget.semanticLabel,
         textDirection: widget.textDirection,
         verticalDirection: widget.verticalDirection,
-        children: widget.children.map<Widget>((Widget child) {
-          if (child is _MenuItemDivider) {
-            // Don't increment the index for dividers: they're not represented
-            // in the node tree.
-            return child;
-          }
-          final Widget result = _MenuNodeWrapper(menu: parentMenu.children[index], child: child);
-          index += 1;
-          return result;
-        }).toList(),
+        children: _expandGroups(),
       ),
     );
   }
