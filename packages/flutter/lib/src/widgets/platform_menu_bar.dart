@@ -85,16 +85,33 @@ class ShortcutSerialization {
         };
 
   final Map<String, Object?> _internal;
+
+  /// The keyboard key that triggers this shortcut, if any.
   LogicalKeyboardKey? get trigger => _trigger;
   LogicalKeyboardKey? _trigger;
+
+  /// The character that triggers this shortcut, if any.
   String? get character => _character;
   String? _character;
+
+  /// If this shortcut has a [trigger], this indicates whether or not the
+  /// control modifier needs to be down or not.
   bool? get control => _control;
   bool? _control;
+
+  /// If this shortcut has a [trigger], this indicates whether or not the
+  /// shift modifier needs to be down or not.
   bool? get shift => _shift;
   bool? _shift;
+
+  /// If this shortcut has a [trigger], this indicates whether or not the
+  /// alt modifier needs to be down or not.
   bool? get alt => _alt;
   bool? _alt;
+
+  /// If this shortcut has a [trigger], this indicates whether or not the meta
+  /// (also known as the Windows or Command key) modifier needs to be down or
+  /// not.
   bool? get meta => _meta;
   bool? _meta;
 
