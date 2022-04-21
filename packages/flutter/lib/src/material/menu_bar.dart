@@ -469,34 +469,33 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // is relative to.
   Rect _calculateMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
     final TextDirection textDirection = Directionality.of(menuButtonContext);
-    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(menuButtonContext);
     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
-    final double verticalPadding = math.max(2, 8 + Theme.of(menuButtonContext).visualDensity.vertical * 2);
+    assert(menuButtonNode.menuPadding != null, 'Menu padding not properly set.');
     Offset menuOrigin;
     Offset spacerCorner;
     switch (textDirection) {
       case TextDirection.rtl:
         spacerCorner = menuBar.paintBounds.bottomRight;
-        if (menuButtonNode.parent == root) {
+        if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
               Offset(
-                -(menuButtonNode.menuPadding?.right ?? menuBarTheme.menuPadding?.right ?? 0),
-                -(menuButtonNode.menuPadding?.top ?? menuBarTheme.menuPadding?.top ?? verticalPadding),
+                -menuButtonNode.menuPadding!.right,
+                -menuButtonNode.menuPadding!.top,
               );
         }
         break;
       case TextDirection.ltr:
         spacerCorner = menuBar.paintBounds.bottomLeft;
-        if (menuButtonNode.parent == root) {
+        if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
               Offset(
-                menuButtonNode.menuPadding?.left ?? menuBarTheme.menuPadding?.left ?? 0,
-                -(menuButtonNode.menuPadding?.top ?? menuBarTheme.menuPadding?.top ?? verticalPadding),
+                menuButtonNode.menuPadding!.left,
+                -menuButtonNode.menuPadding!.top,
               );
         }
         break;
@@ -747,7 +746,11 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
 // Provides default implementation for MenuItem in a StatefulWidget, to serve
 // as a base class for the MenuBarItem, MenuItemGroup and MenuBarMenu classes.
 abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMenuItem {
-  const _MenuBarItemDefaults({super.key, required this.label, this.labelWidget});
+  const _MenuBarItemDefaults({
+    super.key,
+    required this.label,
+    this.labelWidget,
+  });
 
   /// A required label displayed on the entry for this item in the menu.
   ///
@@ -765,6 +768,10 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 
   @override
   MenuSerializableShortcut? get shortcut => null;
+
+  /// The function called when the mouse leaves or enters this menu item's
+  /// button.
+  ValueChanged<bool>? get onHover;
 
   /// The list of top-level menu items to show in the [MenuBar].
   ///
@@ -1234,8 +1241,15 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
     this.shape,
     this.elevation,
     this.padding,
+    this.buttonPadding,
+    this.buttonBackgroundColor,
+    this.buttonForegroundColor,
+    this.buttonOverlayColor,
+    this.buttonShape,
+    this.buttonTextStyle,
     this.onOpen,
     this.onClose,
+    this.onHover,
     this.menus = const <MenuItem>[],
   });
 
@@ -1251,14 +1265,13 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   /// If true, will request focus when first built if nothing else has focus.
   final bool autofocus;
 
-  /// The background color of the cascading menu, if there are [menus]
-  /// specified.
+  /// The background color of the cascading menu specified by [menus].
   ///
-  /// Defaults to the value of [MenuBarThemeData.color] value of the
+  /// Defaults to the value of [MenuBarThemeData.menuBackgroundColor] value of the
   /// ambient [MenuBarTheme].
   final MaterialStateProperty<Color?>? backgroundColor;
 
-  /// The shape of the cascading menu, if there are [menus] specified.
+  /// The shape of the cascading menu specified by [menus].
   ///
   /// Defaults to the value of [MenuBarThemeData.menuShape] value of the
   /// ambient [MenuBarTheme].
@@ -1271,7 +1284,7 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   ///
   /// See also:
   ///
-  ///  * [Material.elevation] for a description of what elevation implies.
+  ///  * [Material.elevation] for a description of what elevation is.
   final MaterialStateProperty<double?>? elevation;
 
   /// The padding around the outside of the contents of a [MenuBarMenu].
@@ -1279,6 +1292,47 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   /// Defaults to the [MenuBarThemeData.menuPadding] value of the ambient
   /// [MenuBarTheme].
   final EdgeInsets? padding;
+
+  /// The padding around the outside of the button that opens a [MenuBarMenu]'s
+  /// submenu.
+  ///
+  /// Defaults to the [MenuBarThemeData.itemPadding] value of the ambient
+  /// [MenuBarTheme].
+  final EdgeInsets? buttonPadding;
+
+  /// The background color of the button that opens the submenu.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemBackgroundColor] value of
+  /// the ambient [MenuBarTheme].
+  final MaterialStateProperty<Color?>? buttonBackgroundColor;
+
+  /// The foreground color of the button that opens the submenu.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemForegroundColor] value of
+  /// the ambient [MenuBarTheme].
+  final MaterialStateProperty<Color?>? buttonForegroundColor;
+
+  /// The overlay color of the button that opens the submenu.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemOverlayColor] value of
+  /// the ambient [MenuBarTheme].
+  final MaterialStateProperty<Color?>? buttonOverlayColor;
+
+  /// The shape of the button that opens the submenu.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.menuShape] value of the
+  /// ambient [MenuBarTheme].
+  final MaterialStateProperty<OutlinedBorder?>? buttonShape;
+
+  /// The text style of the button that opens the submenu.
+  ///
+  /// The color in this text style will only be used if [buttonOverlayColor]
+  /// is unset.
+  final MaterialStateProperty<TextStyle?>? buttonTextStyle;
+
+  /// Called when the button that opens the submenu is hovered over.
+  @override
+  final ValueChanged<bool>? onHover;
 
   @override
   final VoidCallback? onOpen;
@@ -1334,7 +1388,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   bool clickBan = false;
   late FocusNode focusNode;
 
-  bool get isAnOpenMenu {
+  bool get _isAnOpenMenu {
     return menu != null && controller!.isAnOpenMenu(menu!);
   }
 
@@ -1348,9 +1402,6 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   @override
   void dispose() {
     focusNode.removeListener(markDirty);
-    if (menu != null) {
-      controller?.unregisterMenu(menu!);
-    }
     focusNode.dispose();
     super.dispose();
   }
@@ -1359,33 +1410,22 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
     setState(() {});
   }
 
-  void updateMenuRegistration() {
-    final _MenuNode newMenu = _MenuNodeWrapper.of(context);
-    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
-    if (newMenu != menu || newController != controller) {
-      controller = newController;
-      menu = newMenu;
-      newController.registerMenu(
-        menuContext: context,
-        node: newMenu,
-        menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
-        buttonFocus: focusNode,
-      );
-    }
+  void updateChangedState() {
+    menu = _MenuNodeWrapper.of(context);
+    controller = MenuBarController.of(context) as _MenuBarController;
+    menu?.menuPadding =
+        widget.padding ?? MenuBarTheme.of(context).menuPadding ?? _TokenDefaultsM3(context).menuPadding;
   }
 
   @override
   void didChangeDependencies() {
-    updateMenuRegistration();
+    updateChangedState();
     super.didChangeDependencies();
   }
 
   @override
   void didUpdateWidget(MenuBarMenu oldWidget) {
-    if (widget.padding != oldWidget.padding) {
-      _MenuNodeWrapper.of(context).menuPadding = widget.padding;
-    }
-    updateMenuRegistration();
+    updateChangedState();
     super.didUpdateWidget(oldWidget);
   }
 
@@ -1410,16 +1450,16 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   // Used as the builder function to register with the controller.
   Widget _buildMenu(BuildContext context) {
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
-    final double verticalPadding = math.max(2, 8 + Theme.of(context).visualDensity.vertical * 2);
-    final Set<MaterialState> disabled = <MaterialState>{if (!enabled) MaterialState.disabled};
+    final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
+    final Set<MaterialState> disabled = <MaterialState>{
+      if (!enabled) MaterialState.disabled,
+    };
     return _MenuBarMenuList(
-      elevation: (widget.elevation ?? menuBarTheme.menuElevation ?? _TokenDefaultsM3(context).menuElevation)
+      elevation: (widget.elevation ?? menuBarTheme.menuElevation ?? defaultTheme.menuElevation).resolve(disabled)!,
+      shape: (widget.shape ?? menuBarTheme.menuShape ?? defaultTheme.menuShape).resolve(disabled)!,
+      backgroundColor: (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor ?? defaultTheme.menuBackgroundColor)
           .resolve(disabled)!,
-      shape: (widget.shape ?? menuBarTheme.menuShape ?? _TokenDefaultsM3(context).menuShape).resolve(disabled)!,
-      backgroundColor:
-          (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor ?? _TokenDefaultsM3(context).menuBackgroundColor)
-              .resolve(disabled)!,
-      menuPadding: menuBarTheme.menuPadding ?? EdgeInsets.symmetric(vertical: verticalPadding),
+      menuPadding: widget.padding ?? menuBarTheme.menuPadding ?? defaultTheme.menuPadding,
       semanticLabel: widget.semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: Directionality.of(context),
       verticalDirection: VerticalDirection.down,
@@ -1431,26 +1471,22 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return FocusTraversalOrder(
-      order: _MenuFocusOrder(menu!),
-      child: _SelectableButton(
-        selected: isAnOpenMenu,
-        autofocus: widget.autofocus,
-        style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
-          padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
-          backgroundColor: MenuBarTheme.of(context).itemBackgroundColor,
-        ),
-        focusNode: focusNode,
-        onHover: enabled ? _handleMenuHover : null,
-        onPressed: enabled ? _maybeToggleShowMenu : null,
-        child: _MenuBarItemLabel(
-          enabled: enabled,
-          leadingIcon: widget.leadingIcon,
-          label: widget.labelWidget ?? Text(widget.label),
-          trailingIcon: widget.trailingIcon,
-          hasSubmenu: widget.menus.isNotEmpty,
-        ),
-      ),
+    return MenuBarItem._forMenu(
+      label: widget.label,
+      labelWidget: widget.labelWidget,
+      onSelected: enabled ? _maybeToggleShowMenu : null,
+      onHover: enabled ? _handleMenuHover : null,
+      menuBuilder: widget.menus.isNotEmpty ? _buildMenu : null,
+      focusNode: focusNode,
+      leadingIcon: widget.leadingIcon,
+      trailingIcon: widget.trailingIcon,
+      semanticLabel: widget.semanticLabel,
+      backgroundColor: widget.buttonBackgroundColor,
+      foregroundColor: widget.buttonForegroundColor,
+      overlayColor: widget.buttonOverlayColor,
+      textStyle: widget.buttonTextStyle,
+      padding: widget.buttonPadding,
+      shape: widget.buttonShape,
     );
   }
 
@@ -1463,7 +1499,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       return;
     }
 
-    if (isAnOpenMenu) {
+    if (_isAnOpenMenu) {
       controller!.close(menu!);
     } else {
       controller!.openMenu = menu;
@@ -1485,7 +1521,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
     }
 
     hoverTimer?.cancel();
-    if (hovering && !isAnOpenMenu) {
+    if (hovering && !_isAnOpenMenu) {
       // Introduce a small delay in switching to a new sub menu, to prevent menus
       // from flashing up and down crazily as the user traverses them.
       hoverTimer = Timer(_kMenuHoverOpenDelay, () {
@@ -1532,12 +1568,39 @@ class MenuBarItem extends _MenuBarItemDefaults {
     super.labelWidget,
     this.shortcut,
     this.onSelected,
-    this.autofocus = false,
+    this.onHover,
+    this.focusNode,
     this.leadingIcon,
     this.trailingIcon,
     this.semanticLabel,
     this.backgroundColor,
-  });
+    this.foregroundColor,
+    this.overlayColor,
+    this.textStyle,
+    this.padding,
+    this.shape,
+  })  : _hasMenu = false,
+        _menuBuilder = null;
+
+  const MenuBarItem._forMenu({
+    required super.label,
+    super.labelWidget,
+    this.onSelected,
+    this.onHover,
+    this.focusNode,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.semanticLabel,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.overlayColor,
+    this.textStyle,
+    this.padding,
+    this.shape,
+    required WidgetBuilder? menuBuilder,
+  })  : _hasMenu = true,
+        shortcut = null,
+        _menuBuilder = menuBuilder;
 
   @override
   final MenuSerializableShortcut? shortcut;
@@ -1545,8 +1608,11 @@ class MenuBarItem extends _MenuBarItemDefaults {
   @override
   final VoidCallback? onSelected;
 
-  /// If true, will request focus when first built if nothing else has focus.
-  final bool autofocus;
+  @override
+  final ValueChanged<bool>? onHover;
+
+  /// The focus node to use for the menu item button.
+  final FocusNode? focusNode;
 
   /// An optional icon to display before the label text.
   final Widget? leadingIcon;
@@ -1558,7 +1624,42 @@ class MenuBarItem extends _MenuBarItemDefaults {
   final String? semanticLabel;
 
   /// The background color for this [MenuBarItem].
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemBackgroundColor] if not set.
   final MaterialStateProperty<Color?>? backgroundColor;
+
+  /// The foreground color for this [MenuBarItem].
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemForegroundColor] if not set.
+  final MaterialStateProperty<Color?>? foregroundColor;
+
+  /// The overlay color for this [MenuBarItem].
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemOverlayColor] if not set.
+  final MaterialStateProperty<Color?>? overlayColor;
+
+  /// The padding around the contents of the [MenuBarItem].
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemPadding] if not set.
+  final EdgeInsets? padding;
+
+  /// The text style for the text in this menu bar item.
+  ///
+  /// May be overridden inside of [labelWidget], if supplied.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemTextStyle] if not set.
+  final MaterialStateProperty<TextStyle?>? textStyle;
+
+  /// The shape of this menu bar item.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.itemShape] if not set.
+  final MaterialStateProperty<OutlinedBorder?>? shape;
+
+  // Indicates that this is a button for a submenu, not just a regular item.
+  final bool _hasMenu;
+  
+  // The menu builder to use when this button is used for a [MenuBarMenu].
+  final WidgetBuilder? _menuBuilder;
 
   @override
   State<MenuBarItem> createState() => _MenuBarItemState();
@@ -1573,12 +1674,19 @@ class MenuBarItem extends _MenuBarItemDefaults {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(FlagProperty('enabled', value: onSelected != null, ifFalse: 'DISABLED'));
+    properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(StringProperty('label', label));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(StringProperty('semanticLabel', semanticLabel, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsets?>('padding', padding, defaultValue: null));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('foregroundColor', foregroundColor, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<Color?>>('overlayColor', overlayColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('textStyle', textStyle, defaultValue: null));
   }
 }
 
@@ -1588,12 +1696,14 @@ class _MenuBarItemState extends State<MenuBarItem> {
   late _MenuBarController controller;
   bool registered = false;
   Timer? hoverTimer;
-  late FocusNode focusNode;
+  FocusNode get focusNode => widget.focusNode ?? _focusNode!;
+  FocusNode? _focusNode;
+  bool hovering = false;
 
   @override
   void initState() {
     super.initState();
-    focusNode = FocusNode(debugLabel: 'MenuBarItem(${widget.label})');
+    _focusNode = FocusNode(debugLabel: 'MenuBarItem(${widget.label})');
   }
 
   @override
@@ -1601,39 +1711,41 @@ class _MenuBarItemState extends State<MenuBarItem> {
     hoverTimer?.cancel();
     hoverTimer = null;
     controller.unregisterMenu(menu!);
-    focusNode.dispose();
+    _focusNode?.dispose();
+    _focusNode = null;
     super.dispose();
+  }
+
+  void updateMenuRegistration() {
+    final _MenuNode newMenu = _MenuNodeWrapper.of(context);
+    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
+    if (newMenu != menu || newController != controller) {
+      controller = newController;
+      menu = newMenu;
+      newController.registerMenu(
+        menuContext: context,
+        node: newMenu,
+        menuBuilder: widget._menuBuilder,
+        buttonFocus: focusNode,
+      );
+    }
   }
 
   @override
   void didChangeDependencies() {
-    final _MenuNode newMenu = _MenuNodeWrapper.of(context);
-    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
-    if (newMenu != menu || newController != controller) {
-      menu = newMenu;
-      controller = newController;
-      controller.registerMenu(
-        menuContext: context,
-        node: menu!,
-        buttonFocus: focusNode,
-      );
-    }
+    updateMenuRegistration();
     super.didChangeDependencies();
   }
 
   @override
   void didUpdateWidget(MenuBarItem oldWidget) {
-    final _MenuNode newMenu = _MenuNodeWrapper.of(context);
-    final _MenuBarController newController = MenuBarController.of(context) as _MenuBarController;
-    if (newMenu != menu || newController != controller) {
-      menu = newMenu;
-      controller = newController;
-      controller.registerMenu(
-        menuContext: context,
-        node: menu!,
-        buttonFocus: focusNode,
-      );
+    if (widget.focusNode != null) {
+      _focusNode?.dispose();
+      _focusNode = null;
+    } else {
+      _focusNode ??= FocusNode(debugLabel: 'MenuBarItem(${widget.label})');
     }
+    updateMenuRegistration();
     super.didUpdateWidget(oldWidget);
   }
 
@@ -1643,21 +1755,31 @@ class _MenuBarItemState extends State<MenuBarItem> {
 
   void _handleSelect() {
     widget.onSelected?.call();
-    controller.closeAll();
+    if (!widget._hasMenu) {
+      controller.closeAll();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isOpen = menu != null && controller.isAnOpenMenu(menu!);
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
+    final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
       order: _MenuFocusOrder(menu!),
       child: _SelectableButton(
         selected: isOpen,
-        autofocus: widget.autofocus,
         style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
-          padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
-          backgroundColor: MenuBarTheme.of(context).itemBackgroundColor,
+          backgroundColor:
+              widget.backgroundColor ?? menuBarTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
+          foregroundColor:
+              widget.foregroundColor ?? menuBarTheme.itemForegroundColor ?? defaultTheme.itemForegroundColor,
+          overlayColor: widget.overlayColor ?? menuBarTheme.itemOverlayColor ?? defaultTheme.itemOverlayColor,
+          padding: MaterialStateProperty.all<EdgeInsets?>(
+              widget.padding ?? menuBarTheme.itemPadding ?? defaultTheme.itemPadding),
+          shape: widget.shape ?? menuBarTheme.itemShape ?? defaultTheme.itemShape,
+          textStyle: widget.textStyle ?? menuBarTheme.itemTextStyle ?? defaultTheme.itemTextStyle,
         ),
         focusNode: focusNode,
         onHover: enabled ? _handleMenuHover : null,
@@ -1668,14 +1790,22 @@ class _MenuBarItemState extends State<MenuBarItem> {
           label: widget.labelWidget ?? Text(widget.label),
           shortcut: widget.shortcut,
           trailingIcon: widget.trailingIcon,
-          hasSubmenu: false,
+          hasSubmenu: widget._hasMenu,
         ),
       ),
     );
   }
 
   // Called when the pointer is hovering over the menu button.
-  void _handleMenuHover(bool hovering) {
+  void _handleMenuHover(bool value) {
+    widget.onHover?.call(value);
+    if (hovering == value) {
+      return;
+    }
+    setState(() {
+      hovering = value;
+    });
+
     // Don't open the top level menu bar buttons on hover unless something else
     // is already open. This means that the user has to first open the menu bar
     // before hovering allows them to traverse it.
@@ -1684,7 +1814,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
     }
 
     hoverTimer?.cancel();
-    if (hovering && !(controller.openMenu?.ancestors.contains(menu) ?? false) && controller.openMenu != menu) {
+    if (value && !(controller.openMenu?.ancestors.contains(menu) ?? false) && controller.openMenu != menu) {
       // Introduce a small delay in switching to a new sub menu, to prevent menus
       // from flashing up and down crazily as the user traverses them.
       hoverTimer = Timer(_kMenuHoverOpenDelay, () {
@@ -2660,7 +2790,6 @@ class _SelectableButton extends TextButton {
     super.onHover,
     super.style,
     super.focusNode,
-    super.autofocus = false,
     required this.selected,
     required super.child,
   });
@@ -2686,9 +2815,8 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
           barElevation: MaterialStateProperty.all<double?>(2.0),
           menuElevation: MaterialStateProperty.all<double?>(4.0),
           menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
-          menuPadding: const EdgeInsets.all(4.0),
           itemPadding: const EdgeInsets.all(4.0),
-          itemShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
+          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultBorder),
         );
 
   static const RoundedRectangleBorder _defaultBorder =
@@ -2726,7 +2854,13 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   MaterialStateProperty<ShapeBorder?> get menuShape => super.menuShape!;
 
   @override
-  EdgeInsets get menuPadding => super.menuPadding!;
+  EdgeInsets get menuPadding {
+    final VisualDensity density = Theme.of(context).visualDensity;
+    return EdgeInsets.symmetric(
+      vertical: math.max(2, 8 + density.vertical * 2),
+      horizontal: math.max(2, 8 + density.horizontal * 2),
+    );
+  }
 
   @override
   MaterialStateProperty<Color?> get itemBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
@@ -2765,5 +2899,5 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   EdgeInsets get itemPadding => super.itemPadding!;
 
   @override
-  MaterialStateProperty<ShapeBorder?> get itemShape => super.itemShape!;
+  MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
 }
