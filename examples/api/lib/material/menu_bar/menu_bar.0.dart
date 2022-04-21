@@ -100,7 +100,7 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
         color: backgroundColor,
         child: Text(_showMessage ? 'Message' : 'Application Body'),
       ),
-      children: <PlatformMenu>[
+      menus: <PlatformMenu>[
         MenuBarMenu(
           autofocus: true,
           label: 'Test App',
