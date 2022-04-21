@@ -112,36 +112,36 @@ class MenuBarThemeData with Diagnosticable {
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
   MenuBarThemeData copyWith({
-    double? menuBarHeight,
-    EdgeInsets? menuBarPadding,
-    MaterialStateProperty<Color?>? menuBarBackgroundColor,
-    MaterialStateProperty<double?>? menuBarElevation,
+    double? barHeight,
+    EdgeInsets? barPadding,
+    MaterialStateProperty<Color?>? barBackgroundColor,
+    MaterialStateProperty<double?>? barElevation,
     MaterialStateProperty<Color?>? menuBackgroundColor,
     MaterialStateProperty<double?>? menuElevation,
     MaterialStateProperty<ShapeBorder?>? menuShape,
     EdgeInsets? menuPadding,
-    MaterialStateProperty<Color?>? menuItemBackgroundColor,
-    MaterialStateProperty<Color?>? menuItemForegroundColor,
-    MaterialStateProperty<Color?>? menuItemOverlayColor,
-    MaterialStateProperty<TextStyle?>? menuItemTextStyle,
-    EdgeInsets? menuItemPadding,
-    MaterialStateProperty<ShapeBorder?>? menuItemShape,
+    MaterialStateProperty<Color?>? itemBackgroundColor,
+    MaterialStateProperty<Color?>? itemForegroundColor,
+    MaterialStateProperty<Color?>? itemOverlayColor,
+    MaterialStateProperty<TextStyle?>? itemTextStyle,
+    EdgeInsets? itemPadding,
+    MaterialStateProperty<ShapeBorder?>? itemShape,
   }) {
     return MenuBarThemeData(
-      barHeight: menuBarHeight ?? this.barHeight,
-      barPadding: menuBarPadding ?? this.barPadding,
-      barBackgroundColor: menuBarBackgroundColor ?? this.barBackgroundColor,
-      barElevation: menuBarElevation ?? this.barElevation,
+      barHeight: barHeight ?? this.barHeight,
+      barPadding: barPadding ?? this.barPadding,
+      barBackgroundColor: barBackgroundColor ?? this.barBackgroundColor,
+      barElevation: barElevation ?? this.barElevation,
       menuBackgroundColor: menuBackgroundColor ?? this.menuBackgroundColor,
       menuElevation: menuElevation ?? this.menuElevation,
       menuShape: menuShape ?? this.menuShape,
       menuPadding: menuPadding ?? this.menuPadding,
-      itemBackgroundColor: menuItemBackgroundColor ?? this.itemBackgroundColor,
-      itemForegroundColor: menuItemForegroundColor ?? this.itemForegroundColor,
-      itemOverlayColor: menuItemOverlayColor ?? this.itemOverlayColor,
-      itemTextStyle: menuItemTextStyle ?? this.itemTextStyle,
-      itemPadding: menuItemPadding ?? this.itemPadding,
-      itemShape: menuItemShape ?? this.itemShape,
+      itemBackgroundColor: itemBackgroundColor ?? this.itemBackgroundColor,
+      itemForegroundColor: itemForegroundColor ?? this.itemForegroundColor,
+      itemOverlayColor: itemOverlayColor ?? this.itemOverlayColor,
+      itemTextStyle: itemTextStyle ?? this.itemTextStyle,
+      itemPadding: itemPadding ?? this.itemPadding,
+      itemShape: itemShape ?? this.itemShape,
     );
   }
 
@@ -230,20 +230,20 @@ class MenuBarThemeData with Diagnosticable {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DoubleProperty('menuBarHeight', barHeight, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsets>('menuBarPadding', barPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBarBackgroundColor', barBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('menuBarElevation', barElevation, defaultValue: null));
+    properties.add(DoubleProperty('barHeight', barHeight, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsets>('barPadding', barPadding, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('barBackgroundColor', barBackgroundColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('barElevation', barElevation, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBackgroundColor', menuBackgroundColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('menuElevation', menuElevation, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('menuShape', menuShape, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuPadding', menuPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuItemBackgroundColor', itemBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuItemForegroundColor', itemForegroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuItemOverlayColor', itemOverlayColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('menuItemTextStyle', itemTextStyle, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemBackgroundColor', itemBackgroundColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemForegroundColor', itemForegroundColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemOverlayColor', itemOverlayColor, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('itemTextStyle', itemTextStyle, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuItemPadding', itemPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('menuItemShape', itemShape, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('itemShape', itemShape, defaultValue: null));
   }
 }
 

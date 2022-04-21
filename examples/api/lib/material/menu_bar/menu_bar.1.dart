@@ -80,7 +80,7 @@ class _HomeState extends State<Home> {
     return MenuBar.adaptive(
       enabled: enabled,
       body: const Center(child: Text('Body')),
-      children: <MenuItem>[
+      menus: <MenuItem>[
         MenuBarMenu(
           label: getLabel(MenuSelection.file),
           menus: <MenuItem>[

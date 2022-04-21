@@ -79,7 +79,7 @@ class _HomeState extends State<Home> {
           data: theme.copyWith(visualDensity: density),
           child: MenuBarTheme(
             data: MenuBarTheme.of(context).copyWith(
-              menuItemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
+              itemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
                 if (state.contains(MaterialState.selected)) {
                   return theme.focusColor;
                 }
@@ -88,131 +88,43 @@ class _HomeState extends State<Home> {
                 }
                 return null;
               }),
-              // textStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
-              //   if (states.contains(MaterialState.disabled)) {
-              //     return Theme.of(context).textTheme.titleMedium!.copyWith(color: theme.disabledColor);
-              //   }
-              //   return Theme.of(context).textTheme.titleMedium!;
-              // }),
-              // menuBarElevation: 20.0,
-              // menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-              // menuBarHeight: 52.0,
-              // menuElevation: 15.0,
-              // menuShape: const StadiumBorder(),
-              menuPadding: EdgeInsets.zero,
+              itemTextStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
+                if (states.contains(MaterialState.disabled)) {
+                  return Theme.of(context).textTheme.titleSmall!.copyWith(color: theme.disabledColor);
+                }
+                return Theme.of(context).textTheme.titleSmall!;
+              }),
+              // barElevation: MaterialStateProperty.all<double?>(20.0),
+              // barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
+              // barHeight: 52.0,
+              // menuElevation: MaterialStateProperty.all<double?>(15.0),
+              // menuShape: MaterialStateProperty.all<ShapeBorder?>(const StadiumBorder()),
+              // menuPadding: EdgeInsets.zero,
             ),
-            child: MenuBar.adaptive(
-              targetPlatform: isPlatformMenu ? TargetPlatform.macOS : TargetPlatform.windows,
+            child: MenuBar(
               enabled: enabled,
               controller: controller,
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Checkbox(
-                          value: isPlatformMenu,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              if (value ?? false) {
-                                isPlatformMenu = true;
-                              } else {
-                                isPlatformMenu = false;
-                              }
-                            });
-                          },
-                        ),
-                        const Text('Platform Menus')
-                      ],
-                    ),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints.tightFor(width: 400),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          Text('Horizontal Density: ${density.horizontal.toStringAsFixed(1)}'),
-                          Slider(
-                              value: density.horizontal,
-                              max: 4,
-                              min: -4,
-                              divisions: 10,
-                              onChanged: !isPlatformMenu
-                                  ? (double value) {
-                                      setState(() {
-                                        density = VisualDensity(horizontal: value, vertical: density.vertical);
-                                      });
-                                    }
-                                  : null),
-                        ],
-                      ),
-                    ),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints.tightFor(width: 400),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          Text('Vertical Density: ${density.vertical.toStringAsFixed(1)}'),
-                          Slider(
-                              value: density.vertical,
-                              max: 4,
-                              min: -4,
-                              divisions: 10,
-                              onChanged: !isPlatformMenu
-                                  ? (double value) {
-                                      setState(() {
-                                        density = VisualDensity(horizontal: density.horizontal, vertical: value);
-                                      });
-                                    }
-                                  : null),
-                        ],
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Checkbox(
-                          value: textDirection == TextDirection.rtl,
-                          onChanged: !isPlatformMenu
-                              ? (bool? value) {
-                                  setState(() {
-                                    if (value ?? false) {
-                                      textDirection = TextDirection.rtl;
-                                    } else {
-                                      textDirection = TextDirection.ltr;
-                                    }
-                                  });
-                                }
-                              : null,
-                        ),
-                        const Text('RTL Text')
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Checkbox(
-                          value: enabled,
-                          onChanged: !isPlatformMenu
-                              ? (bool? value) {
-                                  setState(() {
-                                    if (value ?? false) {
-                                      enabled = true;
-                                    } else {
-                                      enabled = false;
-                                    }
-                                  });
-                                }
-                              : null,
-                        ),
-                        const Text('Enabled')
-                      ],
-                    ),
-                  ],
-                ),
+              body: _Controls(
+                density: density,
+                enabled: enabled,
+                textDirection: textDirection,
+                onDensityChanged: (VisualDensity value) {
+                  setState(() {
+                    density = value;
+                  });
+                },
+                onTextDirectionChanged: (TextDirection value) {
+                  setState(() {
+                    textDirection = value;
+                  });
+                },
+                onEnabledChanged: (bool value) {
+                  setState(() {
+                    enabled = value;
+                  });
+                },
               ),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
                   onOpen: () {
@@ -320,6 +232,27 @@ class _HomeState extends State<Home> {
                     ),
                     MenuBarItem(
                       label: subMenu[6],
+                      onSelected: (){},
+                    ),
+                    MenuBarItem(
+                      label: subMenu[6],
+                      onSelected: (){},
+                    ),
+                    MenuBarItem(
+                      label: subMenu[6],
+                      onSelected: (){},
+                    ),
+                    MenuBarItem(
+                      label: subMenu[6],
+                      onSelected: (){},
+                    ),
+                    MenuBarItem(
+                      label: subMenu[6],
+                      onSelected: (){},
+                    ),
+                    MenuBarItem(
+                      label: subMenu[6],
+                      onSelected: (){},
                     ),
                   ],
                 ),
@@ -329,6 +262,101 @@ class _HomeState extends State<Home> {
           ),
         );
       }),
+    );
+  }
+}
+
+class _Controls extends StatelessWidget {
+  const _Controls({
+    required this.density,
+    required this.textDirection,
+    this.enabled = true,
+    required this.onDensityChanged,
+    required this.onTextDirectionChanged,
+    required this.onEnabledChanged,
+  });
+
+  final VisualDensity density;
+  final TextDirection textDirection;
+  final bool enabled;
+  final ValueChanged<VisualDensity> onDensityChanged;
+  final ValueChanged<TextDirection> onTextDirectionChanged;
+  final ValueChanged<bool> onEnabledChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          ConstrainedBox(
+            constraints: const BoxConstraints.tightFor(width: 400),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                Text('Horizontal Density: ${density.horizontal.toStringAsFixed(1)}'),
+                Slider(
+                    value: density.horizontal,
+                    max: 4,
+                    min: -4,
+                    divisions: 10,
+                    onChanged: (double value) {
+                      onDensityChanged(VisualDensity(horizontal: value, vertical: density.vertical));
+                    }),
+              ],
+            ),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints.tightFor(width: 400),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                Text('Vertical Density: ${density.vertical.toStringAsFixed(1)}'),
+                Slider(
+                    value: density.vertical,
+                    max: 4,
+                    min: -4,
+                    divisions: 10,
+                    onChanged: (double value) {
+                      onDensityChanged(VisualDensity(horizontal: density.horizontal, vertical: value));
+                    }),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Checkbox(
+                value: textDirection == TextDirection.rtl,
+                onChanged: (bool? value) {
+                  if (value ?? false) {
+                    onTextDirectionChanged(TextDirection.rtl);
+                  } else {
+                    onTextDirectionChanged(TextDirection.ltr);
+                  }
+                },
+              ),
+              const Text('RTL Text')
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Checkbox(
+                value: enabled,
+                onChanged: (bool? value) {
+                  if (value ?? false) {
+                    onEnabledChanged(true);
+                  } else {
+                    onEnabledChanged(false);
+                  }
+                },
+              ),
+              const Text('Enabled')
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
