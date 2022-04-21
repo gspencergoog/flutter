@@ -107,7 +107,7 @@ class MenuBarThemeData with Diagnosticable {
   final EdgeInsets? itemPadding;
 
   /// The shape around an individual [MenuBarItem].
-  final MaterialStateProperty<ShapeBorder?>? itemShape;
+  final MaterialStateProperty<OutlinedBorder?>? itemShape;
 
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
@@ -125,7 +125,7 @@ class MenuBarThemeData with Diagnosticable {
     MaterialStateProperty<Color?>? itemOverlayColor,
     MaterialStateProperty<TextStyle?>? itemTextStyle,
     EdgeInsets? itemPadding,
-    MaterialStateProperty<ShapeBorder?>? itemShape,
+    MaterialStateProperty<OutlinedBorder?>? itemShape,
   }) {
     return MenuBarThemeData(
       barHeight: barHeight ?? this.barHeight,
@@ -152,8 +152,9 @@ class MenuBarThemeData with Diagnosticable {
   /// {@macro dart.ui.shadow.lerp}
   static MenuBarThemeData? lerp(MenuBarThemeData? a, MenuBarThemeData? b, double t) {
     assert(t != null);
-    if (a == null && b == null)
+    if (a == null && b == null) {
       return null;
+    }
     return MenuBarThemeData(
       barHeight: lerpDouble(a?.barHeight, b?.barHeight, t),
       barPadding: EdgeInsets.lerp(a?.barPadding, b?.barPadding, t),
@@ -168,19 +169,27 @@ class MenuBarThemeData with Diagnosticable {
       itemOverlayColor: _lerpProperties<Color?>(a?.itemOverlayColor, b?.itemOverlayColor, t, Color.lerp),
       itemTextStyle: _lerpProperties<TextStyle?>(a?.itemTextStyle, b?.itemTextStyle, t, TextStyle.lerp),
       itemPadding: EdgeInsets.lerp(a?.itemPadding, b?.itemPadding, t),
-      itemShape: _lerpProperties<ShapeBorder?>(a?.itemShape, b?.itemShape, t, ShapeBorder.lerp),
+      itemShape: _lerpProperties<OutlinedBorder?>(
+        a?.itemShape,
+        b?.itemShape,
+        t,
+        (ShapeBorder? a, ShapeBorder? b, double t) {
+          return ShapeBorder.lerp(a, b, t) as OutlinedBorder?;
+        },
+      ),
     );
   }
 
   static MaterialStateProperty<T>? _lerpProperties<T>(
-      MaterialStateProperty<T>? a,
-      MaterialStateProperty<T>? b,
-      double t,
-      T Function(T?, T?, double) lerpFunction,
-      ) {
+    MaterialStateProperty<T>? a,
+    MaterialStateProperty<T>? b,
+    double t,
+    T Function(T?, T?, double) lerpFunction,
+  ) {
     // Avoid creating a _LerpProperties object for a common case.
-    if (a == null && b == null)
+    if (a == null && b == null) {
       return null;
+    }
     return _LerpProperties<T>(a, b, t, lerpFunction);
   }
 
@@ -206,25 +215,27 @@ class MenuBarThemeData with Diagnosticable {
 
   @override
   bool operator ==(Object other) {
-    if (identical(this, other))
+    if (identical(this, other)) {
       return true;
-    if (other.runtimeType != runtimeType)
+    }
+    if (other.runtimeType != runtimeType) {
       return false;
-    return other is MenuBarThemeData
-        && other.barHeight == barHeight
-        && other.barPadding == barPadding
-        && other.barBackgroundColor == barBackgroundColor
-        && other.barElevation == barElevation
-        && other.menuBackgroundColor == menuBackgroundColor
-        && other.menuElevation == menuElevation
-        && other.menuShape == menuShape
-        && other.menuPadding == menuPadding
-        && other.itemBackgroundColor == itemBackgroundColor
-        && other.itemForegroundColor == itemForegroundColor
-        && other.itemOverlayColor == itemOverlayColor
-        && other.itemTextStyle == itemTextStyle
-        && other.itemPadding == itemPadding
-        && other.itemShape == itemShape;
+    }
+    return other is MenuBarThemeData &&
+        other.barHeight == barHeight &&
+        other.barPadding == barPadding &&
+        other.barBackgroundColor == barBackgroundColor &&
+        other.barElevation == barElevation &&
+        other.menuBackgroundColor == menuBackgroundColor &&
+        other.menuElevation == menuElevation &&
+        other.menuShape == menuShape &&
+        other.menuPadding == menuPadding &&
+        other.itemBackgroundColor == itemBackgroundColor &&
+        other.itemForegroundColor == itemForegroundColor &&
+        other.itemOverlayColor == itemOverlayColor &&
+        other.itemTextStyle == itemTextStyle &&
+        other.itemPadding == itemPadding &&
+        other.itemShape == itemShape;
   }
 
   @override
@@ -232,18 +243,28 @@ class MenuBarThemeData with Diagnosticable {
     super.debugFillProperties(properties);
     properties.add(DoubleProperty('barHeight', barHeight, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('barPadding', barPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('barBackgroundColor', barBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('barElevation', barElevation, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBackgroundColor', menuBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('menuElevation', menuElevation, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('menuShape', menuShape, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('barBackgroundColor', barBackgroundColor,
+        defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<double?>>('barElevation', barElevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('menuBackgroundColor', menuBackgroundColor,
+        defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<double?>>('menuElevation', menuElevation, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('menuShape', menuShape, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuPadding', menuPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemBackgroundColor', itemBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemForegroundColor', itemForegroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemOverlayColor', itemOverlayColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('itemTextStyle', itemTextStyle, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemBackgroundColor', itemBackgroundColor,
+        defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemForegroundColor', itemForegroundColor,
+        defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('itemOverlayColor', itemOverlayColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('itemTextStyle', itemTextStyle, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets>('menuItemPadding', itemPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('itemShape', itemShape, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('itemShape', itemShape, defaultValue: null));
   }
 }
 
