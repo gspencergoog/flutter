@@ -49,10 +49,10 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   final MenuItem item;
   FocusNode? focusNode;
   _MenuNode? parent;
+  EdgeInsets? menuPadding;
   List<_MenuNode> children;
   WidgetBuilder? builder;
   bool get isGroup => item.members.isNotEmpty;
-
   bool get hasSubmenu => children.isNotEmpty;
 
   // Returns all the ancestors of this node, except for the root node.
@@ -482,7 +482,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
-              Offset(-(menuBarTheme.menuPadding?.right ?? 0), -(menuBarTheme.menuPadding?.top ?? verticalPadding));
+              Offset(
+                -(menuButtonNode.menuPadding?.right ?? menuBarTheme.menuPadding?.right ?? 0),
+                -(menuButtonNode.menuPadding?.top ?? menuBarTheme.menuPadding?.top ?? verticalPadding),
+              );
         }
         break;
       case TextDirection.ltr:
@@ -491,7 +494,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
           menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
-              Offset(menuBarTheme.menuPadding?.left ?? 0, -(menuBarTheme.menuPadding?.top ?? verticalPadding));
+              Offset(
+                menuButtonNode.menuPadding?.left ?? menuBarTheme.menuPadding?.left ?? 0,
+                -(menuButtonNode.menuPadding?.top ?? menuBarTheme.menuPadding?.top ?? verticalPadding),
+              );
         }
         break;
     }
@@ -860,32 +866,44 @@ class MenuBar extends PlatformMenuBar {
     this.enabled = true,
     this.backgroundColor,
     this.height,
+    this.padding,
     this.elevation,
-    this.isPlatformMenu = false,
     required super.body,
     super.menus = const <MenuItem>[],
-  });
+  }) : _isPlatformMenu = false;
 
-  /// Creates an adaptive [MenuBar] that renders using platform APIs on
-  /// platforms that support it, and using Flutter on platforms that don't.
+  // Private constructor for the adaptive factory constructor to use.
+  const MenuBar._({
+    super.key,
+    this.controller,
+    this.enabled = true,
+    this.backgroundColor,
+    this.height,
+    this.padding,
+    this.elevation,
+    bool isPlatformMenu = false,
+    required super.body,
+    super.menus = const <MenuItem>[],
+  }) : _isPlatformMenu = isPlatformMenu;
+
+  /// Creates an adaptive [MenuBar] that renders using platform APIs with a
+  /// [PlatformMenuBar] on platforms that support it, and using Flutter
+  /// rendering on platforms that don't.
   ///
   /// The [body] parameter is required.
-  ///
-  /// An optional `targetPlatform` argument can be used to override the actual
-  /// target platform provided by [defaultTargetPlatform], which is the default.
   factory MenuBar.adaptive({
     Key? key,
     MenuBarController? controller,
     bool enabled = true,
     MaterialStateProperty<Color?>? backgroundColor,
     double? height,
+    EdgeInsets? padding,
     MaterialStateProperty<double?>? elevation,
-    TargetPlatform? targetPlatform,
     required Widget body,
     List<MenuItem> menus = const <MenuItem>[],
   }) {
     bool isPlatformMenu;
-    switch (targetPlatform ?? defaultTargetPlatform) {
+    switch (defaultTargetPlatform) {
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
       case TargetPlatform.iOS:
@@ -898,12 +916,13 @@ class MenuBar extends PlatformMenuBar {
         break;
     }
 
-    return MenuBar(
+    return MenuBar._(
       key: key,
       controller: controller,
       enabled: enabled,
       backgroundColor: backgroundColor,
       height: height,
+      padding: padding,
       elevation: elevation,
       isPlatformMenu: isPlatformMenu,
       body: body,
@@ -933,6 +952,11 @@ class MenuBar extends PlatformMenuBar {
   /// Defaults to the value of [MenuBarThemeData.barHeight] if not set.
   final double? height;
 
+  /// The padding around the contents of the menu bar itself.
+  ///
+  /// Defaults to the value of [MenuBarThemeData.barPadding] if not set.
+  final EdgeInsets? padding;
+
   /// The Material elevation the menu bar (if any).
   ///
   /// Defaults to the [MenuBarThemeData.barElevation] value of the ambient
@@ -960,12 +984,7 @@ class MenuBar extends PlatformMenuBar {
   /// If true, then a [PlatformMenuBar] will be substituted with the same
   /// [menus], [body], and [enabled] but none of the visual attributes will
   /// be passed along.
-  ///
-  /// See also:
-  ///
-  ///  * [MenuBar.adaptive], a factory constructor that uses the current
-  ///    [defaultTargetPlatform] to automatically set this value.
-  final bool isPlatformMenu;
+  final bool _isPlatformMenu;
 
   @override
   State<MenuBar> createState() => _MenuBarState();
@@ -983,6 +1002,7 @@ class MenuBar extends PlatformMenuBar {
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DoubleProperty('height', height, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsets?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
   }
 }
@@ -1073,7 +1093,7 @@ class _MenuBarState extends State<MenuBar> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isPlatformMenu) {
+    if (widget._isPlatformMenu) {
       return PlatformMenuBar(body: widget.body, menus: widget.menus);
     }
     final List<_MenuNode> components = <_MenuNode>[
@@ -1125,13 +1145,22 @@ class _MenuBarState extends State<MenuBar> {
                       child: AnimatedBuilder(
                           animation: controller,
                           builder: (BuildContext context, Widget? ignoredChild) {
-                            final Set<MaterialState> disabled = <MaterialState>{if (!widget.enabled) MaterialState.disabled};
+                            final Set<MaterialState> disabled = <MaterialState>{
+                              if (!widget.enabled) MaterialState.disabled
+                            };
                             return _MenuBarTopLevelBar(
-                              elevation: (widget.elevation ?? menuBarTheme.barElevation ?? _TokenDefaultsM3(context).barElevation).resolve(disabled)!,
+                              elevation: (widget.elevation ??
+                                      menuBarTheme.barElevation ??
+                                      _TokenDefaultsM3(context).barElevation)
+                                  .resolve(disabled)!,
                               height: widget.height ?? menuBarTheme.barHeight ?? _TokenDefaultsM3(context).barHeight,
                               enabled: controller.enabled,
                               color: (widget.backgroundColor ??
-                                  menuBarTheme.barBackgroundColor ?? _TokenDefaultsM3(context).barBackgroundColor).resolve(disabled)!,
+                                      menuBarTheme.barBackgroundColor ??
+                                      _TokenDefaultsM3(context).barBackgroundColor)
+                                  .resolve(disabled)!,
+                              padding:
+                                  widget.padding ?? menuBarTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
                               children: widget.menus,
                             );
                           }),
@@ -1204,6 +1233,7 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
     this.backgroundColor,
     this.shape,
     this.elevation,
+    this.padding,
     this.onOpen,
     this.onClose,
     this.menus = const <MenuItem>[],
@@ -1243,6 +1273,12 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
   ///
   ///  * [Material.elevation] for a description of what elevation implies.
   final MaterialStateProperty<double?>? elevation;
+
+  /// The padding around the outside of the contents of a [MenuBarMenu].
+  ///
+  /// Defaults to the [MenuBarThemeData.menuPadding] value of the ambient
+  /// [MenuBarTheme].
+  final EdgeInsets? padding;
 
   @override
   final VoidCallback? onOpen;
@@ -1284,7 +1320,9 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('shape', shape, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));  }
+    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsets?>('padding', padding, defaultValue: null));
+  }
 }
 
 class _MenuBarMenuState extends State<MenuBarMenu> {
@@ -1344,6 +1382,9 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
 
   @override
   void didUpdateWidget(MenuBarMenu oldWidget) {
+    if (widget.padding != oldWidget.padding) {
+      _MenuNodeWrapper.of(context).menuPadding = widget.padding;
+    }
     updateMenuRegistration();
     super.didUpdateWidget(oldWidget);
   }
@@ -1372,11 +1413,12 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
     final double verticalPadding = math.max(2, 8 + Theme.of(context).visualDensity.vertical * 2);
     final Set<MaterialState> disabled = <MaterialState>{if (!enabled) MaterialState.disabled};
     return _MenuBarMenuList(
-      elevation: (widget.elevation ?? menuBarTheme.menuElevation ?? _TokenDefaultsM3(context).menuElevation).resolve(disabled)!,
-      shape: (widget.shape ??
-          menuBarTheme.menuShape ??
-          _TokenDefaultsM3(context).menuShape).resolve(disabled)!,
-      backgroundColor: (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor ?? _TokenDefaultsM3(context).menuBackgroundColor).resolve(disabled)!,
+      elevation: (widget.elevation ?? menuBarTheme.menuElevation ?? _TokenDefaultsM3(context).menuElevation)
+          .resolve(disabled)!,
+      shape: (widget.shape ?? menuBarTheme.menuShape ?? _TokenDefaultsM3(context).menuShape).resolve(disabled)!,
+      backgroundColor:
+          (widget.backgroundColor ?? menuBarTheme.menuBackgroundColor ?? _TokenDefaultsM3(context).menuBackgroundColor)
+              .resolve(disabled)!,
       menuPadding: menuBarTheme.menuPadding ?? EdgeInsets.symmetric(vertical: verticalPadding),
       semanticLabel: widget.semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: Directionality.of(context),
@@ -1684,7 +1726,7 @@ class MenuItemGroup extends StatelessWidget implements MenuItem {
   /// Converts this [MenuItemGroup] into a data structure accepted by the
   /// 'flutter/menu' method channel method 'Menu.SetMenu'.
   ///
-  /// This is used by [PlatformMenuBar] (or when [MenuBar.isPlatformMenu] is
+  /// This is used by [PlatformMenuBar] (or when [MenuBar._isPlatformMenu] is
   /// true) when rendering this [MenuItemGroup] using platform APIs.
   @override
   Iterable<Map<String, Object?>> toChannelRepresentation(PlatformMenuDelegate delegate,
@@ -1739,6 +1781,7 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
     required this.elevation,
     required this.height,
     required this.color,
+    required this.padding,
     required this.children,
   }) : preferredSize = Size.fromHeight(height);
 
@@ -1753,6 +1796,9 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
 
   /// The background color of the menu app bar.
   final Color color;
+
+  /// The padding around the outside of the menu bar contents.
+  final EdgeInsets padding;
 
   @override
   final Size preferredSize;
@@ -2635,17 +2681,18 @@ class _SelectableButtonState extends ButtonStyleButtonState<_SelectableButton> {
 class _TokenDefaultsM3 extends MenuBarThemeData {
   _TokenDefaultsM3(this.context)
       : super(
-    barHeight: 32.0,
-    barPadding: EdgeInsets.zero,
-    barElevation: MaterialStateProperty.all<double?>(2.0),
-    menuElevation: MaterialStateProperty.all<double?>(4.0),
-    menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
-    menuPadding: const EdgeInsets.all(4.0),
-    itemPadding: const EdgeInsets.all(4.0),
-    itemShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
-  );
+          barHeight: 32.0,
+          barPadding: EdgeInsets.zero,
+          barElevation: MaterialStateProperty.all<double?>(2.0),
+          menuElevation: MaterialStateProperty.all<double?>(4.0),
+          menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
+          menuPadding: const EdgeInsets.all(4.0),
+          itemPadding: const EdgeInsets.all(4.0),
+          itemShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
+        );
 
-  static const RoundedRectangleBorder _defaultBorder = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8.0)));
+  static const RoundedRectangleBorder _defaultBorder =
+      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8.0)));
 
   final BuildContext context;
   late final ColorScheme _colors = Theme.of(context).colorScheme;
@@ -2660,8 +2707,9 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   @override
   MaterialStateProperty<Color?> get barBackgroundColor =>
       MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.disabled))
+        if (states.contains(MaterialState.disabled)) {
           return _colors.onSurface.withOpacity(0.12);
+        }
         return _colors.surface;
       });
 
@@ -2669,8 +2717,7 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   MaterialStateProperty<double?> get barElevation => super.barElevation!;
 
   @override
-  MaterialStateProperty<Color?> get menuBackgroundColor =>
-      MaterialStateProperty.all<Color?>(_colors.surface);
+  MaterialStateProperty<Color?> get menuBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
 
   @override
   MaterialStateProperty<double?> get menuElevation => super.menuElevation!;
@@ -2682,28 +2729,31 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   EdgeInsets get menuPadding => super.menuPadding!;
 
   @override
-  MaterialStateProperty<Color?> get itemBackgroundColor =>
-      MaterialStateProperty.all<Color?>(_colors.surface);
+  MaterialStateProperty<Color?> get itemBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
 
   @override
   MaterialStateProperty<Color?> get itemForegroundColor =>
       MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.disabled))
+        if (states.contains(MaterialState.disabled)) {
           return _colors.onSurface.withOpacity(0.38);
+        }
         return _colors.primary;
       });
 
   @override
-  MaterialStateProperty<Color?> get itemOverlayColor =>
-      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.hovered))
+  MaterialStateProperty<Color?> get itemOverlayColor => MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+        if (states.contains(MaterialState.hovered)) {
           return _colors.primary.withOpacity(0.08);
-        if (states.contains(MaterialState.focused))
+        }
+        if (states.contains(MaterialState.focused)) {
           return _colors.primary.withOpacity(0.12);
-        if (states.contains(MaterialState.pressed))
+        }
+        if (states.contains(MaterialState.pressed)) {
           return _colors.primary.withOpacity(0.12);
-        if (states.contains(MaterialState.selected))
+        }
+        if (states.contains(MaterialState.selected)) {
           return _colors.primary.withOpacity(0.12);
+        }
         return null;
       });
 
