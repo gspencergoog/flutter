@@ -181,6 +181,8 @@ void main() {
       );
 
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTWH(0, 0, 800, 600)));
+      debugPrint('Menu Size: ${tester.getSize(find.byType(MenuBarMenu).first)}');
+      debugPrint('Body Size: ${tester.getSize(find.text('Body'))}');
       expect(tester.getRect(find.ancestor(of: find.text('Body'), matching: find.byType(Stack)).first),
           equals(const Rect.fromLTWH(0, 48, 800, 552)));
 
