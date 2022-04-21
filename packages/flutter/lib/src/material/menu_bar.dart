@@ -302,7 +302,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     if (_openMenu == null) {
       return false;
     }
-    return _openMenu == menu || _openMenu!.ancestors.contains(menu);
+    return _openMenu == menu || (_openMenu?.ancestors.contains(menu) ?? false);
   }
 
   /// Sets and gets currently open menu.
@@ -1520,25 +1520,18 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       return;
     }
 
-    hoverTimer?.cancel();
     if (hovering && !_isAnOpenMenu) {
-      // Introduce a small delay in switching to a new sub menu, to prevent menus
-      // from flashing up and down crazily as the user traverses them.
-      hoverTimer = Timer(_kMenuHoverOpenDelay, () {
-        controller!.openMenu = menu;
-        // If we just opened the menu because the user is hovering, then just
-        // ignore any clicks for a bit. Otherwise, the user hovers to the
-        // submenu, and sometimes clicks to open it just after the hover timer
-        // has run out, causing the menu to open briefly, then immediately
-        // close, which is surprising to the user.
-        clickBan = true;
-        clickBanTimer = Timer(_kMenuHoverClickBanDelay, () {
-          clickBan = false;
-          clickBanTimer = null;
-        });
+      controller!.openMenu = menu;
+      // If we just opened the menu because the user is hovering, then just
+      // ignore any clicks for a bit. Otherwise, the user hovers to the
+      // submenu, and sometimes clicks to open it just after the hover timer
+      // has run out, causing the menu to open briefly, then immediately
+      // close, which is surprising to the user.
+      clickBan = true;
+      clickBanTimer = Timer(_kMenuHoverClickBanDelay, () {
+        clickBan = false;
+        clickBanTimer = null;
       });
-    } else {
-      hoverTimer = null;
     }
   }
 }
@@ -1698,7 +1691,6 @@ class _MenuBarItemState extends State<MenuBarItem> {
   Timer? hoverTimer;
   FocusNode get focusNode => widget.focusNode ?? _focusNode!;
   FocusNode? _focusNode;
-  bool hovering = false;
 
   @override
   void initState() {
@@ -1797,31 +1789,11 @@ class _MenuBarItemState extends State<MenuBarItem> {
   }
 
   // Called when the pointer is hovering over the menu button.
-  void _handleMenuHover(bool value) {
-    widget.onHover?.call(value);
-    if (hovering == value) {
-      return;
-    }
-    setState(() {
-      hovering = value;
-    });
+  void _handleMenuHover(bool hovering) {
+    widget.onHover?.call(hovering);
 
-    // Don't open the top level menu bar buttons on hover unless something else
-    // is already open. This means that the user has to first open the menu bar
-    // before hovering allows them to traverse it.
-    if (menu!.parent == controller.root && controller.openMenu == null) {
-      return;
-    }
-
-    hoverTimer?.cancel();
-    if (value && !(controller.openMenu?.ancestors.contains(menu) ?? false) && controller.openMenu != menu) {
-      // Introduce a small delay in switching to a new sub menu, to prevent menus
-      // from flashing up and down crazily as the user traverses them.
-      hoverTimer = Timer(_kMenuHoverOpenDelay, () {
+    if (!widget._hasMenu && hovering && !controller.isAnOpenMenu(menu!)) {
         controller.openMenu = menu;
-      });
-    } else {
-      hoverTimer = null;
     }
   }
 }
