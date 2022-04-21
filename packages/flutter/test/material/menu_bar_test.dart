@@ -119,7 +119,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -174,7 +174,7 @@ void main() {
           home: Material(
             child: MenuBar(
               body: const Center(child: Text('Body')),
-              children: createTestMenus(onSelected: onSelected),
+              menus: createTestMenus(onSelected: onSelected),
             ),
           ),
         ),
@@ -212,10 +212,10 @@ void main() {
           home: Material(
             child: MenuBar(
               height: 50,
-              elevation: 10,
+              elevation: MaterialStateProperty.all<double?>(10),
               backgroundColor: MaterialStateProperty.all(Colors.red),
               body: const Center(child: Text('Body')),
-              children: createTestMenus(onSelected: onSelected),
+              menus: createTestMenus(onSelected: onSelected),
             ),
           ),
         ),
@@ -232,19 +232,18 @@ void main() {
             child: Builder(builder: (BuildContext context) {
               return MenuBarTheme(
                 data: MenuBarTheme.of(context).copyWith(
-                  menuBarBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                  textStyle: MaterialStateTextStyle.resolveWith(
-                      (Set<MaterialState> _) => Theme.of(context).textTheme.titleMedium!),
-                  menuBarElevation: 20.0,
-                  menuBarHeight: 52.0,
+                  barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
+                  itemTextStyle: MaterialStateProperty.all<TextStyle?>(Theme.of(context).textTheme.titleMedium),
+                  barElevation: MaterialStateProperty.all<double?>(20.0),
+                  barHeight: 52.0,
                   menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-                  menuElevation: 15.0,
-                  menuShape: const StadiumBorder(),
+                  menuElevation: MaterialStateProperty.all<double?>(15.0),
+                  menuShape:  MaterialStateProperty.all<ShapeBorder?>(const StadiumBorder()),
                   menuPadding: const EdgeInsets.all(10.0),
                 ),
                 child: MenuBar(
                   body: const Center(child: Text('Body')),
-                  children: createTestMenus(onSelected: onSelected),
+                  menus: createTestMenus(onSelected: onSelected),
                 ),
               );
             }),
@@ -272,7 +271,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              menus: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
             ),
           ),
         ),
@@ -323,7 +322,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              menus: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
             ),
           ),
         ),
@@ -357,11 +356,11 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
-                  shape: const RoundedRectangleBorder(),
+                  shape: MaterialStateProperty.all<ShapeBorder?>(const RoundedRectangleBorder()),
                   label: mainMenu[0],
-                  elevation: 10.0,
+                  elevation: MaterialStateProperty.all<double?>(10.0),
                   backgroundColor: MaterialStateProperty.all(Colors.red),
                   menus: <MenuItem>[
                     MenuItemGroup(
@@ -401,9 +400,9 @@ void main() {
         enabled: false,
         backgroundColor: MaterialStateProperty.all(Colors.red),
         height: 40,
-        elevation: 10,
+        elevation: MaterialStateProperty.all<double?>(10.0),
         body: const SizedBox(),
-        children: const <MenuItem>[item],
+        menus: const <MenuItem>[item],
       );
 
       await tester.pumpWidget(
@@ -444,7 +443,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -487,7 +486,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -525,7 +524,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
@@ -556,7 +555,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -633,7 +632,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -749,7 +748,7 @@ void main() {
               child: MenuBar(
                 controller: controller,
                 body: const Center(child: Text('Body')),
-                children: createTestMenus(
+                menus: createTestMenus(
                   onSelected: onSelected,
                   onOpen: onOpen,
                   onClose: onClose,
@@ -864,7 +863,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -933,7 +932,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -967,7 +966,7 @@ void main() {
               controller: controller,
               enabled: false,
               body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -1012,7 +1011,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -1055,7 +1054,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
@@ -1100,7 +1099,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.keyA, control: true),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.keyB, shift: true),
@@ -1167,7 +1166,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.arrowRight),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.arrowLeft),
@@ -1196,7 +1195,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: createTestMenus(
+              menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.escape),
                   subSubMenu10[1]: const SingleActivator(LogicalKeyboardKey.f11),
@@ -1227,7 +1226,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
@@ -1256,7 +1255,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
                   menus: <MenuItem>[
@@ -1284,11 +1283,11 @@ void main() {
             child: MenuBar(
               controller: controller,
               body: const Center(child: Text('Body')),
-              children: <MenuItem>[
+              menus: <MenuItem>[
                 MenuBarMenu(
-                  shape: const RoundedRectangleBorder(),
+                  shape: MaterialStateProperty.all<ShapeBorder?>(const RoundedRectangleBorder()),
                   label: mainMenu[0],
-                  elevation: 10.0,
+                  elevation: MaterialStateProperty.all<double?>(10.0),
                   backgroundColor: MaterialStateProperty.all(Colors.red),
                   menus: <MenuItem>[
                     MenuItemGroup(
