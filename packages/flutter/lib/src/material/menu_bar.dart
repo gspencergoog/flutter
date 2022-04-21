@@ -13,6 +13,7 @@ import 'package:flutter/src/material/button_style.dart';
 import 'package:flutter/widgets.dart';
 
 import 'button_style_button.dart';
+import 'color_scheme.dart';
 import 'colors.dart';
 import 'divider.dart';
 import 'icons.dart';
@@ -30,6 +31,7 @@ const double _kDefaultMenuBarHeight = 32.0;
 const Color _kDefaultMenuBarColor = Colors.white;
 const double _kDefaultMenuBarElevation = 2.0;
 const double _kDefaultMenuBarMenuElevation = 5.0;
+const EdgeInsets _kDefaultMenuBarPadding = EdgeInsets.all(4.0);
 const Duration _kMenuHoverOpenDelay = Duration(milliseconds: 100);
 const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
@@ -883,7 +885,7 @@ class MenuBar extends PlatformMenuBar {
     bool enabled = true,
     MaterialStateProperty<Color?>? backgroundColor,
     double? height,
-    double? elevation,
+    MaterialStateProperty<double?>? elevation,
     TargetPlatform? targetPlatform,
     required Widget body,
     List<MenuItem> children = const <MenuItem>[],
@@ -934,18 +936,18 @@ class MenuBar extends PlatformMenuBar {
 
   /// The preferred minimum height of the menu bar.
   ///
-  /// Defaults to the value of [MenuBarThemeData.menuBarHeight] if not set.
+  /// Defaults to the value of [MenuBarThemeData.barHeight] if not set.
   final double? height;
 
   /// The Material elevation the menu bar (if any).
   ///
-  /// Defaults to the [MenuBarThemeData.menuBarElevation] value of the ambient
+  /// Defaults to the [MenuBarThemeData.barElevation] value of the ambient
   /// [MenuBarTheme].
   ///
   /// See also:
   ///
   ///  * [Material.elevation] for a description of what elevation implies.
-  final double? elevation;
+  final MaterialStateProperty<double?>? elevation;
 
   /// The widget to be rendered under the [MenuBar].
   ///
@@ -987,7 +989,7 @@ class MenuBar extends PlatformMenuBar {
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DoubleProperty('height', height, defaultValue: null));
-    properties.add(DoubleProperty('elevation', elevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
   }
 }
 
@@ -1130,13 +1132,13 @@ class _MenuBarState extends State<MenuBar> {
                           animation: controller,
                           builder: (BuildContext context, Widget? ignoredChild) {
                             return _MenuBarTopLevelBar(
-                              elevation: widget.elevation ?? menuBarTheme.menuBarElevation ?? _kDefaultMenuBarElevation,
-                              height: widget.height ?? menuBarTheme.menuBarHeight,
+                              elevation: widget.elevation ?? menuBarTheme.barElevation!,
+                              height: widget.height ?? menuBarTheme.barHeight,
                               enabled: controller.enabled,
                               color: widget.backgroundColor ??
-                                  menuBarTheme.menuBarBackgroundColor ??
+                                  menuBarTheme.barBackgroundColor ??
                                   MaterialStateProperty.all(Colors.white),
-                              preferredHeight: widget.height ?? menuBarTheme.menuBarHeight ?? _kDefaultMenuBarHeight,
+                              preferredHeight: widget.height ?? menuBarTheme.barHeight ?? _kDefaultMenuBarHeight,
                               children: widget.menus,
                             );
                           }),
@@ -1241,7 +1243,7 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
 
   /// The Material elevation of the submenu (if any).
   ///
-  /// Defaults to the [MenuBarThemeData.menuBarElevation] value of the ambient
+  /// Defaults to the [MenuBarThemeData.barElevation] value of the ambient
   /// [MenuBarTheme].
   ///
   /// See also:
@@ -1401,7 +1403,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
         autofocus: widget.autofocus,
         style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
           padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
-          backgroundColor: MenuBarTheme.of(context).menuItemBackgroundColor,
+          backgroundColor: MenuBarTheme.of(context).itemBackgroundColor,
         ),
         focusNode: focusNode,
         onHover: enabled ? _handleMenuHover : null,
@@ -1620,7 +1622,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
         autofocus: widget.autofocus,
         style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
           padding: MaterialStateProperty.all<EdgeInsets?>(MenuBarTheme.of(context).menuPadding),
-          backgroundColor: MenuBarTheme.of(context).menuItemBackgroundColor,
+          backgroundColor: MenuBarTheme.of(context).itemBackgroundColor,
         ),
         focusNode: focusNode,
         onHover: enabled ? _handleMenuHover : null,
@@ -1752,7 +1754,7 @@ class _MenuBarTopLevelBar extends StatelessWidget implements PreferredSizeWidget
   final bool enabled;
 
   /// The elevation to give the material behind the menu bar.
-  final double elevation;
+  final MaterialStateProperty<double?> elevation;
 
   /// The height to give the menu bar.
   final double? height;
@@ -1845,7 +1847,7 @@ class _MenuBarItemLabel extends StatelessWidget {
     final double horizontalPadding = math.max(4, 12 + density.horizontal * 2);
     final double verticalPadding = math.max(2, 8 + density.vertical * 2);
     return DefaultTextStyle.merge(
-      style: MenuBarTheme.of(context).textStyle?.resolve(<MaterialState>{
+      style: MenuBarTheme.of(context).menuBarTextStyle?.resolve(<MaterialState>{
         if (!enabled) MaterialState.disabled,
       }),
       child: Padding(
@@ -2654,4 +2656,26 @@ class _SelectableButtonState extends ButtonStyleButtonState<_SelectableButton> {
   Set<MaterialState> get materialStates {
     return <MaterialState>{if (widget.selected) MaterialState.selected, ...super.materialStates};
   }
+}
+
+class _TokenDefaultsM3 extends MenuBarThemeData {
+  _TokenDefaultsM3(this.context)
+      : super(
+    barHeight: 32.0,
+    barPadding: EdgeInsets.zero,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(12.0), topRight: Radius.circular(12.0), bottomLeft: Radius.circular(12.0), bottomRight: Radius.circular(12.0))),
+  );
+
+  final BuildContext context;
+  late final ColorScheme _colors = Theme.of(context).colorScheme;
+
+  @override
+  MaterialStateProperty<Color?>? get barBackgroundColor =>
+      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+        if (states.contains(MaterialState.disabled))
+          return _colors.onSurface.withOpacity(0.12);
+        return _colors.surface;
+      });
+
+  
 }
