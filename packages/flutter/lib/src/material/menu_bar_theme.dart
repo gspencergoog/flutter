@@ -99,7 +99,7 @@ class MenuBarThemeData with Diagnosticable {
 
   /// The text style of the [MenuBarItem]s in a [MenuBar].
   ///
-  /// The color in this text style will only be used if [itemOverlayColor]
+  /// The color in this text style will only be used if [itemForegroundColor]
   /// is unset.
   final MaterialStateProperty<TextStyle?>? itemTextStyle;
 
