@@ -12,9 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/src/material/button_style.dart';
 import 'package:flutter/widgets.dart';
 
-import 'button_style_button.dart';
 import 'color_scheme.dart';
-import 'colors.dart';
 import 'divider.dart';
 import 'icons.dart';
 import 'material.dart';
@@ -1762,14 +1760,12 @@ class _MenuBarItemState extends State<MenuBarItem> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isOpen = menu != null && controller.isAnOpenMenu(menu!);
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
       order: _MenuFocusOrder(menu!),
-      child: _SelectableButton(
-        selected: isOpen,
+      child: TextButton(
         style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
           backgroundColor:
               widget.backgroundColor ?? menuBarTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
@@ -1800,7 +1796,9 @@ class _MenuBarItemState extends State<MenuBarItem> {
     widget.onHover?.call(hovering);
 
     if (!widget._hasMenu && hovering && !controller.isAnOpenMenu(menu!)) {
-      controller.openMenu = menu;
+      setState(() {
+        controller.openMenu = menu;
+      });
     }
   }
 }
@@ -1869,9 +1867,9 @@ class MenuItemGroup extends StatelessWidget implements MenuItem {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (hasDividerBefore) const Divider(),
+        if (hasDividerBefore) const _MenuItemDivider(),
         ...members.cast<Widget>(),
-        if (hasDividerAfter) const Divider(),
+        if (hasDividerAfter) const _MenuItemDivider(),
       ],
     );
   }
@@ -2699,47 +2697,19 @@ class _MenuNodeWrapper extends InheritedWidget {
   }
 }
 
-@immutable
-class _SelectableButton extends TextButton {
-  const _SelectableButton({
-    required super.onPressed,
-    super.onHover,
-    super.style,
-    super.focusNode,
-    required this.selected,
-    required super.child,
-  });
-
-  final bool selected;
-
-  @override
-  ButtonStyleButtonState<_SelectableButton> createState() => _SelectableButtonState();
-}
-
-class _SelectableButtonState extends ButtonStyleButtonState<_SelectableButton> {
-  @override
-  Set<MaterialState> get materialStates {
-    return <MaterialState>{
-      if (widget.selected) MaterialState.selected,
-      ...super.materialStates,
-    };
-  }
-}
-
 class _TokenDefaultsM3 extends MenuBarThemeData {
   _TokenDefaultsM3(this.context)
       : super(
-          barHeight: 32.0,
-          barPadding: EdgeInsets.zero,
-          barElevation: MaterialStateProperty.all<double?>(2.0),
-          menuElevation: MaterialStateProperty.all<double?>(4.0),
-          menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
-          menuPadding: const EdgeInsets.symmetric(vertical: 8.0),
-          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder),
-        );
+            barHeight: 32.0,
+            barPadding: EdgeInsets.zero,
+            barElevation: MaterialStateProperty.all<double?>(2.0),
+            menuElevation: MaterialStateProperty.all<double?>(4.0),
+            menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
+            menuPadding: const EdgeInsets.symmetric(vertical: 8.0),
+            itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder));
 
   static const RoundedRectangleBorder _defaultBorder =
-      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(2.0)));
+      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)));
 
   static const RoundedRectangleBorder _defaultItemBorder = RoundedRectangleBorder();
 
@@ -2753,13 +2723,14 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   EdgeInsets get barPadding => super.barPadding!;
 
   @override
-  MaterialStateProperty<Color?> get barBackgroundColor =>
-      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.disabled)) {
-          return _colors.onSurface.withOpacity(0.12);
-        }
-        return _colors.surface;
-      });
+  MaterialStateProperty<Color?> get barBackgroundColor {
+    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+      if (states.contains(MaterialState.disabled)) {
+        return _colors.onSurface.withOpacity(0.12);
+      }
+      return _colors.surface;
+    });
+  }
 
   @override
   MaterialStateProperty<double?> get barElevation => super.barElevation!;
@@ -2780,30 +2751,22 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   MaterialStateProperty<Color?> get itemBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
 
   @override
-  MaterialStateProperty<Color?> get itemForegroundColor =>
-      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.disabled)) {
-          return _colors.onSurface.withOpacity(0.38);
-        }
-        return _colors.primary;
-      });
+  MaterialStateProperty<Color?> get itemForegroundColor {
+    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+      if (states.contains(MaterialState.disabled)) {
+        return _colors.onSurface.withOpacity(0.38);
+      }
+      return _colors.primary;
+    });
+  }
 
   @override
-  MaterialStateProperty<Color?> get itemOverlayColor => MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-        if (states.contains(MaterialState.hovered)) {
-          return _colors.primary.withOpacity(0.08);
-        }
-        if (states.contains(MaterialState.focused)) {
-          return _colors.primary.withOpacity(0.12);
-        }
-        if (states.contains(MaterialState.pressed)) {
-          return _colors.primary.withOpacity(0.12);
-        }
-        if (states.contains(MaterialState.selected)) {
-          return _colors.primary.withOpacity(0.12);
-        }
-        return null;
-      });
+  MaterialStateProperty<Color?> get itemOverlayColor {
+    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+      // Use the component default.
+      return null;
+    });
+  }
 
   @override
   MaterialStateProperty<TextStyle?> get itemTextStyle =>
