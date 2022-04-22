@@ -20,7 +20,7 @@ const List<String> subMenu = <String>[
   'Sub Menu 5',
   'Sub Menu 6',
   'Sub Menu 7',
-  'Sub Menu 7',
+  'Sub',
 ];
 
 const List<String> subSubMenu = <String>[
@@ -79,21 +79,26 @@ class _HomeState extends State<Home> {
           data: theme.copyWith(visualDensity: density),
           child: MenuBarTheme(
             data: MenuBarTheme.of(context).copyWith(
-              itemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
-                if (state.contains(MaterialState.selected)) {
-                  return theme.focusColor;
-                }
-                if (state.contains(MaterialState.disabled)) {
-                  return theme.disabledColor;
-                }
-                return null;
-              }),
-              itemTextStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
-                if (states.contains(MaterialState.disabled)) {
-                  return Theme.of(context).textTheme.titleSmall!.copyWith(color: theme.disabledColor);
-                }
-                return Theme.of(context).textTheme.titleSmall!;
-              }),
+              // itemOverlayColor: MaterialStateProperty.resolveWith((Set<MaterialState> state) {
+              //   if (state.contains(MaterialState.selected))
+              //     return Colors.red.shade400;
+              //   return null;
+              // }),
+              // itemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
+              //   if (state.contains(MaterialState.selected)) {
+              //     return theme.focusColor;
+              //   }
+              //   if (state.contains(MaterialState.disabled)) {
+              //     return theme.disabledColor;
+              //   }
+              //   return null;
+              // }),
+              // itemTextStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
+              //   if (states.contains(MaterialState.disabled)) {
+              //     return Theme.of(context).textTheme.titleSmall!.copyWith(color: theme.disabledColor);
+              //   }
+              //   return Theme.of(context).textTheme.titleSmall!;
+              // }),
               // barElevation: MaterialStateProperty.all<double?>(20.0),
               // barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
               // barHeight: 52.0,
@@ -247,11 +252,11 @@ class _HomeState extends State<Home> {
                       onSelected: (){},
                     ),
                     MenuBarItem(
-                      label: subMenu[6],
+                      label: subMenu[7],
                       onSelected: (){},
                     ),
                     MenuBarItem(
-                      label: subMenu[6],
+                      label: subMenu[7],
                       onSelected: (){},
                     ),
                   ],
@@ -299,7 +304,7 @@ class _Controls extends StatelessWidget {
                     value: density.horizontal,
                     max: 4,
                     min: -4,
-                    divisions: 10,
+                    divisions: 12,
                     onChanged: (double value) {
                       onDensityChanged(VisualDensity(horizontal: value, vertical: density.vertical));
                     }),
@@ -316,7 +321,7 @@ class _Controls extends StatelessWidget {
                     value: density.vertical,
                     max: 4,
                     min: -4,
-                    divisions: 10,
+                    divisions: 12,
                     onChanged: (double value) {
                       onDensityChanged(VisualDensity(horizontal: density.horizontal, vertical: value));
                     }),

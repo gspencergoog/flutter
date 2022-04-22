@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart';
 
 import 'button_style_button.dart';
 import 'color_scheme.dart';
+import 'colors.dart';
 import 'divider.dart';
 import 'icons.dart';
 import 'material.dart';
@@ -26,7 +27,6 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // The default height for the menu bar.
-const Duration _kMenuHoverOpenDelay = Duration(milliseconds: 100);
 const Duration _kMenuHoverClickBanDelay = Duration(milliseconds: 500);
 const double _kDefaultSubmenuIconSize = 24.0;
 
@@ -1376,6 +1376,17 @@ class MenuBarMenu extends _MenuBarItemDefaults implements PlatformMenu {
     properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('shape', shape, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsets?>('padding', padding, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsets?>('buttonPadding', buttonPadding, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonBackgroundColor', buttonBackgroundColor,
+        defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonForegroundColor', buttonForegroundColor,
+        defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonOverlayColor', buttonOverlayColor,
+        defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('buttonShape', buttonShape, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('buttonTextStyle', buttonTextStyle, defaultValue: null));
   }
 }
 
@@ -1413,8 +1424,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   void updateChangedState() {
     menu = _MenuNodeWrapper.of(context);
     controller = MenuBarController.of(context) as _MenuBarController;
-    menu?.menuPadding =
-        widget.padding ?? MenuBarTheme.of(context).menuPadding ?? _TokenDefaultsM3(context).menuPadding;
+    menu?.menuPadding = widget.padding ?? MenuBarTheme.of(context).menuPadding ?? _TokenDefaultsM3(context).menuPadding;
   }
 
   @override
@@ -1462,7 +1472,6 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
       menuPadding: widget.padding ?? menuBarTheme.menuPadding ?? defaultTheme.menuPadding,
       semanticLabel: widget.semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: Directionality.of(context),
-      verticalDirection: VerticalDirection.down,
       children: _expandGroups(),
     );
   }
@@ -1650,7 +1659,7 @@ class MenuBarItem extends _MenuBarItemDefaults {
 
   // Indicates that this is a button for a submenu, not just a regular item.
   final bool _hasMenu;
-  
+
   // The menu builder to use when this button is used for a [MenuBarMenu].
   final WidgetBuilder? _menuBuilder;
 
@@ -1684,7 +1693,6 @@ class MenuBarItem extends _MenuBarItemDefaults {
 }
 
 class _MenuBarItemState extends State<MenuBarItem> {
-  bool get isOpen => controller.openMenu == menu;
   _MenuNode? menu;
   late _MenuBarController controller;
   bool registered = false;
@@ -1777,7 +1785,6 @@ class _MenuBarItemState extends State<MenuBarItem> {
         onHover: enabled ? _handleMenuHover : null,
         onPressed: enabled ? _handleSelect : null,
         child: _MenuBarItemLabel(
-          enabled: enabled,
           leadingIcon: widget.leadingIcon,
           label: widget.labelWidget ?? Text(widget.label),
           shortcut: widget.shortcut,
@@ -1793,7 +1800,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
     widget.onHover?.call(hovering);
 
     if (!widget._hasMenu && hovering && !controller.isAnOpenMenu(menu!)) {
-        controller.openMenu = menu;
+      controller.openMenu = menu;
     }
   }
 }
@@ -1954,7 +1961,6 @@ class _MenuBarItemLabel extends StatelessWidget {
     required this.label,
     this.trailingIcon,
     this.shortcut,
-    required this.enabled,
     required this.hasSubmenu,
   });
 
@@ -1971,9 +1977,6 @@ class _MenuBarItemLabel extends StatelessWidget {
   /// the shortcut.
   final MenuSerializableShortcut? shortcut;
 
-  /// Whether or not this menu item should appear to be enabled.
-  final bool enabled;
-
   /// Whether or not this menu has a submenu.
   final bool hasSubmenu;
 
@@ -1982,59 +1985,45 @@ class _MenuBarItemLabel extends StatelessWidget {
     final _MenuBarController controller = MenuBarController.of(context) as _MenuBarController;
     final bool isTopLevelItem = _MenuNodeWrapper.of(context).parent == controller.root;
     final VisualDensity density = Theme.of(context).visualDensity;
-    final Set<MaterialState> disabled = <MaterialState>{if (!enabled) MaterialState.disabled};
-    final double horizontalPadding = math.max(4, 12 + density.horizontal * 2);
-    final double verticalPadding = math.max(2, 8 + density.vertical * 2);
-    return DefaultTextStyle.merge(
-      style: MenuBarTheme.of(context).itemTextStyle?.resolve(disabled),
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(end: horizontalPadding, top: verticalPadding, bottom: verticalPadding),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: 32.0 + density.vertical * 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (leadingIcon != null)
-                    Padding(
-                      padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                      child: leadingIcon,
-                    ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                    child: label,
-                  ),
-                ],
+    final double horizontalPadding = math.max(4, 18 + density.horizontal * 2);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (leadingIcon != null) leadingIcon!,
+            Padding(
+              padding: leadingIcon != null ? EdgeInsetsDirectional.only(start: horizontalPadding) : EdgeInsets.zero,
+              child: label,
+            ),
+            if (trailingIcon != null)
+              Padding(
+                padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+                child: trailingIcon,
               ),
-              if (trailingIcon != null)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                  child: trailingIcon,
-                ),
-              if (shortcut != null && !isTopLevelItem)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                  child: Text(
-                    LocalizedShortcutLabeler.instance.getShortcutLabel(
-                      shortcut!,
-                      MaterialLocalizations.of(context),
-                    ),
-                  ),
-                ),
-              if (hasSubmenu && !isTopLevelItem)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                  child: const Icon(
-                    Icons.arrow_right, // Automatically switches with text direction.
-                    size: _kDefaultSubmenuIconSize,
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
-      ),
+        if (!isTopLevelItem) SizedBox(width: horizontalPadding),
+        if (shortcut != null && !isTopLevelItem)
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+            child: Text(
+              LocalizedShortcutLabeler.instance.getShortcutLabel(
+                shortcut!,
+                MaterialLocalizations.of(context),
+              ),
+            ),
+          ),
+        if (hasSubmenu && !isTopLevelItem)
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+            child: const Icon(
+              Icons.arrow_right, // Automatically switches with text direction.
+              size: _kDefaultSubmenuIconSize,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -2306,7 +2295,6 @@ class _MenuBarMenuList extends StatefulWidget {
     required this.menuPadding,
     required this.semanticLabel,
     required this.textDirection,
-    required this.verticalDirection,
     required this.children,
   });
 
@@ -2334,9 +2322,6 @@ class _MenuBarMenuList extends StatefulWidget {
   /// The text direction to use for rendering this menu.
   final TextDirection textDirection;
 
-  /// The vertical direction to use for rendering this menu.
-  final VerticalDirection verticalDirection;
-
   /// The menu items that fill this submenu.
   final List<Widget> children;
 
@@ -2345,21 +2330,6 @@ class _MenuBarMenuList extends StatefulWidget {
 }
 
 class _MenuBarMenuListState extends State<_MenuBarMenuList> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MenuBarMenuList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-  }
-
   List<Widget> _expandGroups() {
     int index = 0;
     final _MenuNode parentMenu = _MenuNodeWrapper.of(context);
@@ -2398,7 +2368,6 @@ class _MenuBarMenuListState extends State<_MenuBarMenuList> {
         padding: widget.menuPadding,
         semanticLabel: widget.semanticLabel,
         textDirection: widget.textDirection,
-        verticalDirection: widget.verticalDirection,
         children: _expandGroups(),
       ),
     );
@@ -2418,7 +2387,6 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
     required this.padding,
     this.semanticLabel,
     this.textDirection,
-    this.verticalDirection,
   });
 
   /// Padding around the contents of the menu bar.
@@ -2435,18 +2403,12 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
   /// Defaults to the ambient text direction from [Directionality.of].
   final TextDirection? textDirection;
 
-  /// The vertical direction to use for rendering this menu.
-  ///
-  /// Defaults to [VerticalDirection.down].
-  final VerticalDirection? verticalDirection;
-
   @override
   RenderObject createRenderObject(BuildContext context) {
     return _RenderMenuBarMenu(
       padding: padding,
       semanticLabel: semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: textDirection ?? Directionality.of(context),
-      verticalDirection: verticalDirection ?? VerticalDirection.down,
     );
   }
 
@@ -2455,8 +2417,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
     renderObject
       ..padding = padding
       ..semanticLabel = semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel
-      ..textDirection = textDirection ?? Directionality.of(context)
-      ..verticalDirection = verticalDirection ?? VerticalDirection.down;
+      ..textDirection = textDirection ?? Directionality.of(context);
   }
 
   @override
@@ -2491,11 +2452,9 @@ class _RenderMenuBarMenu extends RenderBox
     required EdgeInsets padding,
     required String semanticLabel,
     required TextDirection textDirection,
-    required VerticalDirection verticalDirection,
   })  : _padding = padding,
         _semanticLabel = semanticLabel,
-        _textDirection = textDirection,
-        _verticalDirection = verticalDirection;
+        _textDirection = textDirection;
 
   EdgeInsets get padding => _padding;
   EdgeInsets _padding;
@@ -2520,15 +2479,6 @@ class _RenderMenuBarMenu extends RenderBox
   set textDirection(TextDirection value) {
     if (_textDirection != value) {
       _textDirection = value;
-      markNeedsLayout();
-    }
-  }
-
-  VerticalDirection get verticalDirection => _verticalDirection;
-  VerticalDirection _verticalDirection;
-  set verticalDirection(VerticalDirection value) {
-    if (_verticalDirection != value) {
-      _verticalDirection = value;
       markNeedsLayout();
     }
   }
@@ -2672,7 +2622,7 @@ class _RenderMenuBarMenu extends RenderBox
     // (true). The _startIsTopLeft will return null if there's only one child
     // and the relevant direction is null, in which case we arbitrarily decide
     // not to flip, but that doesn't have any detectable effect.
-    final bool flipMainAxis = !(_startIsTopLeft(Axis.vertical, textDirection, verticalDirection) ?? true);
+    final bool flipMainAxis = !(_startIsTopLeft(Axis.vertical, textDirection) ?? true);
     leadingSpace = padding.top;
 
     // Position elements
@@ -2703,9 +2653,9 @@ class _RenderMenuBarMenu extends RenderBox
     defaultPaint(context, offset);
   }
 
-  static bool? _startIsTopLeft(Axis direction, TextDirection? textDirection, VerticalDirection? verticalDirection) {
+  static bool? _startIsTopLeft(Axis direction, TextDirection? textDirection) {
     assert(direction != null);
-    // If the relevant value of textDirection or verticalDirection is null, this returns null too.
+    // If the relevant value of textDirection is null, this returns null too.
     switch (direction) {
       case Axis.horizontal:
         switch (textDirection) {
@@ -2717,14 +2667,7 @@ class _RenderMenuBarMenu extends RenderBox
             return null;
         }
       case Axis.vertical:
-        switch (verticalDirection) {
-          case VerticalDirection.down:
-            return true;
-          case VerticalDirection.up:
-            return false;
-          case null:
-            return null;
-        }
+        return true;
     }
   }
 }
@@ -2776,7 +2719,10 @@ class _SelectableButton extends TextButton {
 class _SelectableButtonState extends ButtonStyleButtonState<_SelectableButton> {
   @override
   Set<MaterialState> get materialStates {
-    return <MaterialState>{if (widget.selected) MaterialState.selected, ...super.materialStates};
+    return <MaterialState>{
+      if (widget.selected) MaterialState.selected,
+      ...super.materialStates,
+    };
   }
 }
 
@@ -2789,7 +2735,6 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
           menuElevation: MaterialStateProperty.all<double?>(4.0),
           menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
           menuPadding: const EdgeInsets.symmetric(vertical: 8.0),
-          itemPadding: EdgeInsets.zero,
           itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder),
         );
 
@@ -2830,14 +2775,6 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
 
   @override
   EdgeInsets get menuPadding => super.menuPadding!;
-  // @override
-  // EdgeInsets get menuPadding {
-  //   final VisualDensity density = Theme.of(context).visualDensity;
-  //   return EdgeInsets.symmetric(
-  //     vertical: math.max(2, 8 + density.vertical * 2),
-  //     horizontal: math.max(2, 8 + density.horizontal * 2),
-  //   );
-  // }
 
   @override
   MaterialStateProperty<Color?> get itemBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
@@ -2873,7 +2810,13 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
       MaterialStateProperty.all<TextStyle?>(Theme.of(context).textTheme.labelLarge);
 
   @override
-  EdgeInsets get itemPadding => super.itemPadding!;
+  EdgeInsets get itemPadding {
+    final VisualDensity density = Theme.of(context).visualDensity;
+    return EdgeInsets.symmetric(
+      vertical: math.max(0, density.vertical * 2),
+      horizontal: math.max(0, 24 + density.horizontal * 2),
+    );
+  }
 
   @override
   MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
