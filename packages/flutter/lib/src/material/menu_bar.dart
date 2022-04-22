@@ -794,7 +794,7 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
   List<MenuItem> get members => const <MenuItem>[];
 
   @override
-  String toStringShort() => '$runtimeType($label)';
+  String toStringShort() => '${describeIdentity(this, '_MenuBarItemDefaults')}($label)';
 }
 
 /// A menu bar with cascading child menus.
@@ -1002,8 +1002,8 @@ class MenuBar extends PlatformMenuBar {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<MenuBarController>('controller', controller, defaultValue: null));
     properties.add(FlagProperty('enabled', value: enabled, ifFalse: 'DISABLED'));
+    properties.add(DiagnosticsProperty<MenuBarController>('controller', controller, defaultValue: null));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DoubleProperty('height', height, defaultValue: null));
@@ -1404,7 +1404,7 @@ class _MenuBarMenuState extends State<MenuBarMenu> {
   @override
   void initState() {
     super.initState();
-    focusNode = FocusNode(debugLabel: 'MenuBarMenu(${widget.label})');
+    focusNode = FocusNode(debugLabel: widget.label);
     focusNode.addListener(markDirty);
   }
 
