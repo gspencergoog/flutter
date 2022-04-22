@@ -77,193 +77,163 @@ class _HomeState extends State<Home> {
       child: Builder(builder: (BuildContext context) {
         return Theme(
           data: theme.copyWith(visualDensity: density),
-          child: MenuBarTheme(
-            data: MenuBarTheme.of(context).copyWith(
-              // itemOverlayColor: MaterialStateProperty.resolveWith((Set<MaterialState> state) {
-              //   if (state.contains(MaterialState.selected))
-              //     return Colors.red.shade400;
-              //   return null;
-              // }),
-              // itemBackgroundColor: MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> state) {
-              //   if (state.contains(MaterialState.selected)) {
-              //     return theme.focusColor;
-              //   }
-              //   if (state.contains(MaterialState.disabled)) {
-              //     return theme.disabledColor;
-              //   }
-              //   return null;
-              // }),
-              // itemTextStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
-              //   if (states.contains(MaterialState.disabled)) {
-              //     return Theme.of(context).textTheme.titleSmall!.copyWith(color: theme.disabledColor);
-              //   }
-              //   return Theme.of(context).textTheme.titleSmall!;
-              // }),
-              // barElevation: MaterialStateProperty.all<double?>(20.0),
-              // barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-              // barHeight: 52.0,
-              // menuElevation: MaterialStateProperty.all<double?>(15.0),
-              // menuShape: MaterialStateProperty.all<ShapeBorder?>(const StadiumBorder()),
-              // menuPadding: EdgeInsets.zero,
-            ),
-            child: MenuBar(
+          child: MenuBar(
+            enabled: enabled,
+            controller: controller,
+            body: _Controls(
+              density: density,
               enabled: enabled,
-              controller: controller,
-              body: _Controls(
-                density: density,
-                enabled: enabled,
-                textDirection: textDirection,
-                onDensityChanged: (VisualDensity value) {
-                  setState(() {
-                    density = value;
-                  });
+              textDirection: textDirection,
+              onDensityChanged: (VisualDensity value) {
+                setState(() {
+                  density = value;
+                });
+              },
+              onTextDirectionChanged: (TextDirection value) {
+                setState(() {
+                  textDirection = value;
+                });
+              },
+              onEnabledChanged: (bool value) {
+                setState(() {
+                  enabled = value;
+                });
+              },
+            ),
+            menus: <MenuItem>[
+              MenuBarMenu(
+                label: mainMenu[0],
+                onOpen: () {
+                  _openItem(mainMenu[0]);
                 },
-                onTextDirectionChanged: (TextDirection value) {
-                  setState(() {
-                    textDirection = value;
-                  });
+                onClose: () {
+                  _closeItem(mainMenu[0]);
                 },
-                onEnabledChanged: (bool value) {
-                  setState(() {
-                    enabled = value;
-                  });
-                },
+                menus: <MenuItem>[
+                  MenuBarItem(
+                      label: subMenu[0],
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyA,
+                        control: true,
+                      ),
+                      leadingIcon: checked ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
+                      trailingIcon: const Icon(Icons.assessment),
+                      onSelected: () {
+                        _itemSelected(subMenu[0]);
+                        setState(() {
+                          checked = !checked;
+                        });
+                      }),
+                  MenuBarItem(
+                    label: subMenu[1],
+                    leadingIcon: const Icon(Icons.check_box),
+                    trailingIcon: const Icon(Icons.mail),
+                    onSelected: () {
+                      _itemSelected(subMenu[1]);
+                    },
+                  ),
+                ],
               ),
-              menus: <MenuItem>[
-                MenuBarMenu(
-                  label: mainMenu[0],
-                  onOpen: () {
-                    _openItem(mainMenu[0]);
-                  },
-                  onClose: () {
-                    _closeItem(mainMenu[0]);
-                  },
-                  menus: <MenuItem>[
+              MenuBarMenu(
+                label: mainMenu[1],
+                onOpen: () {
+                  _openItem(mainMenu[1]);
+                },
+                onClose: () {
+                  _closeItem(mainMenu[1]);
+                },
+                menus: <MenuItem>[
+                  MenuBarItem(
+                    label: subMenu[2],
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.enter,
+                      control: true,
+                    ),
+                    onSelected: () {
+                      _itemSelected(subMenu[2]);
+                    },
+                  ),
+                ],
+              ),
+              MenuBarMenu(
+                label: mainMenu[2],
+                onOpen: () {
+                  _openItem(mainMenu[2]);
+                },
+                onClose: () {
+                  _closeItem(mainMenu[2]);
+                },
+                menus: <MenuItem>[
+                  PlatformMenuItemGroup(members: <MenuItem>[
                     MenuBarItem(
-                        label: subMenu[0],
+                      label: subMenu[3],
+                      onSelected: () {
+                        _itemSelected(subMenu[3]);
+                      },
+                    ),
+                  ]),
+                  MenuBarMenu(
+                    label: subMenu[4],
+                    onOpen: () {
+                      _openItem(subMenu[4]);
+                    },
+                    onClose: () {
+                      _closeItem(subMenu[4]);
+                    },
+                    menus: <MenuItem>[
+                      MenuBarItem(
+                        label: subSubMenu[0],
                         shortcut: const SingleActivator(
-                          LogicalKeyboardKey.keyA,
+                          LogicalKeyboardKey.f11,
                           control: true,
                         ),
-                        leadingIcon: checked ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
-                        trailingIcon: const Icon(Icons.assessment),
                         onSelected: () {
-                          _itemSelected(subMenu[0]);
-                          setState(() {
-                            checked = !checked;
-                          });
-                        }),
-                    MenuBarItem(
-                      label: subMenu[1],
-                      leadingIcon: const Icon(Icons.check_box),
-                      trailingIcon: const Icon(Icons.mail),
-                      onSelected: () {
-                        _itemSelected(subMenu[1]);
-                      },
-                    ),
-                  ],
-                ),
-                MenuBarMenu(
-                  label: mainMenu[1],
-                  onOpen: () {
-                    _openItem(mainMenu[1]);
-                  },
-                  onClose: () {
-                    _closeItem(mainMenu[1]);
-                  },
-                  menus: <MenuItem>[
-                    MenuBarItem(
-                      label: subMenu[2],
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.enter,
-                        control: true,
-                      ),
-                      onSelected: () {
-                        _itemSelected(subMenu[2]);
-                      },
-                    ),
-                  ],
-                ),
-                MenuBarMenu(
-                  label: mainMenu[2],
-                  onOpen: () {
-                    _openItem(mainMenu[2]);
-                  },
-                  onClose: () {
-                    _closeItem(mainMenu[2]);
-                  },
-                  menus: <MenuItem>[
-                    PlatformMenuItemGroup(members: <MenuItem>[
-                      MenuBarItem(
-                        label: subMenu[3],
-                        onSelected: () {
-                          _itemSelected(subMenu[3]);
+                          _itemSelected(subSubMenu[0]);
                         },
                       ),
-                    ]),
-                    MenuBarMenu(
-                      label: subMenu[4],
-                      onOpen: () {
-                        _openItem(subMenu[4]);
-                      },
-                      onClose: () {
-                        _closeItem(subMenu[4]);
-                      },
-                      menus: <MenuItem>[
-                        MenuBarItem(
-                          label: subSubMenu[0],
-                          shortcut: const SingleActivator(
-                            LogicalKeyboardKey.f11,
-                            control: true,
-                          ),
-                          onSelected: () {
-                            _itemSelected(subSubMenu[0]);
-                          },
-                        ),
-                        MenuBarItem(
-                          label: subSubMenu[1],
-                          onSelected: () {
-                            _itemSelected(subSubMenu[1]);
-                          },
-                        ),
-                      ],
-                    ),
-                    MenuBarItem(
-                      label: subMenu[5],
-                      shortcut: const SingleActivator(
-                        LogicalKeyboardKey.tab,
-                        control: true,
+                      MenuBarItem(
+                        label: subSubMenu[1],
+                        onSelected: () {
+                          _itemSelected(subSubMenu[1]);
+                        },
                       ),
+                    ],
+                  ),
+                  MenuBarItem(
+                    label: subMenu[5],
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.tab,
+                      control: true,
                     ),
-                    MenuBarItem(
-                      label: subMenu[6],
-                      onSelected: (){},
-                    ),
-                    MenuBarItem(
-                      label: subMenu[6],
-                      onSelected: (){},
-                    ),
-                    MenuBarItem(
-                      label: subMenu[6],
-                      onSelected: (){},
-                    ),
-                    MenuBarItem(
-                      label: subMenu[6],
-                      onSelected: (){},
-                    ),
-                    MenuBarItem(
-                      label: subMenu[7],
-                      onSelected: (){},
-                    ),
-                    MenuBarItem(
-                      label: subMenu[7],
-                      onSelected: (){},
-                    ),
-                  ],
-                ),
-              ],
-              // child: const Center(child: Text('Body')),
-            ),
+                  ),
+                  MenuBarItem(
+                    label: subMenu[6],
+                    onSelected: (){},
+                  ),
+                  MenuBarItem(
+                    label: subMenu[6],
+                    onSelected: (){},
+                  ),
+                  MenuBarItem(
+                    label: subMenu[6],
+                    onSelected: (){},
+                  ),
+                  MenuBarItem(
+                    label: subMenu[6],
+                    onSelected: (){},
+                  ),
+                  MenuBarItem(
+                    label: subMenu[7],
+                    onSelected: (){},
+                  ),
+                  MenuBarItem(
+                    label: subMenu[7],
+                    onSelected: (){},
+                  ),
+                ],
+              ),
+            ],
+            // child: const Center(child: Text('Body')),
           ),
         );
       }),
