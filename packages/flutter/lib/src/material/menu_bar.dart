@@ -371,7 +371,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       // Everything is already closed.
       return;
     }
-    if (openMenu == node) {
+    if (isAnOpenMenu(node)) {
       // Don't call onClose, notifyListeners, etc, here, because set openMenu
       // will call them if needed.
       if (node.parent == root) {
@@ -450,7 +450,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // Builder for a submenu that should be positioned relative to the menu
   // button whose context is given.
   Widget _buildPositionedMenu(BuildContext menuButtonContext, _MenuNode menuButtonNode, WidgetBuilder menuBuilder) {
-    final Rect menuSpacer = _calculateMenuRect(menuButtonContext, menuButtonNode);
+    final Rect menuSpacer = _computeMenuRect(menuButtonContext, menuButtonNode);
     return Positioned.directional(
       textDirection: Directionality.of(menuButtonContext),
       top: menuSpacer.top,
@@ -467,7 +467,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   // Calculates the position of a submenu, given the menu button and the node it
   // is relative to.
-  Rect _calculateMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
+  Rect _computeMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
     final TextDirection textDirection = Directionality.of(menuButtonContext);
     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
@@ -2421,6 +2421,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
     this.verticalDirection,
   });
 
+  /// Padding around the contents of the menu bar.
   final EdgeInsets padding;
 
   /// The semantic label for this menu.
@@ -2787,12 +2788,15 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
           barElevation: MaterialStateProperty.all<double?>(2.0),
           menuElevation: MaterialStateProperty.all<double?>(4.0),
           menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
-          itemPadding: const EdgeInsets.all(4.0),
-          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultBorder),
+          menuPadding: const EdgeInsets.symmetric(vertical: 8.0),
+          itemPadding: EdgeInsets.zero,
+          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder),
         );
 
   static const RoundedRectangleBorder _defaultBorder =
-      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8.0)));
+      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(2.0)));
+
+  static const RoundedRectangleBorder _defaultItemBorder = RoundedRectangleBorder();
 
   final BuildContext context;
   late final ColorScheme _colors = Theme.of(context).colorScheme;
@@ -2800,7 +2804,6 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   @override
   double get barHeight => super.barHeight!;
 
-  /// The padding around the outside of a [MenuBar].
   @override
   EdgeInsets get barPadding => super.barPadding!;
 
@@ -2826,13 +2829,15 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   MaterialStateProperty<ShapeBorder?> get menuShape => super.menuShape!;
 
   @override
-  EdgeInsets get menuPadding {
-    final VisualDensity density = Theme.of(context).visualDensity;
-    return EdgeInsets.symmetric(
-      vertical: math.max(2, 8 + density.vertical * 2),
-      horizontal: math.max(2, 8 + density.horizontal * 2),
-    );
-  }
+  EdgeInsets get menuPadding => super.menuPadding!;
+  // @override
+  // EdgeInsets get menuPadding {
+  //   final VisualDensity density = Theme.of(context).visualDensity;
+  //   return EdgeInsets.symmetric(
+  //     vertical: math.max(2, 8 + density.vertical * 2),
+  //     horizontal: math.max(2, 8 + density.horizontal * 2),
+  //   );
+  // }
 
   @override
   MaterialStateProperty<Color?> get itemBackgroundColor => MaterialStateProperty.all<Color?>(_colors.surface);
