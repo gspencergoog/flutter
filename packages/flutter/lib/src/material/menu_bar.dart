@@ -1582,6 +1582,7 @@ class MenuBarItem extends _MenuBarItemDefaults {
   })  : _hasMenu = false,
         _menuBuilder = null;
 
+  // Used for MenuBarMenu's button, which has some slightly different behavior.
   const MenuBarItem._forMenu({
     required super.label,
     super.labelWidget,
@@ -1762,18 +1763,27 @@ class _MenuBarItemState extends State<MenuBarItem> {
   Widget build(BuildContext context) {
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
+    final Size densityAdjustedSize = const Size(64, 48) + Theme.of(context).visualDensity.baseSizeAdjustment;
+    MaterialStateProperty<EdgeInsets?> resolvedPadding;
+    if (widget._hasMenu && menu!.isTopLevel) {
+      resolvedPadding = MaterialStateProperty.all<EdgeInsets?>(
+          widget.padding ?? menuBarTheme.barPadding ?? defaultTheme.barPadding);
+    } else {
+      resolvedPadding = MaterialStateProperty.all<EdgeInsets?>(
+          widget.padding ?? menuBarTheme.itemPadding ?? defaultTheme.itemPadding);
+    }
     return FocusTraversalOrder(
       // Define a sort order described by _MenuFocusOrder.
       order: _MenuFocusOrder(menu!),
       child: TextButton(
         style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
+          minimumSize: MaterialStateProperty.all<Size?>(densityAdjustedSize),
           backgroundColor:
               widget.backgroundColor ?? menuBarTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
           foregroundColor:
               widget.foregroundColor ?? menuBarTheme.itemForegroundColor ?? defaultTheme.itemForegroundColor,
           overlayColor: widget.overlayColor ?? menuBarTheme.itemOverlayColor ?? defaultTheme.itemOverlayColor,
-          padding: MaterialStateProperty.all<EdgeInsets?>(
-              widget.padding ?? menuBarTheme.itemPadding ?? defaultTheme.itemPadding),
+          padding: resolvedPadding,
           shape: widget.shape ?? menuBarTheme.itemShape ?? defaultTheme.itemShape,
           textStyle: widget.textStyle ?? menuBarTheme.itemTextStyle ?? defaultTheme.itemTextStyle,
         ),
@@ -2700,8 +2710,6 @@ class _MenuNodeWrapper extends InheritedWidget {
 class _TokenDefaultsM3 extends MenuBarThemeData {
   _TokenDefaultsM3(this.context)
       : super(
-            barHeight: 32.0,
-            barPadding: EdgeInsets.zero,
             barElevation: MaterialStateProperty.all<double?>(2.0),
             menuElevation: MaterialStateProperty.all<double?>(4.0),
             menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBorder),
@@ -2717,10 +2725,14 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
   late final ColorScheme _colors = Theme.of(context).colorScheme;
 
   @override
-  double get barHeight => super.barHeight!;
+  double get barHeight {
+    return 40 + Theme.of(context).visualDensity.baseSizeAdjustment.dy;
+  }
 
   @override
-  EdgeInsets get barPadding => super.barPadding!;
+  EdgeInsets get barPadding {
+    return EdgeInsets.symmetric(horizontal: 20 + Theme.of(context).visualDensity.baseSizeAdjustment.dx);
+  }
 
   @override
   MaterialStateProperty<Color?> get barBackgroundColor {
