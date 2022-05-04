@@ -601,29 +601,29 @@ void main() {
       expect(openPath, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1)'));
       await tester.pump();
 
-      // // Start traversing open menus.
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // expect(openPath, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 2)'));
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1) > MenuBarMenu#00000(Sub Menu 0)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // // Skips the divider.
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1) > MenuBarMenu#00000(Sub Menu 2)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1) > MenuBarMenu#00000(Sub Menu 3)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // await tester.pump();
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 2)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // await tester.pump();
-      // // Skips the disabled "2 > 0".
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 0)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 0) > MenuBarMenu#00000(Sub Menu 0)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // await tester.pump();
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1)'));
-      // await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      // expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1) > MenuBarMenu#00000(Sub Menu 0)'));
+      // Start traversing open menus.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(openPath, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1)'));
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarItem#00000(Sub Menu 10)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      // Skips the divider.
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Sub Menu 11)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarItem#00000(Sub Menu 12)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 2)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      // Skips the disabled "2 > 0".
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 0)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarItem#00000(Sub Menu 00)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarMenu#00000(Menu 1)'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(focusedMenu, equalsIgnoringHashCodes('MenuBarItem#00000(Sub Menu 10)'));
     });
     testWidgets('keyboard directional traversal works', (WidgetTester tester) async {
       await tester.pumpWidget(
