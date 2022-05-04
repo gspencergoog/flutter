@@ -120,31 +120,23 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
 
   @override
   int compareTo(_MenuNode other) {
-    if (isRoot && other.isRoot) {
-      // root menus are equal.
-      return 0;
-    } else {
-      if (isRoot) {
-        // Other menu has ancestors, but this one is the root.
-        return 1;
-      }
-      if (other.isRoot) {
-        // This menu has ancestors, but the other one is root.
-        return -1;
-      }
-      int i = 0;
-      final List<_MenuNode> otherAncestors = other.ancestors;
-      // For menus of the same length, sort each menu component by their index
-      // in the parent.
-      for (; i < ancestors.length && i < otherAncestors.length; i += 1) {
-        final int result = ancestors[i].parentIndex.compareTo(otherAncestors[i].parentIndex);
-        if (result != 0) {
-          return result;
-        }
-      }
-      // If components are equal up to here, then sort shorter list of ancestors first.
-      return ancestors.length.compareTo(otherAncestors.length);
+    // Sort descendants after ancestors.
+    if (ancestors.contains(other)) {
+      return 1;
     }
+    final List<_MenuNode> otherAncestors = other.ancestors;
+    if (otherAncestors.contains(this)) {
+      return -1;
+    }
+    // For sibling menus, sort each menu component by their index in the parent.
+    for (int i = 0; i < ancestors.length && i < otherAncestors.length; i += 1) {
+      final int result = ancestors[i].parentIndex.compareTo(otherAncestors[i].parentIndex);
+      if (result != 0) {
+        return result;
+      }
+    }
+    // If components are still equal here, then sort longer list of ancestors first.
+    return otherAncestors.length.compareTo(ancestors.length);
   }
 
   // Returns the list of node ancestors with any of the ancestors that appear in
@@ -2041,13 +2033,19 @@ class _MenuBarItemLabel extends StatelessWidget {
 ///
 /// This overrides the default focus order so that hitting "Tab" will not just
 /// move in reading order.
-class _MenuFocusOrder extends FocusOrder {
+class _MenuFocusOrder extends FocusOrder with Diagnosticable {
   const _MenuFocusOrder(this.menu);
 
   final _MenuNode menu;
 
   @override
   int doCompare(_MenuFocusOrder other) => menu.compareTo(other.menu);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<_MenuNode>('menu', menu));
+  }
 }
 
 /// A helper class used to generate shortcut labels for a [ShortcutActivator]
