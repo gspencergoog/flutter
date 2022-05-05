@@ -46,10 +46,12 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   }
 
   final MenuItem item;
+  bool isOpen = false;
   FocusNode? focusNode;
   _MenuNode? parent;
   EdgeInsets? menuPadding;
   List<_MenuNode> children;
+  OverlayEntry? overlayEntry;
   WidgetBuilder? builder;
   bool get isGroup => item.members.isNotEmpty;
   bool get hasSubmenu => children.isNotEmpty;
@@ -161,6 +163,31 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   /// Used for menu traversal.
   List<_MenuNode> get focusableChildren {
     return children.where((_MenuNode child) => child.focusNode?.canRequestFocus ?? false).toList();
+  }
+
+  void open() {
+    if (isOpen) {
+      return;
+    }
+    isOpen = true;
+    if (hasSubmenu && builder != null) {
+      overlayEntry = OverlayEntry(
+        builder: builder!,
+      );
+      Navigator.of(focusNode!.context!).overlay!.insert(overlayEntry!);
+    }
+    item.onOpen?.call();
+  }
+
+  void close() {
+    if (!isOpen) {
+      return;
+    }
+    isOpen = false;
+    item.onClose?.call();
+    if (hasSubmenu && overlayEntry != null) {
+      overlayEntry!.remove();
+    }
   }
 
   // Used for testing.
@@ -328,10 +355,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final _MenuNode? oldMenu = _openMenu;
     _openMenu = value;
     oldMenu?.ancestorDifference(_openMenu).forEach((_MenuNode node) {
-      node.item.onClose?.call();
+      node.close();
     });
     _openMenu?.ancestorDifference(oldMenu).forEach((_MenuNode node) {
-      node.item.onOpen?.call();
+      node.open();
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
       // Request focus on the new thing that is now open, if any, so that
@@ -451,7 +478,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         menuButtonContext,
         _MenuNodeWrapper(
           menu: menuButtonNode,
-          child: Builder(builder: menuBuilder),
+          child: _MenuBarControllerMarker(
+            controller: this,
+            child: Builder(builder: menuBuilder),
+          ),
         ),
       ),
     );
@@ -1091,53 +1121,13 @@ class _MenuBarState extends State<MenuBar> {
     super.dispose();
   }
 
-  // Called with the controller changes state.
+  // Called when the controller changes state.
   void _markDirty() {
-    if (mounted) {
-      SchedulerBinding.instance.addPostFrameCallback((Duration _) {
-        setState(() {});
-      });
-    }
-  }
-
-  List<OverlayEntry> _buildOverlayEntries() {
-    final List<_MenuNode> components = <_MenuNode>[
-      if (controller.openMenu != null) ...controller.openMenu!.ancestors,
-      if (controller.openMenu != null) controller.openMenu!,
-    ];
-
-    // Build all of the visible submenus, wrapping them in the appropriate
-    // themes and a way to find the menu controller.
-    return components.where((_MenuNode menu) => menu.builder != null).map<OverlayEntry>((_MenuNode menu) {
-      return OverlayEntry(builder: menu.builder!);
-    }).toList();
-
-    // final OverlayState overlay = Navigator.of(context).overlay!;
-    // late OverlayEntry entry;
-    // void removeOverlay(MenuItem item) {
-    //   if (!item.isOpen) {
-    //     entry.remove();
-    //     item.root?.removeChangeListener(removeOverlay);
-    //   }
+    // if (mounted) {
+    //   SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+    //     setState(() {});
+    //   });
     // }
-    //
-    // item.root?.addChangeListener(removeOverlay);
-    // entry = OverlayEntry(
-    //   builder: (BuildContext context) {
-    //     return Positioned.fromRelativeRect(
-    //       rect: position,
-    //       child: CascadingMenu<T>(
-    //         item: item,
-    //         elevation: elevation,
-    //         semanticLabel: semanticLabel,
-    //         shape: shape,
-    //         color: color,
-    //       ),
-    //     );
-    //   },
-    // );
-    // overlay.insert(entry);
-
   }
 
   @override
@@ -1146,7 +1136,6 @@ class _MenuBarState extends State<MenuBar> {
       return PlatformMenuBar(menus: widget.menus, child: widget.child);
     }
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
-    Overlay.of(context)?.insertAll(_buildOverlayEntries());
     return _MenuBarControllerMarker(
       controller: controller,
       child: Actions(
