@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -251,6 +252,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // Keeps the previously focused widget when a main menu is opened, so that
   // when the last menu is dismissed, the focus can be restored.
   FocusNode? _previousFocus;
+
   // A menu that has been opened, but the menu hasn't been realized yet. Once it
   // is, then request focus on it.
   _MenuNode? _pendingFocusedMenu;
@@ -502,6 +504,13 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final _MenuNode? focused = focusedItem;
     if (focused != null && !isAnOpenMenu(focused)) {
       openMenu = focused;
+    }
+  }
+
+  void handlePointerDown(PointerDownEvent event) {
+    final _MenuNode? open = openMenu;
+    if (open == null) {
+      return;
     }
   }
 
@@ -1006,6 +1015,7 @@ class MenuBar extends PlatformMenuBar {
 
 class _MenuBarState extends State<MenuBar> {
   late Map<MenuSerializableShortcut, VoidCallback> shortcuts;
+  late FocusNode focusNode;
   _MenuBarController? _controller;
   _MenuBarController get controller {
     // Make our own controller if the user didn't provide one.
@@ -1019,6 +1029,7 @@ class _MenuBarState extends State<MenuBar> {
   @override
   void initState() {
     super.initState();
+    focusNode = FocusNode(debugLabel: 'MenuBar');
     controller.menuBarContext = context;
     controller.buildMenus(widget.menus);
     controller.addListener(_markDirty);
@@ -1076,6 +1087,7 @@ class _MenuBarState extends State<MenuBar> {
 
   @override
   void dispose() {
+    focusNode.dispose();
     controller.removeListener(_markDirty);
     _controller?.dispose();
     super.dispose();
@@ -1115,80 +1127,77 @@ class _MenuBarState extends State<MenuBar> {
               : const <ShortcutActivator, VoidCallback>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
-            child: Stack(
-              clipBehavior: Clip.none,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Shortcuts(
-                      // Make sure that these override any shortcut bindings
-                      // from the menu items when a menu is open. If someone
-                      // wants to bind an arrow or tab to a menu item, it would
-                      // otherwise override the default traversal keys. We want
-                      // their shortcut to apply everywhere but in the menu
-                      // itself, since there we have to do some special work for
-                      // traversing menus.
-                      shortcuts: const <ShortcutActivator, Intent>{
-                        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-                        SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
-                        SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                        SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
-                        SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                        SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
-                        SingleActivator(LogicalKeyboardKey.arrowRight):
-                            DirectionalFocusIntent(TraversalDirection.right),
-                      },
-                      child: AnimatedBuilder(
-                          animation: controller,
-                          builder: (BuildContext context, Widget? ignoredChild) {
-                            final Set<MaterialState> disabled = <MaterialState>{
-                              if (!widget.enabled) MaterialState.disabled
-                            };
-                            return _MenuBarTopLevelBar(
-                              elevation: (widget.elevation ??
-                                      menuBarTheme.barElevation ??
-                                      _TokenDefaultsM3(context).barElevation)
-                                  .resolve(disabled)!,
-                              height: widget.height ?? menuBarTheme.barHeight ?? _TokenDefaultsM3(context).barHeight,
-                              enabled: controller.enabled,
-                              color: (widget.backgroundColor ??
-                                      menuBarTheme.barBackgroundColor ??
-                                      _TokenDefaultsM3(context).barBackgroundColor)
-                                  .resolve(disabled)!,
-                              padding:
-                                  widget.padding ?? menuBarTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
-                              children: widget.menus,
-                            );
-                          }),
-                    ),
-                    Expanded(
-                      child: Stack(
-                        children: <Widget>[
-                          // Add an expanded box so that things don't move around
-                          // when the ModalBarrier is added to the Stack when a menu
-                          // is opened.
-                          ConstrainedBox(constraints: const BoxConstraints.expand()),
-                          ExcludeFocus(
-                            excluding: controller.openMenu != null,
-                            child: widget.body,
-                          ),
-                          if (controller.openMenu != null)
-                            ModalBarrier(
-                              onDismiss: controller.closeAll,
-                            ),
-                        ],
+                _MenuBarClickDetector(
+                  onPointerDown: (bool inside) {
+                    if (!inside) {
+                      controller.closeAll();
+                    }
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: <Widget>[
+                      Shortcuts(
+                        // Make sure that these override any shortcut bindings
+                        // from the menu items when a menu is open. If someone
+                        // wants to bind an arrow or tab to a menu item, it would
+                        // otherwise override the default traversal keys. We want
+                        // their shortcut to apply everywhere but in the menu
+                        // itself, since there we have to do some special work for
+                        // traversing menus.
+                        shortcuts: const <ShortcutActivator, Intent>{
+                          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+                          SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+                          SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
+                          SingleActivator(LogicalKeyboardKey.arrowDown):
+                              DirectionalFocusIntent(TraversalDirection.down),
+                          SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+                          SingleActivator(LogicalKeyboardKey.arrowLeft):
+                              DirectionalFocusIntent(TraversalDirection.left),
+                          SingleActivator(LogicalKeyboardKey.arrowRight):
+                              DirectionalFocusIntent(TraversalDirection.right),
+                        },
+                        child: AnimatedBuilder(
+                            animation: controller,
+                            builder: (BuildContext context, Widget? ignoredChild) {
+                              final Set<MaterialState> disabled = <MaterialState>{
+                                if (!widget.enabled) MaterialState.disabled
+                              };
+                              return _MenuBarTopLevelBar(
+                                elevation: (widget.elevation ??
+                                        menuBarTheme.barElevation ??
+                                        _TokenDefaultsM3(context).barElevation)
+                                    .resolve(disabled)!,
+                                height: widget.height ?? menuBarTheme.barHeight ?? _TokenDefaultsM3(context).barHeight,
+                                enabled: controller.enabled,
+                                color: (widget.backgroundColor ??
+                                        menuBarTheme.barBackgroundColor ??
+                                        _TokenDefaultsM3(context).barBackgroundColor)
+                                    .resolve(disabled)!,
+                                padding:
+                                    widget.padding ?? menuBarTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
+                                children: widget.menus,
+                              );
+                            }),
                       ),
-                    ),
-                  ],
+                      // Build all of the visible submenus.
+                      ...components.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
+                        // This Builder needs to have a key, otherwise the Builder
+                        // gets reused for all the menus, since the builder function
+                        // is likely to be the same among the menus.
+                        return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
+                      }).toList(),
+                    ],
+                  ),
                 ),
-                // Build all of the visible submenus.
-                ...components.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
-                  // This Builder needs to have a key, otherwise the Builder
-                  // gets reused for all the menus, since the builder function
-                  // is likely to be the same among the menus.
-                  return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
-                }).toList(),
+                Expanded(
+                  child: ExcludeFocus(
+                    excluding: controller.openMenu != null,
+                    child: widget.body,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1758,8 +1767,8 @@ class _MenuBarItemState extends State<MenuBarItem> {
     final Size densityAdjustedSize = const Size(64, 48) + Theme.of(context).visualDensity.baseSizeAdjustment;
     MaterialStateProperty<EdgeInsets?> resolvedPadding;
     if (widget._hasMenu && menu!.isTopLevel) {
-      resolvedPadding = MaterialStateProperty.all<EdgeInsets?>(
-          widget.padding ?? menuBarTheme.barPadding ?? defaultTheme.barPadding);
+      resolvedPadding =
+          MaterialStateProperty.all<EdgeInsets?>(widget.padding ?? menuBarTheme.barPadding ?? defaultTheme.barPadding);
     } else {
       resolvedPadding = MaterialStateProperty.all<EdgeInsets?>(
           widget.padding ?? menuBarTheme.itemPadding ?? defaultTheme.itemPadding);
@@ -2793,4 +2802,54 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
 
   @override
   MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
+}
+
+/// Detects pointer down events anywhere and reports if the pointer is inside or
+/// outside of the render object associated with this object's [BuildContext].
+class _MenuBarClickDetector extends StatefulWidget {
+  /// Creates a [_MenuBarClickDetector].
+  ///
+  /// All parameters are required.
+  const _MenuBarClickDetector({required this.onPointerDown, required this.child});
+
+  /// The callback to call when a pointer down event occurs anywhere in the app.
+  /// Passes true if the tap down is inside of the render box associated with
+  /// the context for this widget, and false if outside of this widget.
+  final ValueChanged<bool> onPointerDown;
+
+  /// The child to include in the area covered by this detector.
+  final Widget child;
+
+  @override
+  State<_MenuBarClickDetector> createState() => _MenuBarClickDetectorState();
+}
+
+class _MenuBarClickDetectorState extends State<_MenuBarClickDetector> {
+  @override
+  void initState() {
+    super.initState();
+    GestureBinding.instance.pointerRouter.addGlobalRoute(handlePointerEvent);
+  }
+
+  @override
+  void dispose() {
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(handlePointerEvent);
+    super.dispose();
+  }
+
+  void handlePointerEvent(PointerEvent event) {
+    if (event is! PointerDownEvent) {
+      return;
+    }
+    final RenderObject? renderObject = context.findRenderObject();
+    if (renderObject == null || renderObject is! RenderBox) {
+      return;
+    }
+    widget.onPointerDown(renderObject.hitTest(BoxHitTestResult(), position: event.position));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
 }
