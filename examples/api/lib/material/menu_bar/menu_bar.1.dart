@@ -79,7 +79,6 @@ class _HomeState extends State<Home> {
 
     return MenuBar.adaptive(
       enabled: enabled,
-      body: const Center(child: Text('Body')),
       menus: <MenuItem>[
         MenuBarMenu(
           label: getLabel(MenuSelection.file),
@@ -159,6 +158,7 @@ class _HomeState extends State<Home> {
           ],
         ),
       ],
+      child: const Center(child: Text('Body')),
     );
   }
 }

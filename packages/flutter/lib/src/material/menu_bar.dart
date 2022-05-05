@@ -447,9 +447,9 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       textDirection: Directionality.of(menuButtonContext),
       top: menuSpacer.top,
       start: menuSpacer.width,
-      child: Theme(
-        data: Theme.of(menuButtonContext),
-        child: _MenuNodeWrapper(
+      child: InheritedTheme.captureAll(
+        menuButtonContext,
+        _MenuNodeWrapper(
           menu: menuButtonNode,
           child: Builder(builder: menuBuilder),
         ),
@@ -822,11 +822,11 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 /// the newly hovered one. When those occur, [MenuBarMenu.onOpen], and
 /// [MenuBarMenu.onClose] are called, respectively.
 ///
-/// The [body] is where the body of the application with the menu bar resides.
+/// The [child] is where the body of the application with the menu bar resides.
 /// When a menu is open, the `MenuBar` places a [ModalBarrier] over the body so
 /// that clicking away from the menu will close all menus.
 ///
-/// It also excludes keyboard focus on the [body] with an [ExcludeFocus] while
+/// It also excludes keyboard focus on the [child] with an [ExcludeFocus] while
 /// menus are open. This means that anything that was focused when a menu is
 /// opened is no longer focused. Once the last menu is closed, the previous
 /// [FocusManager.instance.primaryFocus] is restored.
@@ -865,7 +865,7 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 class MenuBar extends PlatformMenuBar {
   /// Creates a const [MenuBar].
   ///
-  /// The [body] parameter is required.
+  /// The [child] parameter is required.
   const MenuBar({
     super.key,
     this.controller,
@@ -874,8 +874,8 @@ class MenuBar extends PlatformMenuBar {
     this.height,
     this.padding,
     this.elevation,
-    required super.body,
     super.menus = const <MenuItem>[],
+    super.child,
   }) : _isPlatformMenu = false;
 
   // Private constructor for the adaptive factory constructor to use.
@@ -888,15 +888,13 @@ class MenuBar extends PlatformMenuBar {
     this.padding,
     this.elevation,
     bool isPlatformMenu = false,
-    required super.body,
     super.menus = const <MenuItem>[],
+    super.child,
   }) : _isPlatformMenu = isPlatformMenu;
 
   /// Creates an adaptive [MenuBar] that renders using platform APIs with a
   /// [PlatformMenuBar] on platforms that support it, and using Flutter
   /// rendering on platforms that don't.
-  ///
-  /// The [body] parameter is required.
   factory MenuBar.adaptive({
     Key? key,
     MenuBarController? controller,
@@ -905,7 +903,7 @@ class MenuBar extends PlatformMenuBar {
     double? height,
     EdgeInsets? padding,
     MaterialStateProperty<double?>? elevation,
-    required Widget body,
+    Widget? child,
     List<MenuItem> menus = const <MenuItem>[],
   }) {
     bool isPlatformMenu;
@@ -931,8 +929,8 @@ class MenuBar extends PlatformMenuBar {
       padding: padding,
       elevation: elevation,
       isPlatformMenu: isPlatformMenu,
-      body: body,
       menus: menus,
+      child: child,
     );
   }
 
@@ -976,19 +974,19 @@ class MenuBar extends PlatformMenuBar {
   /// The widget to be rendered under the [MenuBar].
   ///
   /// This is typically the body of the application's UI. When a menu is open,
-  /// the [body] will be covered by a [ModalBarrier] and have focus excluded
+  /// the [child] will be covered by a [ModalBarrier] and have focus excluded
   /// with an [ExcludeFocus], so that when the user is navigating the menu the
   /// focus remains on the menu, and when they click away from the menu, the
   /// menu will closed.
   @override
   // Overriding just to get a different docstring than the base class.
-  Widget get body => super.body;
+  Widget? get child => super.child;
 
   /// Whether or not this should be rendered as a [PlatformMenuBar] or a
   /// Material [MenuBar].
   ///
   /// If true, then a [PlatformMenuBar] will be substituted with the same
-  /// [menus], [body], and [enabled] but none of the visual attributes will
+  /// [menus], [child], and [enabled] but none of the visual attributes will
   /// be passed along.
   final bool _isPlatformMenu;
 
@@ -1096,20 +1094,32 @@ class _MenuBarState extends State<MenuBar> {
   // Called with the controller changes state.
   void _markDirty() {
     if (mounted) {
-      setState(() {});
+      SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+        setState(() {});
+      });
     }
+  }
+
+  List<OverlayEntry> _buildOverlayEntries() {
+    final List<_MenuNode> components = <_MenuNode>[
+      if (controller.openMenu != null) ...controller.openMenu!.ancestors,
+      if (controller.openMenu != null) controller.openMenu!,
+    ];
+
+    // Build all of the visible submenus, wrapping them in the appropriate
+    // themes and a way to find the menu controller.
+    return components.where((_MenuNode menu) => menu.builder != null).map<OverlayEntry>((_MenuNode menu) {
+      return OverlayEntry(builder: menu.builder!);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget._isPlatformMenu) {
-      return PlatformMenuBar(body: widget.body, menus: widget.menus);
+      return PlatformMenuBar(menus: widget.menus, child: widget.child);
     }
-    final List<_MenuNode> components = <_MenuNode>[
-      if (controller.openMenu != null) ...controller.openMenu!.ancestors,
-      if (controller.openMenu != null) controller.openMenu!,
-    ];
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
+    Overlay.of(context)?.insertAll(_buildOverlayEntries());
     return _MenuBarControllerMarker(
       controller: controller,
       child: Actions(
@@ -1182,22 +1192,16 @@ class _MenuBarState extends State<MenuBar> {
                               );
                             }),
                       ),
-                      // Build all of the visible submenus.
-                      ...components.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
-                        // This Builder needs to have a key, otherwise the Builder
-                        // gets reused for all the menus, since the builder function
-                        // is likely to be the same among the menus.
-                        return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
-                      }).toList(),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: ExcludeFocus(
-                    excluding: controller.openMenu != null,
-                    child: widget.body,
+                if (widget.child != null)
+                  Expanded(
+                    child: ExcludeFocus(
+                      excluding: controller.openMenu != null,
+                      child: widget.child!,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
