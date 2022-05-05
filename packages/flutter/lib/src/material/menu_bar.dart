@@ -493,6 +493,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final TextDirection textDirection = Directionality.of(menuButtonContext);
     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
+    final RenderBox overlay = Navigator.of(menuButtonContext).overlay!.context.findRenderObject()! as RenderBox;
+
     assert(menuButtonNode.menuPadding != null, 'Menu padding not properly set.');
     Offset menuOrigin;
     Offset spacerCorner;
@@ -502,7 +504,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
         } else {
-          menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
+          menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: overlay) +
               Offset(
                 -menuButtonNode.menuPadding!.right,
                 -menuButtonNode.menuPadding!.top,
@@ -514,7 +516,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
         } else {
-          menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
+          menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: overlay) +
               Offset(
                 menuButtonNode.menuPadding!.left,
                 -menuButtonNode.menuPadding!.top,
