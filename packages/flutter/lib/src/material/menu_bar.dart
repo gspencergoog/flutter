@@ -1111,6 +1111,33 @@ class _MenuBarState extends State<MenuBar> {
     return components.where((_MenuNode menu) => menu.builder != null).map<OverlayEntry>((_MenuNode menu) {
       return OverlayEntry(builder: menu.builder!);
     }).toList();
+
+    // final OverlayState overlay = Navigator.of(context).overlay!;
+    // late OverlayEntry entry;
+    // void removeOverlay(MenuItem item) {
+    //   if (!item.isOpen) {
+    //     entry.remove();
+    //     item.root?.removeChangeListener(removeOverlay);
+    //   }
+    // }
+    //
+    // item.root?.addChangeListener(removeOverlay);
+    // entry = OverlayEntry(
+    //   builder: (BuildContext context) {
+    //     return Positioned.fromRelativeRect(
+    //       rect: position,
+    //       child: CascadingMenu<T>(
+    //         item: item,
+    //         elevation: elevation,
+    //         semanticLabel: semanticLabel,
+    //         shape: shape,
+    //         color: color,
+    //       ),
+    //     );
+    //   },
+    // );
+    // overlay.insert(entry);
+
   }
 
   @override
