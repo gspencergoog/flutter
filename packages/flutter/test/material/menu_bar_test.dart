@@ -118,12 +118,12 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -173,8 +173,8 @@ void main() {
         MaterialApp(
           home: Material(
             child: MenuBar(
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(onSelected: onSelected),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -212,8 +212,8 @@ void main() {
               height: 50,
               elevation: MaterialStateProperty.all<double?>(10),
               backgroundColor: MaterialStateProperty.all(Colors.red),
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(onSelected: onSelected),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -240,8 +240,8 @@ void main() {
                   menuPadding: const EdgeInsets.all(10.0),
                 ),
                 child: MenuBar(
-                  body: const Center(child: Text('Body')),
                   menus: createTestMenus(onSelected: onSelected),
+                  child: const Center(child: Text('Body')),
                 ),
               );
             }),
@@ -268,8 +268,8 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -319,8 +319,8 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -353,7 +353,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: <MenuItem>[
                 MenuBarMenu(
                   shape: MaterialStateProperty.all<ShapeBorder?>(const RoundedRectangleBorder()),
@@ -372,6 +371,7 @@ void main() {
                   ],
                 ),
               ],
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -402,8 +402,8 @@ void main() {
         backgroundColor: MaterialStateProperty.all(Colors.red),
         height: 40,
         elevation: MaterialStateProperty.all<double?>(10.0),
-        body: const SizedBox(),
         menus: const <MenuItem>[item],
+        child: const SizedBox(),
       );
 
       await tester.pumpWidget(
@@ -442,7 +442,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -454,6 +453,7 @@ void main() {
                   ),
                 },
               ),
+              child: const Center(child: Focus(autofocus: true, child: Text('Body'))),
             ),
           ),
         ),
@@ -485,7 +485,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -495,6 +494,7 @@ void main() {
                   subSubMenu10[1]: duplicateActivator,
                 },
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -523,7 +523,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
@@ -541,6 +540,7 @@ void main() {
                   ],
                 ),
               ],
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -554,12 +554,12 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -631,12 +631,12 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -747,12 +747,12 @@ void main() {
             child: Material(
               child: MenuBar(
                 controller: controller,
-                body: const Center(child: Text('Body')),
                 menus: createTestMenus(
                   onSelected: onSelected,
                   onOpen: onOpen,
                   onClose: onClose,
                 ),
+                child: const Center(child: Text('Body')),
               ),
             ),
           ),
@@ -862,12 +862,12 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -931,7 +931,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -943,6 +942,7 @@ void main() {
                   )
                 },
               ),
+              child: const Center(child: Focus(autofocus: true, child: Text('Body'))),
             ),
           ),
         ),
@@ -965,7 +965,6 @@ void main() {
             child: MenuBar(
               controller: controller,
               enabled: false,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -977,6 +976,7 @@ void main() {
                   )
                 },
               ),
+              child: const Center(child: Focus(autofocus: true, child: Text('Body'))),
             ),
           ),
         ),
@@ -1010,7 +1010,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Focus(autofocus: true, child: Text('Body'))),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -1022,6 +1021,7 @@ void main() {
                   )
                 },
               ),
+              child: const Center(child: Focus(autofocus: true, child: Text('Body'))),
             ),
           ),
         ),
@@ -1053,7 +1053,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 onSelected: onSelected,
                 onOpen: onOpen,
@@ -1065,6 +1064,7 @@ void main() {
                   )
                 },
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1098,7 +1098,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.keyA, control: true),
@@ -1107,6 +1106,7 @@ void main() {
                   subSubMenu10[3]: const SingleActivator(LogicalKeyboardKey.keyD, meta: true),
                 },
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1165,7 +1165,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.arrowRight),
@@ -1174,6 +1173,7 @@ void main() {
                   subSubMenu10[3]: const SingleActivator(LogicalKeyboardKey.arrowDown),
                 },
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1194,7 +1194,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: createTestMenus(
                 shortcuts: <String, MenuSerializableShortcut>{
                   subSubMenu10[0]: const SingleActivator(LogicalKeyboardKey.escape),
@@ -1203,6 +1202,7 @@ void main() {
                   subSubMenu10[3]: const SingleActivator(LogicalKeyboardKey.tab),
                 },
               ),
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1225,7 +1225,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
@@ -1237,6 +1236,7 @@ void main() {
                   ],
                 ),
               ],
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1254,7 +1254,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: <MenuItem>[
                 MenuBarMenu(
                   label: mainMenu[0],
@@ -1266,6 +1265,7 @@ void main() {
                   ],
                 ),
               ],
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),
@@ -1282,7 +1282,6 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              body: const Center(child: Text('Body')),
               menus: <MenuItem>[
                 MenuBarMenu(
                   shape: MaterialStateProperty.all<ShapeBorder?>(const RoundedRectangleBorder()),
@@ -1301,6 +1300,7 @@ void main() {
                   ],
                 ),
               ],
+              child: const Center(child: Text('Body')),
             ),
           ),
         ),

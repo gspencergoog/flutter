@@ -95,11 +95,6 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
   @override
   Widget build(BuildContext context) {
     return MenuBar(
-      body: Container(
-        alignment: Alignment.center,
-        color: backgroundColor,
-        child: Text(_showMessage ? 'Message' : 'Application Body'),
-      ),
       menus: <PlatformMenu>[
         MenuBarMenu(
           autofocus: true,
@@ -156,6 +151,11 @@ class _MyMenuBarAppState extends State<MyMenuBarApp> {
           ],
         ),
       ],
+      child: Container(
+        alignment: Alignment.center,
+        color: backgroundColor,
+        child: Text(_showMessage ? 'Message' : 'Application Body'),
+      ),
     );
   }
 }

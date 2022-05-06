@@ -46,6 +46,7 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   }
 
   final MenuItem item;
+  bool isOpen = false;
   FocusNode? focusNode;
   _MenuNode? parent;
   EdgeInsets? menuPadding;
@@ -161,6 +162,22 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   /// Used for menu traversal.
   List<_MenuNode> get focusableChildren {
     return children.where((_MenuNode child) => child.focusNode?.canRequestFocus ?? false).toList();
+  }
+
+  void open() {
+    if (isOpen) {
+      return;
+    }
+    isOpen = true;
+    item.onOpen?.call();
+  }
+
+  void close() {
+    if (!isOpen) {
+      return;
+    }
+    isOpen = false;
+    item.onClose?.call();
   }
 
   // Used for testing.
@@ -328,10 +345,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     final _MenuNode? oldMenu = _openMenu;
     _openMenu = value;
     oldMenu?.ancestorDifference(_openMenu).forEach((_MenuNode node) {
-      node.item.onClose?.call();
+      node.close();
     });
     _openMenu?.ancestorDifference(oldMenu).forEach((_MenuNode node) {
-      node.item.onOpen?.call();
+      node.open();
     });
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
       // Request focus on the new thing that is now open, if any, so that
@@ -822,11 +839,11 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 /// the newly hovered one. When those occur, [MenuBarMenu.onOpen], and
 /// [MenuBarMenu.onClose] are called, respectively.
 ///
-/// The [body] is where the body of the application with the menu bar resides.
+/// The [child] is where the body of the application with the menu bar resides.
 /// When a menu is open, the `MenuBar` places a [ModalBarrier] over the body so
 /// that clicking away from the menu will close all menus.
 ///
-/// It also excludes keyboard focus on the [body] with an [ExcludeFocus] while
+/// It also excludes keyboard focus on the [child] with an [ExcludeFocus] while
 /// menus are open. This means that anything that was focused when a menu is
 /// opened is no longer focused. Once the last menu is closed, the previous
 /// [FocusManager.instance.primaryFocus] is restored.
@@ -865,7 +882,7 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 class MenuBar extends PlatformMenuBar {
   /// Creates a const [MenuBar].
   ///
-  /// The [body] parameter is required.
+  /// The [child] parameter is required.
   const MenuBar({
     super.key,
     this.controller,
@@ -874,9 +891,9 @@ class MenuBar extends PlatformMenuBar {
     this.height,
     this.padding,
     this.elevation,
-    required super.body,
     super.menus = const <MenuItem>[],
-  }) : _isPlatformMenu = false;
+    Widget? child,
+  }) : _isPlatformMenu = false, super(body: child);
 
   // Private constructor for the adaptive factory constructor to use.
   const MenuBar._({
@@ -888,15 +905,13 @@ class MenuBar extends PlatformMenuBar {
     this.padding,
     this.elevation,
     bool isPlatformMenu = false,
-    required super.body,
     super.menus = const <MenuItem>[],
-  }) : _isPlatformMenu = isPlatformMenu;
+    Widget? child,
+  }) : _isPlatformMenu = isPlatformMenu, super(body: child);
 
   /// Creates an adaptive [MenuBar] that renders using platform APIs with a
   /// [PlatformMenuBar] on platforms that support it, and using Flutter
   /// rendering on platforms that don't.
-  ///
-  /// The [body] parameter is required.
   factory MenuBar.adaptive({
     Key? key,
     MenuBarController? controller,
@@ -905,8 +920,8 @@ class MenuBar extends PlatformMenuBar {
     double? height,
     EdgeInsets? padding,
     MaterialStateProperty<double?>? elevation,
-    required Widget body,
     List<MenuItem> menus = const <MenuItem>[],
+    Widget? child,
   }) {
     bool isPlatformMenu;
     switch (defaultTargetPlatform) {
@@ -931,8 +946,8 @@ class MenuBar extends PlatformMenuBar {
       padding: padding,
       elevation: elevation,
       isPlatformMenu: isPlatformMenu,
-      body: body,
       menus: menus,
+      child: child,
     );
   }
 
@@ -976,19 +991,17 @@ class MenuBar extends PlatformMenuBar {
   /// The widget to be rendered under the [MenuBar].
   ///
   /// This is typically the body of the application's UI. When a menu is open,
-  /// the [body] will be covered by a [ModalBarrier] and have focus excluded
+  /// the [child] will be covered by a [ModalBarrier] and have focus excluded
   /// with an [ExcludeFocus], so that when the user is navigating the menu the
   /// focus remains on the menu, and when they click away from the menu, the
   /// menu will closed.
-  @override
-  // Overriding just to get a different docstring than the base class.
-  Widget get body => super.body;
+  Widget? get child => super.body;
 
   /// Whether or not this should be rendered as a [PlatformMenuBar] or a
   /// Material [MenuBar].
   ///
   /// If true, then a [PlatformMenuBar] will be substituted with the same
-  /// [menus], [body], and [enabled] but none of the visual attributes will
+  /// [menus], [child], and [enabled] but none of the visual attributes will
   /// be passed along.
   final bool _isPlatformMenu;
 
@@ -1093,22 +1106,20 @@ class _MenuBarState extends State<MenuBar> {
     super.dispose();
   }
 
-  // Called with the controller changes state.
+  // Called when the controller changes state.
   void _markDirty() {
-    if (mounted) {
-      setState(() {});
-    }
+    // if (mounted) {
+    //   SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+    //     setState(() {});
+    //   });
+    // }
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget._isPlatformMenu) {
-      return PlatformMenuBar(body: widget.body, menus: widget.menus);
+      return PlatformMenuBar(menus: widget.menus, body: widget.child);
     }
-    final List<_MenuNode> components = <_MenuNode>[
-      if (controller.openMenu != null) ...controller.openMenu!.ancestors,
-      if (controller.openMenu != null) controller.openMenu!,
-    ];
     final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
     return _MenuBarControllerMarker(
       controller: controller,
@@ -1182,22 +1193,16 @@ class _MenuBarState extends State<MenuBar> {
                               );
                             }),
                       ),
-                      // Build all of the visible submenus.
-                      ...components.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
-                        // This Builder needs to have a key, otherwise the Builder
-                        // gets reused for all the menus, since the builder function
-                        // is likely to be the same among the menus.
-                        return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
-                      }).toList(),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: ExcludeFocus(
-                    excluding: controller.openMenu != null,
-                    child: widget.body,
+                if (widget.child != null)
+                  Expanded(
+                    child: ExcludeFocus(
+                      excluding: controller.openMenu != null,
+                      child: widget.child!,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

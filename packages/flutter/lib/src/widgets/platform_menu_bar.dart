@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'basic.dart';
 import 'binding.dart';
 import 'framework.dart';
 import 'shortcuts.dart';
@@ -492,15 +493,14 @@ class PlatformMenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// The [body] and [menus] attributes are required.
   const PlatformMenuBar({
     super.key,
-    required this.body,
     required this.menus,
+    this.body,
   });
 
-  /// The widget to be rendered in the Flutter window that these platform menus
-  /// are associated with.
+  /// The widget below this in the widget tree.
   ///
   /// This is typically the body of the application's UI.
-  final Widget body;
+  final Widget? body;
 
   /// The list of menu items that are the top level children of the
   /// [PlatformMenuBar].
@@ -572,7 +572,7 @@ class _PlatformMenuBarState extends State<PlatformMenuBar> {
   Widget build(BuildContext context) {
     // PlatformMenuBar is really about managing the platform menu bar, and
     // doesn't do any rendering or event handling in Flutter.
-    return widget.body;
+    return widget.body ?? const SizedBox();
   }
 }
 
