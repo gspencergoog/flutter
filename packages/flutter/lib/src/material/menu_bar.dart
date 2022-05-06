@@ -47,6 +47,7 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
 
   final MenuItem item;
   bool isOpen = false;
+  late BuildContext menuButtonContext;
   FocusNode? focusNode;
   _MenuNode? parent;
   EdgeInsets? menuPadding;
@@ -403,28 +404,35 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   }
 
   void updateOverlay() {
-    if (!isMenuOpen && _menuOverlay != null) {
-      _menuOverlay!.remove();
+    if (!isMenuOpen) {
+      _menuOverlay?.remove();
       _menuOverlay = null;
       return;
     }
     if (_menuOverlay == null) {
       _menuOverlay = OverlayEntry(builder: _buildMenus);
       Navigator.of(menuBarContext).overlay!.insert(_menuOverlay!);
+    } else {
+      _menuOverlay!.markNeedsBuild();
     }
   }
 
   Widget _buildMenus(BuildContext context) {
+    assert(openMenu != null, 'Attempted to build menus when no menu was open.');
     final TextDirection textDirection = Directionality.of(context);
-    return InheritedTheme.captureAll(
-      menuBarContext,
-      Directionality(
-        textDirection: textDirection,
-        child: Stack(
-          children: [],
+
+    return Positioned.fill(
+      child: InheritedTheme.captureAll(
+        menuBarContext,
+        Directionality(
+          textDirection: textDirection,
+          child: _MenuLayout(
+            textDirection: textDirection,
+            menus: <_MenuNode>[...openMenu!.ancestors, openMenu!],
+          ),
         ),
+        to: Navigator.of(menuBarContext).overlay!.context,
       ),
-      to: Navigator.of(menuBarContext).overlay!.context,
     );
   }
 
@@ -449,29 +457,33 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   /// it to the new menu to that context (if it changed).
   void registerMenu({
     required BuildContext menuContext,
-    required _MenuNode node,
+    required _MenuNode menuNode,
     WidgetBuilder? menuBuilder,
     FocusNode? buttonFocus,
   }) {
     if (menuBuilder != null) {
-      node.builder = (BuildContext context) {
-        // Capture the correct context for the menu.
-        return _buildPositionedMenu(menuContext, node, menuBuilder);
+      menuNode.builder = (BuildContext context) {
+        // Associate the menu node with the menu in the widget tree, so it can
+        // be looked up by the menu items.
+        return _MenuNodeWrapper(
+          menu: menuNode,
+          child: Builder(builder: menuBuilder),
+        );
       };
     } else {
-      node.builder = null;
+      menuNode.builder = null;
     }
-    if (node.focusNode != buttonFocus) {
-      node.focusNode?.removeListener(_handleItemFocus);
-      node.focusNode = buttonFocus;
-      node.focusNode?.addListener(_handleItemFocus);
+    menuNode.menuButtonContext = menuContext;
+    if (menuNode.focusNode != buttonFocus) {
+      menuNode.focusNode?.removeListener(_handleItemFocus);
+      menuNode.focusNode = buttonFocus;
+      menuNode.focusNode?.addListener(_handleItemFocus);
       if (buttonFocus != null) {
-        _focusNodes[buttonFocus] = node;
+        _focusNodes[buttonFocus] = menuNode;
       }
     }
-
-    if (node == _pendingFocusedMenu) {
-      node.focusNode?.requestFocus();
+    if (menuNode == _pendingFocusedMenu) {
+      menuNode.focusNode?.requestFocus();
       _pendingFocusedMenu = null;
     }
   }
@@ -491,62 +503,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     if (openMenu == node) {
       close(node);
     }
-  }
-
-  // Builder for a submenu that should be positioned relative to the menu
-  // button whose context is given.
-  Widget _buildPositionedMenu(BuildContext menuButtonContext, _MenuNode menuButtonNode, WidgetBuilder menuBuilder) {
-    final Rect menuSpacer = _computeMenuRect(menuButtonContext, menuButtonNode);
-    return Positioned.directional(
-      textDirection: Directionality.of(menuButtonContext),
-      top: menuSpacer.top,
-      start: menuSpacer.width,
-      child: Theme(
-        data: Theme.of(menuButtonContext),
-        child: _MenuNodeWrapper(
-          menu: menuButtonNode,
-          child: Builder(builder: menuBuilder),
-        ),
-      ),
-    );
-  }
-
-  // Calculates the position of a submenu, given the menu button and the node it
-  // is relative to.
-  Rect _computeMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
-    final TextDirection textDirection = Directionality.of(menuButtonContext);
-    final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
-    final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
-    assert(menuButtonNode.menuPadding != null, 'Menu padding not properly set.');
-    Offset menuOrigin;
-    Offset spacerCorner;
-    switch (textDirection) {
-      case TextDirection.rtl:
-        spacerCorner = menuBar.paintBounds.bottomRight;
-        if (menuButtonNode.isTopLevel) {
-          menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
-        } else {
-          menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
-              Offset(
-                -menuButtonNode.menuPadding!.right,
-                -menuButtonNode.menuPadding!.top,
-              );
-        }
-        break;
-      case TextDirection.ltr:
-        spacerCorner = menuBar.paintBounds.bottomLeft;
-        if (menuButtonNode.isTopLevel) {
-          menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
-        } else {
-          menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
-              Offset(
-                menuButtonNode.menuPadding!.left,
-                -menuButtonNode.menuPadding!.top,
-              );
-        }
-        break;
-    }
-    return Rect.fromPoints(menuOrigin, spacerCorner);
   }
 
   void _handleItemFocus() {
@@ -1770,7 +1726,7 @@ class _MenuBarItemState extends State<MenuBarItem> {
       menu = newMenu;
       newController.registerMenu(
         menuContext: context,
-        node: newMenu,
+        menuNode: newMenu,
         menuBuilder: widget._menuBuilder,
         buttonFocus: focusNode,
       );
@@ -2899,3 +2855,368 @@ class _MenuBarClickDetectorState extends State<_MenuBarClickDetector> {
     return widget.child;
   }
 }
+
+class _MenuLayout extends MultiChildRenderObjectWidget {
+  _MenuLayout({
+    required this.textDirection,
+    required this.menus,
+  }) : super(children: _getOpenMenuWidgets(menus));
+
+  final List<_MenuNode> menus;
+  final TextDirection textDirection;
+
+  // Returns the list of currently open menus in the controller as a list of
+  // Builder widgets that will be the children of this layout widget.
+  static List<Widget> _getOpenMenuWidgets(List<_MenuNode> menus) {
+    return menus
+        .where((_MenuNode menu) => menu.builder != null)
+        .map<Widget>((_MenuNode menu) {
+      // This Builder needs to have a key, otherwise the Builder
+      // gets reused for all the menus, since the builder function
+      // is likely to be the same among the menus.
+      return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
+    }).toList();
+  }
+
+  @override
+  _RenderMenuLayout createRenderObject(BuildContext context) {
+    return _RenderMenuLayout(
+      menus: menus,
+      textDirection: textDirection,
+    );
+  }
+}
+
+/// Parent data for use with [RenderStack].
+class _RenderMenuLayoutParentData extends ContainerBoxParentData<RenderBox> {
+  /// The distance by which the child's top edge is inset from the top of the layout.
+  double? top;
+
+  /// The distance by which the child's right edge is inset from the right of the layout.
+  double? right;
+
+  /// The distance by which the child's bottom edge is inset from the bottom of the layout.
+  double? bottom;
+
+  /// The distance by which the child's left edge is inset from the left of the layout.
+  double? left;
+
+  /// The child's width.
+  ///
+  /// Ignored if both left and right are non-null.
+  double? width;
+
+  /// The child's height.
+  ///
+  /// Ignored if both top and bottom are non-null.
+  double? height;
+
+  /// Get or set the current values in terms of a RelativeRect object.
+  RelativeRect get rect => RelativeRect.fromLTRB(left!, top!, right!, bottom!);
+  set rect(RelativeRect value) {
+    top = value.top;
+    right = value.right;
+    bottom = value.bottom;
+    left = value.left;
+  }
+
+  @override
+  String toString() {
+    final List<String> values = <String>[
+      if (top != null) 'top=${debugFormatDouble(top)}',
+      if (right != null) 'right=${debugFormatDouble(right)}',
+      if (bottom != null) 'bottom=${debugFormatDouble(bottom)}',
+      if (left != null) 'left=${debugFormatDouble(left)}',
+      if (width != null) 'width=${debugFormatDouble(width)}',
+      if (height != null) 'height=${debugFormatDouble(height)}',
+    ];
+    assert(values.isNotEmpty);
+    values.add(super.toString());
+    return values.join('; ');
+  }
+}
+
+class _RenderMenuLayout extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _RenderMenuLayoutParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _RenderMenuLayoutParentData> {
+  /// Creates a render object for layout of cascading menus.
+  _RenderMenuLayout({
+    List<RenderBox>? children,
+    List<_MenuNode>? menus,
+    TextDirection? textDirection,
+  })  : _menus = menus,
+        _textDirection = textDirection {
+    addAll(children);
+  }
+
+  bool _hasVisualOverflow = false;
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _RenderMenuLayoutParentData)
+      child.parentData = _RenderMenuLayoutParentData();
+  }
+  
+  /// The text direction in which to lay out the menus.
+  ///
+  /// Left to right submenus will lay out on the right side of their parents by
+  /// default, and right to left submenus will lay out on the left side of their
+  /// parents.
+  TextDirection? get textDirection => _textDirection;
+  TextDirection? _textDirection;
+  set textDirection(TextDirection? value) {
+    if (_textDirection == value) {
+      return;
+    }
+    _textDirection = value;
+    markNeedsLayout();
+  }
+
+  /// The controller to get the data from about open which menus to lay out.
+  List<_MenuNode>? get menus => _menus;
+  List<_MenuNode>? _menus;
+  set menus(List<_MenuNode>? value) {
+    if (_menus == value) {
+      return;
+    }
+    _menus = value;
+    markNeedsLayout();
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    return constraints.biggest;
+  }
+
+  @override
+  void performLayout() {
+    final BoxConstraints constraints = this.constraints;
+    _hasVisualOverflow = false;
+
+    size = constraints.biggest;
+
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final _RenderMenuLayoutParentData childParentData = child.parentData! as _RenderMenuLayoutParentData;
+
+      _hasVisualOverflow = layoutMenu(child, childParentData, size) || _hasVisualOverflow;
+
+      assert(child.parentData == childParentData);
+      child = childParentData.nextSibling;
+    }
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
+  }
+
+  /// Lays out the currently opened menus according to the text direction.
+  ///
+  /// Returns true when the child has visual overflow.
+  static bool layoutMenu(RenderBox child, _RenderMenuLayoutParentData childParentData, Size size) {
+    assert(child.parentData == childParentData);
+
+    bool hasVisualOverflow = false;
+    BoxConstraints childConstraints = const BoxConstraints();
+
+    if (childParentData.left != null && childParentData.right != null)
+      childConstraints = childConstraints.tighten(width: size.width - childParentData.right! - childParentData.left!);
+    else if (childParentData.width != null) {
+      childConstraints = childConstraints.tighten(width: childParentData.width);
+    }
+
+    if (childParentData.top != null && childParentData.bottom != null)
+      childConstraints = childConstraints.tighten(height: size.height - childParentData.bottom! - childParentData.top!);
+    else if (childParentData.height != null)
+      childConstraints = childConstraints.tighten(height: childParentData.height);
+
+    child.layout(childConstraints, parentUsesSize: true);
+
+    final double x;
+    if (childParentData.left != null) {
+      x = childParentData.left!;
+    } else if (childParentData.right != null) {
+      x = size.width - childParentData.right! - child.size.width;
+    } else {
+      x = 0.0;
+    }
+
+    if (x < 0.0 || x + child.size.width > size.width) {
+      hasVisualOverflow = true;
+    }
+
+    final double y;
+    if (childParentData.top != null) {
+      y = childParentData.top!;
+    } else if (childParentData.bottom != null) {
+      y = size.height - childParentData.bottom! - child.size.height;
+    } else {
+      y = 0.0;
+    }
+
+    if (y < 0.0 || y + child.size.height > size.height) {
+      hasVisualOverflow = true;
+    }
+
+    childParentData.offset = Offset(x, y);
+
+    return hasVisualOverflow;
+  }
+}
+//
+//
+//
+// class _MenuLayoutState extends State<_MenuLayout> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return CustomMultiChildLayout(
+//       delegate: _MenuLayoutDelegate(controller: widget.controller, openMenus: widget.openMenus),
+//       children: <Widget>[
+//         // Build all of the visible submenus.
+//         ...widget.openMenus.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
+//           return LayoutId(
+//             id: menu,
+//             // This Builder needs to have a key, otherwise the Builder
+//             // gets reused for all the menus, since the builder function
+//             // is likely to be the same among the menus.
+//             child: Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!),
+//           );
+//         }).toList(),
+//       ],
+//     );
+//   }
+// }
+//
+// class _MenuLayoutDelegate extends MultiChildLayoutDelegate {
+//   _MenuLayoutDelegate({required this.controller, required this.openMenus});
+//
+//   final _MenuBarController controller;
+//   final List<_MenuNode> openMenus;
+//
+//   @override
+//   void performLayout(Size size) {
+//     final BuildContext overlayContext = Navigator.of(controller.menuBarContext).overlay!.context;
+//     final RenderBox menuBarBox = controller.menuBarContext.findRenderObject()! as RenderBox;
+//     final RenderBox overlayBox = overlayContext.findRenderObject()! as RenderBox;
+//     Offset? startOffset;
+//     Rect remainingRect = overlayBox.paintBounds;
+//     for (final _MenuNode menu in openMenus) {
+//       final RenderBox buttonBox = menu.menuButtonContext.findRenderObject()! as RenderBox;
+//       final TextDirection textDirection = Directionality.of(menu.menuButtonContext);
+//       if (startOffset == null) {
+//         startOffset = getTopLevelOffset(textDirection, buttonBox, menuBarBox);
+//         remainingRect = shrinkRemainingRect(textDirection, remainingRect, startOffset);
+//       } else {
+//         remainingRect = Rect.fromLTWH(remainingRect.left + menuSize.width, remainingRect.top, remainingRect.width - menuSize.width, remainingRect.height);
+//       }
+//       final Size menuSize =
+//           layoutMenu(allowedRect: remainingRect, menu: menu, overlayBox: overlayBox, menuBarBox: menuBarBox);
+//     }
+//     _MenuNode? parent;
+//     for (final _MenuNode menu in openMenus) {
+//       if (parent == null) {
+//         assert(menu.isTopLevel);
+//         parent = menu;
+//         positionMenu(position: , parentSize menu: menu, overlayBox: overlayBox, menuBarBox: menuBarBox);
+//       } else {
+//         positionMenu(overlaySize: size, menu: menu, overlayBox: overlayBox, menuBarBox: menuBarBox);
+//       }
+//     }
+//   }
+//
+//   Offset getTopLevelOffset(TextDirection textDirection, RenderBox buttonBox, RenderBox menuBarBox) {
+//     switch (textDirection) {
+//       case TextDirection.rtl:
+//         return buttonBox.localToGlobal(buttonBox.paintBounds.bottomRight, ancestor: menuBarBox);
+//       case TextDirection.ltr:
+//         return buttonBox.paintBounds.bottomLeft;
+//     }
+//   }
+//
+//   Rect shrinkRemaininRect(TextDirection textDirection, Rect remainingRect, Offset startOffset) {
+//     return Rect.fromLTWH(startOffset.dx, startOffset.dy, remainingRect.width - startOffset.dx, remainingRect.height - startOffset.dy);
+//   }
+//
+//   Size layoutMenu({
+//     required Size overlaySize,
+//     required _MenuNode menu,
+//     required RenderBox overlayBox,
+//     required RenderBox menuBarBox,
+//   }) {
+//     final RenderBox buttonBox = menu.menuButtonContext.findRenderObject()! as RenderBox;
+//
+//     Size menuSize = Size.zero;
+//     if (hasChild(menu)) {
+//       menuSize = layoutChild(menu, BoxConstraints(maxWidth: overlaySize.width, maxHeight: overlaySize.height));
+//     }
+//     return menuSize;
+//   }
+//
+//   Offset positionMenu({
+//     required Size overlaySize,
+//     required _MenuNode menu,
+//     required RenderBox overlayBox,
+//     required RenderBox menuBarBox,
+//   }) {
+//     final TextDirection textDirection = Directionality.of(menu.menuButtonContext);
+//
+//     Offset menuOrigin = Offset.zero;
+//     switch (textDirection) {
+//       case TextDirection.rtl:
+//         if (menu.isTopLevel) {
+//           menuOrigin = buttonBox.localToGlobal(buttonBox.paintBounds.bottomRight, ancestor: menuBarBox);
+//         }
+//         break;
+//       case TextDirection.ltr:
+//         if (menu.isTopLevel) {
+//           menuOrigin = buttonBox.localToGlobal(buttonBox.paintBounds.bottomLeft, ancestor: menuBarBox);
+//         }
+//         break;
+//     }
+//   }
+//
+//   // Calculates the position of a submenu, given the menu button and the node it
+//   // is relative to.
+//   Rect _computeMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
+//     final TextDirection textDirection = Directionality.of(menuButtonContext);
+//     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
+//     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
+//     assert(menuButtonNode.menuPadding != null, 'Menu padding not properly set.');
+//     Offset menuOrigin;
+//     Offset spacerCorner;
+//     switch (textDirection) {
+//       case TextDirection.rtl:
+//         spacerCorner = menuBar.paintBounds.bottomRight;
+//         if (menuButtonNode.isTopLevel) {
+//           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
+//         } else {
+//           menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: menuBar) +
+//               Offset(
+//                 -menuButtonNode.menuPadding!.right,
+//                 -menuButtonNode.menuPadding!.top,
+//               );
+//         }
+//         break;
+//       case TextDirection.ltr:
+//         spacerCorner = menuBar.paintBounds.bottomLeft;
+//         if (menuButtonNode.isTopLevel) {
+//           menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
+//         } else {
+//           menuOrigin = button.localToGlobal(button.paintBounds.topRight, ancestor: menuBar) +
+//               Offset(
+//                 menuButtonNode.menuPadding!.left,
+//                 -menuButtonNode.menuPadding!.top,
+//               );
+//         }
+//         break;
+//     }
+//     return Rect.fromPoints(menuOrigin, spacerCorner);
+//   }
+//
+//   @override
+//   bool shouldRelayout(covariant _MenuLayoutDelegate oldDelegate) {
+//     return oldDelegate.controller != controller || !listEquals(openMenus, oldDelegate.openMenus);
+//   }
+// }
