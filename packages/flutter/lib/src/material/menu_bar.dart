@@ -227,6 +227,9 @@ abstract class MenuBarController {
   /// Closes any menus that are currently open.
   void closeAll();
 
+  /// Returns true if any menu in the associated menu bar is currently open.
+  bool get isMenuOpen;
+
   /// Returns the active menu controller in the given context, and creates a
   /// dependency relationship that will rebuild the context when the controller
   /// changes.
@@ -273,6 +276,13 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // A menu that has been opened, but the menu hasn't been realized yet. Once it
   // is, then request focus on it.
   _MenuNode? _pendingFocusedMenu;
+
+  // The overlay entry containing any open menus. It will be added/removed from
+  // the overlay when menus are opened/closed. Will be null if no menus are open.
+  OverlayEntry? _menuOverlay;
+
+  @override
+  bool get isMenuOpen => _openMenu != null;
 
   /// The context of the [MenuBar] that this controller serves.
   ///
@@ -350,6 +360,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     _openMenu?.ancestorDifference(oldMenu).forEach((_MenuNode node) {
       node.open();
     });
+    updateOverlay();
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
       // Request focus on the new thing that is now open, if any, so that
       // focus traversal starts from that location.
@@ -391,8 +402,34 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
   }
 
+  void updateOverlay() {
+    if (!isMenuOpen && _menuOverlay != null) {
+      _menuOverlay!.remove();
+      _menuOverlay = null;
+      return;
+    }
+    if (_menuOverlay == null) {
+      _menuOverlay = OverlayEntry(builder: _buildMenus);
+      Navigator.of(menuBarContext).overlay!.insert(_menuOverlay!);
+    }
+  }
+
+  Widget _buildMenus(BuildContext context) {
+    final TextDirection textDirection = Directionality.of(context);
+    return InheritedTheme.captureAll(
+      menuBarContext,
+      Directionality(
+        textDirection: textDirection,
+        child: Stack(
+          children: [],
+        ),
+      ),
+      to: Navigator.of(menuBarContext).overlay!.context,
+    );
+  }
+
   // Build the node hierarchy for the static part of the menus (the widgets).
-  void buildMenus(List<MenuItem> topLevel) {
+  void buildMenuTree(List<MenuItem> topLevel) {
     root.children.clear();
     _focusNodes.clear();
     _previousFocus = null;
@@ -893,7 +930,8 @@ class MenuBar extends PlatformMenuBar {
     this.elevation,
     super.menus = const <MenuItem>[],
     Widget? child,
-  }) : _isPlatformMenu = false, super(body: child);
+  })  : _isPlatformMenu = false,
+        super(body: child);
 
   // Private constructor for the adaptive factory constructor to use.
   const MenuBar._({
@@ -907,7 +945,8 @@ class MenuBar extends PlatformMenuBar {
     bool isPlatformMenu = false,
     super.menus = const <MenuItem>[],
     Widget? child,
-  }) : _isPlatformMenu = isPlatformMenu, super(body: child);
+  })  : _isPlatformMenu = isPlatformMenu,
+        super(body: child);
 
   /// Creates an adaptive [MenuBar] that renders using platform APIs with a
   /// [PlatformMenuBar] on platforms that support it, and using Flutter
@@ -995,7 +1034,9 @@ class MenuBar extends PlatformMenuBar {
   /// with an [ExcludeFocus], so that when the user is navigating the menu the
   /// focus remains on the menu, and when they click away from the menu, the
   /// menu will closed.
-  Widget? get child => super.body;
+  // Overriding just to get a different docstring.
+  @override
+  Widget? get child => super.child;
 
   /// Whether or not this should be rendered as a [PlatformMenuBar] or a
   /// Material [MenuBar].
@@ -1044,7 +1085,7 @@ class _MenuBarState extends State<MenuBar> {
     super.initState();
     focusNode = FocusNode(debugLabel: 'MenuBar');
     controller.menuBarContext = context;
-    controller.buildMenus(widget.menus);
+    controller.buildMenuTree(widget.menus);
     controller.addListener(_markDirty);
     _updateShortcuts();
   }
@@ -1053,7 +1094,7 @@ class _MenuBarState extends State<MenuBar> {
   void didUpdateWidget(MenuBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.menus != oldWidget.menus) {
-      controller.buildMenus(widget.menus);
+      controller.buildMenuTree(widget.menus);
     }
     _updateShortcuts();
     controller.enabled = widget.enabled;

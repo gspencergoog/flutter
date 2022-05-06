@@ -494,13 +494,18 @@ class PlatformMenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   const PlatformMenuBar({
     super.key,
     required this.menus,
-    this.body,
-  });
+    @Deprecated(
+      'Migrate to use child instead. '
+      'This feature was deprecated after v2.13.0-0.0.pre.',
+    )
+    Widget? body,
+    Widget? child,
+  }) : child = child ?? body;
 
   /// The widget below this in the widget tree.
   ///
   /// This is typically the body of the application's UI.
-  final Widget? body;
+  final Widget? child;
 
   /// The list of menu items that are the top level children of the
   /// [PlatformMenuBar].
@@ -572,7 +577,7 @@ class _PlatformMenuBarState extends State<PlatformMenuBar> {
   Widget build(BuildContext context) {
     // PlatformMenuBar is really about managing the platform menu bar, and
     // doesn't do any rendering or event handling in Flutter.
-    return widget.body ?? const SizedBox();
+    return widget.child ?? const SizedBox();
   }
 }
 
