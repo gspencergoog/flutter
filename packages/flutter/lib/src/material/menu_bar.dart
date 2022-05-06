@@ -469,18 +469,22 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // Builder for a submenu that should be positioned relative to the menu
   // button whose context is given.
   Widget _buildPositionedMenu(BuildContext menuButtonContext, _MenuNode menuButtonNode, WidgetBuilder menuBuilder) {
-    final Rect menuSpacer = _computeMenuRect(menuButtonContext, menuButtonNode);
-    return Positioned.directional(
-      textDirection: Directionality.of(menuButtonContext),
-      top: menuSpacer.top,
-      start: menuSpacer.width,
-      child: InheritedTheme.captureAll(
-        menuButtonContext,
-        _MenuNodeWrapper(
-          menu: menuButtonNode,
-          child: _MenuBarControllerMarker(
-            controller: this,
-            child: Builder(builder: menuBuilder),
+    final Offset menuPosition = _computeMenuPosition(menuButtonContext, menuButtonNode);
+    final TextDirection textDirection = Directionality.of(menuButtonContext);
+    return Directionality(
+      textDirection: textDirection,
+      child: Positioned.directional(
+        textDirection: textDirection,
+        top: menuPosition.dy,
+        start: menuPosition.dx,
+        child: InheritedTheme.captureAll(
+          menuButtonContext,
+          _MenuNodeWrapper(
+            menu: menuButtonNode,
+            child: _MenuBarControllerMarker(
+              controller: this,
+              child: Builder(builder: menuBuilder),
+            ),
           ),
         ),
       ),
@@ -489,7 +493,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   // Calculates the position of a submenu, given the menu button and the node it
   // is relative to.
-  Rect _computeMenuRect(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
+  Offset _computeMenuPosition(BuildContext menuButtonContext, _MenuNode menuButtonNode) {
     final TextDirection textDirection = Directionality.of(menuButtonContext);
     final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
     final RenderBox menuBar = menuBarContext.findRenderObject()! as RenderBox;
@@ -497,10 +501,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
     assert(menuButtonNode.menuPadding != null, 'Menu padding not properly set.');
     Offset menuOrigin;
-    Offset spacerCorner;
     switch (textDirection) {
       case TextDirection.rtl:
-        spacerCorner = menuBar.paintBounds.bottomRight;
         if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
         } else {
@@ -512,7 +514,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         }
         break;
       case TextDirection.ltr:
-        spacerCorner = menuBar.paintBounds.bottomLeft;
         if (menuButtonNode.isTopLevel) {
           menuOrigin = button.localToGlobal(button.paintBounds.bottomLeft, ancestor: menuBar);
         } else {
@@ -524,7 +525,8 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         }
         break;
     }
-    return Rect.fromPoints(menuOrigin, spacerCorner);
+    debugPrint('Menu origin: $menuOrigin button Rect: ${button.paintBounds}');
+    return menuOrigin;
   }
 
   void _handleItemFocus() {
