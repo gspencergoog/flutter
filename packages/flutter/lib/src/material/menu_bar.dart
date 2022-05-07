@@ -2860,21 +2860,25 @@ class _MenuLayout extends MultiChildRenderObjectWidget {
   _MenuLayout({
     required this.textDirection,
     required this.menus,
-  }) : super(children: _getOpenMenuWidgets(menus));
+  }) : super(children: _createOpenMenuWidgets(menus));
 
   final List<_MenuNode> menus;
   final TextDirection textDirection;
 
   // Returns the list of currently open menus in the controller as a list of
   // Builder widgets that will be the children of this layout widget.
-  static List<Widget> _getOpenMenuWidgets(List<_MenuNode> menus) {
-    return menus
-        .where((_MenuNode menu) => menu.builder != null)
-        .map<Widget>((_MenuNode menu) {
+  static List<Widget> _createOpenMenuWidgets(List<_MenuNode> menus) {
+    return menus.where((_MenuNode menu) => menu.builder != null).map<Widget>((_MenuNode menu) {
       // This Builder needs to have a key, otherwise the Builder
       // gets reused for all the menus, since the builder function
       // is likely to be the same among the menus.
-      return Builder(key: ValueKey<_MenuNode>(menu), builder: menu.builder!);
+      return _RenderMenuLayoutMenuAssociation(
+        menu: menu,
+        child: Builder(
+          key: ValueKey<_MenuNode>(menu),
+          builder: menu.builder!,
+        ),
+      );
     }).toList();
   }
 
@@ -2887,8 +2891,29 @@ class _MenuLayout extends MultiChildRenderObjectWidget {
   }
 }
 
+class _RenderMenuLayoutMenuAssociation extends ParentDataWidget<_RenderMenuLayoutParentData> {
+  const _RenderMenuLayoutMenuAssociation({required super.child, required this.menu});
+
+  final _MenuNode menu;
+
+  @override
+  void applyParentData(RenderObject renderObject) {
+    assert(renderObject is _RenderMenuLayout);
+    (renderObject as _RenderMenuLayout).parentData ??= _RenderMenuLayoutParentData();
+    (renderObject.parentData! as _RenderMenuLayoutParentData).menu = menu;
+  }
+
+  @override
+  Type get debugTypicalAncestorWidgetClass => throw UnimplementedError();
+}
+
 /// Parent data for use with [RenderStack].
 class _RenderMenuLayoutParentData extends ContainerBoxParentData<RenderBox> {
+  /// The menu node associated with this submenu. This is the node that opens
+  /// this submenu when clicked on. This is needed to be able to find the menu
+  /// button's box to align the submenu with.
+  _MenuNode? menu;
+
   /// The distance by which the child's top edge is inset from the top of the layout.
   double? top;
 
@@ -2954,10 +2979,11 @@ class _RenderMenuLayout extends RenderBox
 
   @override
   void setupParentData(RenderBox child) {
-    if (child.parentData is! _RenderMenuLayoutParentData)
+    if (child.parentData is! _RenderMenuLayoutParentData) {
       child.parentData = _RenderMenuLayoutParentData();
+    }
   }
-  
+
   /// The text direction in which to lay out the menus.
   ///
   /// Left to right submenus will lay out on the right side of their parents by
