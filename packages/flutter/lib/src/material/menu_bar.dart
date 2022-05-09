@@ -170,12 +170,6 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
       return;
     }
     isOpen = true;
-    if (hasSubmenu && builder != null) {
-      overlayEntry = OverlayEntry(
-        builder: builder!,
-      );
-      Navigator.of(focusNode!.context!).overlay!.insert(overlayEntry!);
-    }
     item.onOpen?.call();
   }
 
@@ -185,9 +179,6 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
     }
     isOpen = false;
     item.onClose?.call();
-    if (hasSubmenu && overlayEntry != null) {
-      overlayEntry!.remove();
-    }
   }
 
   // Used for testing.
@@ -236,6 +227,9 @@ abstract class MenuBarController {
 
   /// Closes any menus that are currently open.
   void closeAll();
+
+  /// Returns true if any menu in the menu bar is open.
+  bool get menuIsOpen;
 
   /// Returns the active menu controller in the given context, and creates a
   /// dependency relationship that will rebuild the context when the controller
@@ -287,6 +281,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // The render boxes of all the MenuBarMenus that are displaying menu items.
   final Set<RenderBox> _menuRenderBoxes = <RenderBox>{};
 
+  // If set, this is the overlay entry that contains all of the submenus.
+  // It is only non-null when there is a menu open.
+  OverlayEntry? _overlayEntry;
+
   // Keeps the previously focused widget when a main menu is opened, so that
   // when the last menu is dismissed, the focus can be restored.
   FocusNode? _previousFocus;
@@ -294,6 +292,14 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // A menu that has been opened, but the menu hasn't been realized yet. Once it
   // is, then request focus on it.
   _MenuNode? _pendingFocusedMenu;
+
+  @override
+  bool get menuIsOpen => openMenu != null;
+
+  @override
+  void closeAll() {
+    openMenu = null;
+  }
 
   /// The context of the [MenuBar] that this controller serves.
   ///
@@ -371,6 +377,17 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     _openMenu?.ancestorDifference(oldMenu).forEach((_MenuNode node) {
       node.open();
     });
+    if (_openMenu != null) {
+      if (_overlayEntry == null) {
+        _overlayEntry = OverlayEntry(builder: _buildMenus);
+        Navigator.of(menuBarContext).overlay!.insert(_overlayEntry!);
+      } else {
+        _overlayEntry?.markNeedsBuild();
+      }
+    } else {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    }
     if (value != null && value.focusNode?.hasPrimaryFocus != true) {
       // Request focus on the new thing that is now open, if any, so that
       // focus traversal starts from that location.
@@ -386,11 +403,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     notifyListeners();
   }
 
-  @override
-  void closeAll() {
-    openMenu = null;
-  }
-
   void handlePointerEvent(PointerEvent event) {
     if (event is! PointerDownEvent) {
       return;
@@ -401,12 +413,29 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
       ..._menuRenderBoxes,
     ].where((RenderBox? box) => box != null).cast<RenderBox>().toList();
     for (final RenderBox renderBox in renderBoxes) {
+      assert(renderBox.attached);
       isInsideMenu =
           renderBox.hitTest(BoxHitTestResult(), position: renderBox.globalToLocal(event.position)) || isInsideMenu;
     }
     if (!isInsideMenu) {
       closeAll();
     }
+  }
+
+  Widget _buildMenus(BuildContext context) {
+    assert(openMenu != null, 'Tried to build menus when none were open');
+    return Positioned.fill(
+      child: FocusScope(
+        debugLabel: 'MenuBar Stack',
+        child: Stack(
+          children: <Widget>[
+            if (openMenu!.builder != null) Builder(key: ValueKey<_MenuNode>(openMenu!), builder: openMenu!.builder!),
+            ...openMenu!.ancestors.where((_MenuNode node) => node.builder != null)
+                .map<Widget>((_MenuNode node) => Builder(key: ValueKey<_MenuNode>(node), builder: node.builder!)),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Closes the given menu, and any open descendant menus.
@@ -1215,11 +1244,9 @@ class _MenuBarState extends State<MenuBar> {
                         SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
                         SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
                         SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                        SingleActivator(LogicalKeyboardKey.arrowDown):
-                            DirectionalFocusIntent(TraversalDirection.down),
+                        SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
                         SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                        SingleActivator(LogicalKeyboardKey.arrowLeft):
-                            DirectionalFocusIntent(TraversalDirection.left),
+                        SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
                         SingleActivator(LogicalKeyboardKey.arrowRight):
                             DirectionalFocusIntent(TraversalDirection.right),
                       },
