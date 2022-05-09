@@ -268,13 +268,24 @@ abstract class MenuBarController {
 // private API for the MenuBar internals to use. This is the class that gets
 // instantiated when the MenuBarController factory constructor is called.
 class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnosticable {
-  _MenuBarController() : super._();
+  _MenuBarController() : super._() {
+    GestureBinding.instance.pointerRouter.addGlobalRoute(handlePointerEvent);
+  }
+
+  @override
+  void dispose() {
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(handlePointerEvent);
+    super.dispose();
+  }
 
   // The root of the menu tree.
   _MenuNode root = _MenuNode(item: const PlatformMenu(label: 'root', menus: <MenuItem>[]));
   // The map of focus nodes to menus. The reverse map of the
   // _registeredFocusNodes.
   final Map<FocusNode, _MenuNode> _focusNodes = <FocusNode, _MenuNode>{};
+
+  // The render boxes of all the MenuBarMenus that are displaying menu items.
+  final Set<RenderBox> _menuRenderBoxes = <RenderBox>{};
 
   // Keeps the previously focused widget when a main menu is opened, so that
   // when the last menu is dismissed, the focus can be restored.
@@ -380,6 +391,24 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     openMenu = null;
   }
 
+  void handlePointerEvent(PointerEvent event) {
+    if (event is! PointerDownEvent) {
+      return;
+    }
+    bool isInsideMenu = false;
+    final List<RenderBox> renderBoxes = <RenderBox?>[
+      menuBarContext.findRenderObject() as RenderBox?,
+      ..._menuRenderBoxes,
+    ].where((RenderBox? box) => box != null).cast<RenderBox>().toList();
+    for (final RenderBox renderBox in renderBoxes) {
+      isInsideMenu =
+          renderBox.hitTest(BoxHitTestResult(), position: renderBox.globalToLocal(event.position)) || isInsideMenu;
+    }
+    if (!isInsideMenu) {
+      closeAll();
+    }
+  }
+
   /// Closes the given menu, and any open descendant menus.
   ///
   /// Leaves ancestor menus alone.
@@ -466,6 +495,14 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     }
   }
 
+  void registerMenuRenderObject(RenderBox menu) {
+    _menuRenderBoxes.add(menu);
+  }
+
+  void unregisterMenuRenderObject(RenderBox menu) {
+    _menuRenderBoxes.remove(menu);
+  }
+
   // Builder for a submenu that should be positioned relative to the menu
   // button whose context is given.
   Widget _buildPositionedMenu(BuildContext menuButtonContext, _MenuNode menuButtonNode, WidgetBuilder menuBuilder) {
@@ -509,8 +546,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
           menuOrigin = Offset(menuBarOrigin.dx - menuOrigin.dx, menuOrigin.dy);
         } else {
           menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: overlay);
-          menuOrigin = Offset(menuBarOrigin.dx - menuOrigin.dx, menuOrigin.dy)
-              +
+          menuOrigin = Offset(menuBarOrigin.dx - menuOrigin.dx, menuOrigin.dy) +
               Offset(
                 -menuButtonNode.menuPadding!.right,
                 -menuButtonNode.menuPadding!.top,
@@ -529,7 +565,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
         }
         break;
     }
-    debugPrint('Menu origin: $menuOrigin button Rect: ${button.paintBounds}');
     return menuOrigin;
   }
 
@@ -844,8 +879,9 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
 ///
 /// The menu can be navigated by the user using the arrow keys, and can be
 /// dismissed using the escape key, or by clicking away from the menu item
-/// (anywhere on the modal barrier over the app body). Once a menu is open, the
-/// menu hierarchy can be navigated by hovering over the menu with the mouse.
+/// (anywhere that is not a part of the menu bar or cascading menus). Once a
+/// menu is open, the menu hierarchy can be navigated by hovering over the menu
+/// with the mouse.
 ///
 /// Menu items can have a [MenuBarItem.shortcut] assigned to them so that if the
 /// shortcut sequence is pressed, the menu item that shortcut will be selected.
@@ -1164,60 +1200,53 @@ class _MenuBarState extends State<MenuBar> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                _MenuBarClickDetector(
-                  onPointerDown: (bool inside) {
-                    if (!inside) {
-                      controller.closeAll();
-                    }
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: <Widget>[
-                      Shortcuts(
-                        // Make sure that these override any shortcut bindings
-                        // from the menu items when a menu is open. If someone
-                        // wants to bind an arrow or tab to a menu item, it would
-                        // otherwise override the default traversal keys. We want
-                        // their shortcut to apply everywhere but in the menu
-                        // itself, since there we have to do some special work for
-                        // traversing menus.
-                        shortcuts: const <ShortcutActivator, Intent>{
-                          SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-                          SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
-                          SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                          SingleActivator(LogicalKeyboardKey.arrowDown):
-                              DirectionalFocusIntent(TraversalDirection.down),
-                          SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                          SingleActivator(LogicalKeyboardKey.arrowLeft):
-                              DirectionalFocusIntent(TraversalDirection.left),
-                          SingleActivator(LogicalKeyboardKey.arrowRight):
-                              DirectionalFocusIntent(TraversalDirection.right),
-                        },
-                        child: AnimatedBuilder(
-                            animation: controller,
-                            builder: (BuildContext context, Widget? ignoredChild) {
-                              final Set<MaterialState> disabled = <MaterialState>{
-                                if (!widget.enabled) MaterialState.disabled
-                              };
-                              return _MenuBarTopLevelBar(
-                                elevation: (widget.elevation ??
-                                        menuBarTheme.barElevation ??
-                                        _TokenDefaultsM3(context).barElevation)
-                                    .resolve(disabled)!,
-                                height: widget.height ?? menuBarTheme.barHeight ?? _TokenDefaultsM3(context).barHeight,
-                                enabled: controller.enabled,
-                                color: (widget.backgroundColor ??
-                                        menuBarTheme.barBackgroundColor ??
-                                        _TokenDefaultsM3(context).barBackgroundColor)
-                                    .resolve(disabled)!,
-                                padding:
-                                    widget.padding ?? menuBarTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
-                                children: widget.menus,
-                              );
-                            }),
-                      ),
-                    ],
-                  ),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    Shortcuts(
+                      // Make sure that these override any shortcut bindings
+                      // from the menu items when a menu is open. If someone
+                      // wants to bind an arrow or tab to a menu item, it would
+                      // otherwise override the default traversal keys. We want
+                      // their shortcut to apply everywhere but in the menu
+                      // itself, since there we have to do some special work for
+                      // traversing menus.
+                      shortcuts: const <ShortcutActivator, Intent>{
+                        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+                        SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+                        SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
+                        SingleActivator(LogicalKeyboardKey.arrowDown):
+                            DirectionalFocusIntent(TraversalDirection.down),
+                        SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+                        SingleActivator(LogicalKeyboardKey.arrowLeft):
+                            DirectionalFocusIntent(TraversalDirection.left),
+                        SingleActivator(LogicalKeyboardKey.arrowRight):
+                            DirectionalFocusIntent(TraversalDirection.right),
+                      },
+                      child: AnimatedBuilder(
+                          animation: controller,
+                          builder: (BuildContext context, Widget? ignoredChild) {
+                            final Set<MaterialState> disabled = <MaterialState>{
+                              if (!widget.enabled) MaterialState.disabled
+                            };
+                            return _MenuBarTopLevelBar(
+                              elevation: (widget.elevation ??
+                                      menuBarTheme.barElevation ??
+                                      _TokenDefaultsM3(context).barElevation)
+                                  .resolve(disabled)!,
+                              height: widget.height ?? menuBarTheme.barHeight ?? _TokenDefaultsM3(context).barHeight,
+                              enabled: controller.enabled,
+                              color: (widget.backgroundColor ??
+                                      menuBarTheme.barBackgroundColor ??
+                                      _TokenDefaultsM3(context).barBackgroundColor)
+                                  .resolve(disabled)!,
+                              padding:
+                                  widget.padding ?? menuBarTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
+                              children: widget.menus,
+                            );
+                          }),
+                    ),
+                  ],
                 ),
                 if (widget.child != null)
                   Expanded(
@@ -2396,6 +2425,7 @@ class _MenuBarMenuListState extends State<_MenuBarMenuList> {
       shape: widget.shape,
       elevation: widget.elevation,
       child: _MenuBarMenuRenderWidget(
+        controller: MenuBarController.of(context) as _MenuBarController,
         padding: widget.menuPadding,
         semanticLabel: widget.semanticLabel,
         textDirection: widget.textDirection,
@@ -2414,11 +2444,15 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
   ///
   /// The `children` and [padding] arguments are required.
   _MenuBarMenuRenderWidget({
+    required this.controller,
     required super.children,
     required this.padding,
     this.semanticLabel,
     this.textDirection,
   });
+
+  /// The MenuBarController that this menu should register its render object with.
+  final _MenuBarController controller;
 
   /// Padding around the contents of the menu bar.
   final EdgeInsets padding;
@@ -2437,6 +2471,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
   @override
   RenderObject createRenderObject(BuildContext context) {
     return _RenderMenuBarMenu(
+      controller: controller,
       padding: padding,
       semanticLabel: semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
       textDirection: textDirection ?? Directionality.of(context),
@@ -2446,6 +2481,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
   @override
   void updateRenderObject(BuildContext context, covariant _RenderMenuBarMenu renderObject) {
     renderObject
+      ..controller = controller
       ..padding = padding
       ..semanticLabel = semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel
       ..textDirection = textDirection ?? Directionality.of(context);
@@ -2480,12 +2516,33 @@ class _RenderMenuBarMenu extends RenderBox
         RenderBoxContainerDefaultsMixin<RenderBox, _RenderMenuBarMenuParentData>,
         DebugOverflowIndicatorMixin {
   _RenderMenuBarMenu({
+    required _MenuBarController controller,
     required EdgeInsets padding,
     required String semanticLabel,
     required TextDirection textDirection,
-  })  : _padding = padding,
+  })  : _controller = controller,
+        _padding = padding,
         _semanticLabel = semanticLabel,
-        _textDirection = textDirection;
+        _textDirection = textDirection {
+    _controller.registerMenuRenderObject(this);
+  }
+
+  @override
+  void dispose() {
+    _controller.unregisterMenuRenderObject(this);
+    super.dispose();
+  }
+
+  _MenuBarController get controller => _controller;
+  _MenuBarController _controller;
+  set controller(_MenuBarController value) {
+    if (_controller != value) {
+      _controller.unregisterMenuRenderObject(this);
+      _controller = value;
+      _controller.registerMenuRenderObject(this);
+      markNeedsLayout();
+    }
+  }
 
   EdgeInsets get padding => _padding;
   EdgeInsets _padding;
@@ -2818,54 +2875,4 @@ class _TokenDefaultsM3 extends MenuBarThemeData {
 
   @override
   MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
-}
-
-/// Detects pointer down events anywhere and reports if the pointer is inside or
-/// outside of the render object associated with this object's [BuildContext].
-class _MenuBarClickDetector extends StatefulWidget {
-  /// Creates a [_MenuBarClickDetector].
-  ///
-  /// All parameters are required.
-  const _MenuBarClickDetector({required this.onPointerDown, required this.child});
-
-  /// The callback to call when a pointer down event occurs anywhere in the app.
-  /// Passes true if the tap down is inside of the render box associated with
-  /// the context for this widget, and false if outside of this widget.
-  final ValueChanged<bool> onPointerDown;
-
-  /// The child to include in the area covered by this detector.
-  final Widget child;
-
-  @override
-  State<_MenuBarClickDetector> createState() => _MenuBarClickDetectorState();
-}
-
-class _MenuBarClickDetectorState extends State<_MenuBarClickDetector> {
-  @override
-  void initState() {
-    super.initState();
-    GestureBinding.instance.pointerRouter.addGlobalRoute(handlePointerEvent);
-  }
-
-  @override
-  void dispose() {
-    GestureBinding.instance.pointerRouter.removeGlobalRoute(handlePointerEvent);
-    super.dispose();
-  }
-
-  void handlePointerEvent(PointerEvent event) {
-    if (event is! PointerDownEvent) {
-      return;
-    }
-    final RenderObject? renderObject = context.findRenderObject();
-    if (renderObject == null || renderObject is! RenderBox) {
-      return;
-    }
-    widget.onPointerDown(renderObject.hitTest(BoxHitTestResult(), position: event.position));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
 }
