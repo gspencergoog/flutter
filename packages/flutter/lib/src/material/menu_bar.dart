@@ -503,10 +503,14 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     Offset menuOrigin;
     switch (textDirection) {
       case TextDirection.rtl:
+        final Offset menuBarOrigin = menuBar.localToGlobal(menuBar.semanticBounds.topRight, ancestor: overlay);
         if (menuButtonNode.isTopLevel) {
-          menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: menuBar);
+          menuOrigin = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
+          menuOrigin = Offset(menuBarOrigin.dx - menuOrigin.dx, menuOrigin.dy);
         } else {
-          menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: overlay) +
+          menuOrigin = button.localToGlobal(button.paintBounds.topLeft, ancestor: overlay);
+          menuOrigin = Offset(menuBarOrigin.dx - menuOrigin.dx, menuOrigin.dy)
+              +
               Offset(
                 -menuButtonNode.menuPadding!.right,
                 -menuButtonNode.menuPadding!.top,
@@ -2153,21 +2157,12 @@ class LocalizedShortcutLabeler {
       LogicalKeyboardKey.channelDown: localizations.keyboardKeyChannelDown,
       LogicalKeyboardKey.channelUp: localizations.keyboardKeyChannelUp,
       LogicalKeyboardKey.delete: localizations.keyboardKeyDelete,
-      LogicalKeyboardKey.eisu: localizations.keyboardKeyEisu,
       LogicalKeyboardKey.eject: localizations.keyboardKeyEject,
       LogicalKeyboardKey.end: localizations.keyboardKeyEnd,
       LogicalKeyboardKey.escape: localizations.keyboardKeyEscape,
       LogicalKeyboardKey.fn: localizations.keyboardKeyFn,
-      LogicalKeyboardKey.hangulMode: localizations.keyboardKeyHangulMode,
-      LogicalKeyboardKey.hanjaMode: localizations.keyboardKeyHanjaMode,
-      LogicalKeyboardKey.hankaku: localizations.keyboardKeyHankaku,
-      LogicalKeyboardKey.hiragana: localizations.keyboardKeyHiragana,
-      LogicalKeyboardKey.hiraganaKatakana: localizations.keyboardKeyHiraganaKatakana,
       LogicalKeyboardKey.home: localizations.keyboardKeyHome,
       LogicalKeyboardKey.insert: localizations.keyboardKeyInsert,
-      LogicalKeyboardKey.kanaMode: localizations.keyboardKeyKanaMode,
-      LogicalKeyboardKey.kanjiMode: localizations.keyboardKeyKanjiMode,
-      LogicalKeyboardKey.katakana: localizations.keyboardKeyKatakana,
       LogicalKeyboardKey.numLock: localizations.keyboardKeyNumLock,
       LogicalKeyboardKey.numpad1: localizations.keyboardKeyNumpad1,
       LogicalKeyboardKey.numpad2: localizations.keyboardKeyNumpad2,
@@ -2194,12 +2189,9 @@ class LocalizedShortcutLabeler {
       LogicalKeyboardKey.power: localizations.keyboardKeyPower,
       LogicalKeyboardKey.powerOff: localizations.keyboardKeyPowerOff,
       LogicalKeyboardKey.printScreen: localizations.keyboardKeyPrintScreen,
-      LogicalKeyboardKey.romaji: localizations.keyboardKeyRomaji,
       LogicalKeyboardKey.scrollLock: localizations.keyboardKeyScrollLock,
       LogicalKeyboardKey.select: localizations.keyboardKeySelect,
       LogicalKeyboardKey.space: localizations.keyboardKeySpace,
-      LogicalKeyboardKey.zenkaku: localizations.keyboardKeyZenkaku,
-      LogicalKeyboardKey.zenkakuHankaku: localizations.keyboardKeyZenkakuHankaku,
     };
     return _cachedShortcutKeys[localizations]![key] ?? key.keyLabel;
   }
