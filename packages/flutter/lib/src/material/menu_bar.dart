@@ -51,7 +51,6 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
   _MenuNode? parent;
   EdgeInsets? menuPadding;
   List<_MenuNode> children;
-  OverlayEntry? overlayEntry;
   WidgetBuilder? builder;
   bool get isGroup => item.members.isNotEmpty;
   bool get hasSubmenu => children.isNotEmpty;
@@ -269,6 +268,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   @override
   void dispose() {
     GestureBinding.instance.pointerRouter.removeGlobalRoute(handlePointerEvent);
+    _overlayFocusScope?.dispose();
     super.dispose();
   }
 
@@ -292,6 +292,12 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // A menu that has been opened, but the menu hasn't been realized yet. Once it
   // is, then request focus on it.
   _MenuNode? _pendingFocusedMenu;
+
+  // The focus scope node for the overlay menu items that augments its
+  // descendants with the top level menu buttons.
+  _MenuBarFocusScopeNode? _overlayFocusScope;
+
+  Map<MenuSerializableShortcut, VoidCallback> shortcuts = <MenuSerializableShortcut, VoidCallback>{};
 
   @override
   bool get menuIsOpen => openMenu != null;
@@ -403,6 +409,17 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     notifyListeners();
   }
 
+  List<_MenuNode> get openNodes {
+    return <_MenuNode>[
+      ...openMenu?.ancestors ?? <_MenuNode>[],
+      if (openMenu != null) openMenu!,
+    ];
+  }
+
+  List<FocusNode> get openMenuFocusNodes {
+    return openNodes.map<FocusNode>((_MenuNode node) => node.focusNode!).toList();
+  }
+
   void handlePointerEvent(PointerEvent event) {
     if (event is! PointerDownEvent) {
       return;
@@ -424,15 +441,58 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
 
   Widget _buildMenus(BuildContext context) {
     assert(openMenu != null, 'Tried to build menus when none were open');
+    _overlayFocusScope?.dispose();
+    final List<FocusNode> topLevelNodes = <FocusNode>[];
+    _focusNodes.forEach((FocusNode node, _MenuNode menu) {
+      if (menu.isTopLevel) {
+        topLevelNodes.add(node);
+      }
+    });
+    _overlayFocusScope = _MenuBarFocusScopeNode(additionalNodes: topLevelNodes);
     return Positioned.fill(
-      child: FocusScope(
-        debugLabel: 'MenuBar Stack',
-        child: Stack(
-          children: <Widget>[
-            if (openMenu!.builder != null) Builder(key: ValueKey<_MenuNode>(openMenu!), builder: openMenu!.builder!),
-            ...openMenu!.ancestors.where((_MenuNode node) => node.builder != null)
-                .map<Widget>((_MenuNode node) => Builder(key: ValueKey<_MenuNode>(node), builder: node.builder!)),
-          ],
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          DirectionalFocusIntent: _MenuDirectionalFocusAction(
+            controller: this,
+            textDirection: Directionality.of(context),
+          ),
+          DismissIntent: _MenuDismissAction(controller: this),
+        },
+        child: CallbackShortcuts(
+          // Handles user shortcuts.
+          bindings: enabled
+              ? shortcuts.cast<ShortcutActivator, VoidCallback>()
+              : const <ShortcutActivator, VoidCallback>{},
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Shortcuts(
+              // Make sure that these override any shortcut bindings
+              // from the menu items when a menu is open. If someone
+              // wants to bind an arrow or tab to a menu item, it would
+              // otherwise override the default traversal keys. We want
+              // their shortcut to apply everywhere but in the menu
+              // itself, since there we have to do some special work for
+              // traversing menus.
+              shortcuts: const <ShortcutActivator, Intent>{
+                SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+                SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+                SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
+                SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
+                SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+                SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
+                SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
+              },
+              child: FocusScope(
+                debugLabel: 'MenuBar Stack',
+                node: _overlayFocusScope,
+                child: Stack(
+                  children: openNodes.where((_MenuNode node) => node.builder != null).map<Widget>((_MenuNode node) {
+                    return Builder(key: ValueKey<_MenuNode>(node), builder: node.builder!);
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -641,10 +701,7 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
     if (openMenu == null) {
       return null;
     }
-    return <String>[
-      ...openMenu!.ancestors.map<String>((_MenuNode node) => node.toStringShort()),
-      openMenu!.toStringShort()
-    ].join(' > ');
+    return openNodes.map<String>((_MenuNode node) => node.toStringShort()).join(' > ');
   }
 
   // A testing method used to provide access to the currently focused menu in
@@ -1115,7 +1172,6 @@ class MenuBar extends PlatformMenuBar {
 }
 
 class _MenuBarState extends State<MenuBar> {
-  late Map<MenuSerializableShortcut, VoidCallback> shortcuts;
   late FocusNode focusNode;
   _MenuBarController? _controller;
   _MenuBarController get controller {
@@ -1133,7 +1189,6 @@ class _MenuBarState extends State<MenuBar> {
     focusNode = FocusNode(debugLabel: 'MenuBar');
     controller.menuBarContext = context;
     controller.buildMenus(widget.menus);
-    controller.addListener(_markDirty);
     _updateShortcuts();
   }
 
@@ -1153,12 +1208,12 @@ class _MenuBarState extends State<MenuBar> {
   }
 
   void _updateShortcuts() {
-    shortcuts = <MenuSerializableShortcut, VoidCallback>{};
+    controller.shortcuts = <MenuSerializableShortcut, VoidCallback>{};
     _addChildShortcuts(widget.menus);
     // Now wrap each shortcut in a call to _doSelect so that selecting them
     // will close the menus. We didn't do this when building the map because it
     // would preclude duplicate testing.
-    shortcuts = shortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
+    controller.shortcuts = controller.shortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
       return MapEntry<MenuSerializableShortcut, VoidCallback>(key, () => _doSelect(value));
     });
   }
@@ -1168,7 +1223,7 @@ class _MenuBarState extends State<MenuBar> {
       if (child.menus.isNotEmpty) {
         _addChildShortcuts(child.menus);
       } else if (child.shortcut != null && child.onSelected != null) {
-        if (shortcuts.containsKey(child.shortcut) && shortcuts[child.shortcut!] != child.onSelected) {
+        if (controller.shortcuts.containsKey(child.shortcut) && controller.shortcuts[child.shortcut!] != child.onSelected) {
           throw FlutterError(
             'More than one menu item is bound to ${child.shortcut}, and they have '
             'different callbacks.\n'
@@ -1179,7 +1234,7 @@ class _MenuBarState extends State<MenuBar> {
             'action to take (or do them all).',
           );
         }
-        shortcuts[child.shortcut!] = child.onSelected!;
+        controller.shortcuts[child.shortcut!] = child.onSelected!;
       } else if (child.members.isNotEmpty) {
         _addChildShortcuts(child.members);
       }
@@ -1189,18 +1244,8 @@ class _MenuBarState extends State<MenuBar> {
   @override
   void dispose() {
     focusNode.dispose();
-    controller.removeListener(_markDirty);
     _controller?.dispose();
     super.dispose();
-  }
-
-  // Called when the controller changes state.
-  void _markDirty() {
-    // if (mounted) {
-    //   SchedulerBinding.instance.addPostFrameCallback((Duration _) {
-    //     setState(() {});
-    //   });
-    // }
   }
 
   @override
@@ -1222,7 +1267,7 @@ class _MenuBarState extends State<MenuBar> {
         child: CallbackShortcuts(
           // Handles user shortcuts.
           bindings: controller.enabled
-              ? shortcuts.cast<ShortcutActivator, VoidCallback>()
+              ? controller.shortcuts.cast<ShortcutActivator, VoidCallback>()
               : const <ShortcutActivator, VoidCallback>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
@@ -2814,6 +2859,26 @@ class _MenuNodeWrapper extends InheritedWidget {
   }
 }
 
+// A FocusScope that augments its list of descendants with the given additional
+// nodes.
+class _MenuBarFocusScopeNode extends FocusScopeNode {
+  _MenuBarFocusScopeNode({
+    required this.additionalNodes,
+  });
+
+  final List<FocusNode> additionalNodes;
+
+  @override
+  List<FocusNode> get descendants {
+    return <FocusNode>[
+      ...additionalNodes,
+      ...super.descendants,
+    ];
+  }
+}
+
+// This class will eventually be auto-generated, so it should remain at the end
+// of the file.
 class _TokenDefaultsM3 extends MenuBarThemeData {
   _TokenDefaultsM3(this.context)
       : super(
