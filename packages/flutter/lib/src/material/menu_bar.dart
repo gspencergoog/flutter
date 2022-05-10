@@ -39,7 +39,7 @@ class _MenuNode with Diagnosticable, DiagnosticableTreeMixin, Comparable<_MenuNo
     } else {
       parent?.children.add(this);
       for (final MenuItem child in item.menus) {
-        // Will get automatically linked into the tree by creating them.
+        // Children get automatically linked into the menu tree by creating them.
         _MenuNode(item: child, parent: this);
       }
     }
