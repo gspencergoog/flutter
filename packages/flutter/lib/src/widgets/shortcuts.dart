@@ -14,7 +14,6 @@ import 'focus_scope.dart';
 import 'framework.dart';
 import 'inherited_notifier.dart';
 import 'platform_menu_bar.dart';
-import 'transitions.dart';
 
 /// A set of [KeyboardKey]s that can be used as the keys in a [Map].
 ///

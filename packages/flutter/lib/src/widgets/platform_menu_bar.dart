@@ -7,8 +7,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'actions.dart';
 import 'basic.dart';
 import 'binding.dart';
+import 'focus_manager.dart';
 import 'framework.dart';
 import 'shortcuts.dart';
 
@@ -218,8 +220,26 @@ abstract class MenuItem with Diagnosticable {
   ///
   /// Only items that do not have submenus will have this callback invoked.
   ///
+  /// Only one of [onSelected] or [onSelectedIntent] may be specified.
+  ///
+  /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
+  /// menu item is considered to be disabled.
+  ///
   /// The default implementation returns null.
   VoidCallback? get onSelected => null;
+  
+  /// Returns an intent, if any, to be invoked if the platform receives a
+  /// "Menu.selectedCallback" method call from the platform for this item.
+  ///
+  /// Only items that do not have submenus will have this intent invoked.
+  ///
+  /// Only one of [onSelected] or [onSelectedIntent] may be specified.
+  ///
+  /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
+  /// menu item is considered to be disabled.
+  ///
+  /// The default implementation returns null.
+  Intent? get onSelectedIntent => null;
 
   /// Returns a callback, if any, to be invoked if the platform menu receives a
   /// "Menu.opened" method call from the platform for this item.
@@ -444,7 +464,12 @@ class DefaultPlatformMenuDelegate extends PlatformMenuDelegate {
     }
     final MenuItem item = _idMap[id]!;
     if (call.method == _kMenuSelectedCallbackMethod) {
+      assert(item.onSelected == null || item.onSelectedIntent == null,
+        'Only one of MenuItem.onSelected or MenuItem.onSelectedIntent may be specified');
       item.onSelected?.call();
+      if (item.onSelectedIntent != null) {
+        Actions.maybeInvoke(FocusManager.instance.primaryFocus!.context!, item.onSelectedIntent!);
+      }
     } else if (call.method == _kMenuItemOpenedMethod) {
       item.onOpen?.call();
     } else if (call.method == _kMenuItemClosedMethod) {
@@ -772,6 +797,7 @@ class PlatformMenuItem extends MenuItem {
     required this.label,
     this.shortcut,
     this.onSelected,
+    this.onSelectedIntent,
   });
 
   /// The required label used for rendering the menu item.
@@ -789,6 +815,13 @@ class PlatformMenuItem extends MenuItem {
   /// If unset, this menu item will be disabled.
   @override
   final VoidCallback? onSelected;
+
+  /// An optional intent that is invoked when this [PlatformMenuItem] is
+  /// selected.
+  ///
+  /// If unset, this menu item will be disabled.
+  @override
+  final Intent? onSelectedIntent;
 
   @override
   Iterable<Map<String, Object?>> toChannelRepresentation(

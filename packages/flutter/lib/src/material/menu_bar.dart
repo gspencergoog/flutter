@@ -297,7 +297,10 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // descendants with the top level menu buttons.
   _MenuBarFocusScopeNode? _overlayFocusScope;
 
-  Map<MenuSerializableShortcut, VoidCallback> shortcuts = <MenuSerializableShortcut, VoidCallback>{};
+  // The shortcut mappings extracted from the menu items.
+  Map<MenuSerializableShortcut, VoidCallback> callbackShortcuts = <MenuSerializableShortcut, VoidCallback>{};
+  // The intent-based mappings extracted from the menu items.
+  Map<MenuSerializableShortcut, Intent> shortcuts = <MenuSerializableShortcut, Intent>{};
 
   @override
   bool get menuIsOpen => openMenu != null;
@@ -457,39 +460,34 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
             textDirection: Directionality.of(context),
           ),
           DismissIntent: _MenuDismissAction(controller: this),
+          VoidCallbackIntent: VoidCallbackAction(),
         },
-        child: CallbackShortcuts(
-          // Handles user shortcuts.
-          bindings: enabled
-              ? shortcuts.cast<ShortcutActivator, VoidCallback>()
-              : const <ShortcutActivator, VoidCallback>{},
-          child: FocusTraversalGroup(
-            policy: OrderedTraversalPolicy(),
-            child: Shortcuts(
-              // Make sure that these override any shortcut bindings
-              // from the menu items when a menu is open. If someone
-              // wants to bind an arrow or tab to a menu item, it would
-              // otherwise override the default traversal keys. We want
-              // their shortcut to apply everywhere but in the menu
-              // itself, since there we have to do some special work for
-              // traversing menus.
-              shortcuts: const <ShortcutActivator, Intent>{
-                SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-                SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
-                SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
-                SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
-                SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-                SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
-                SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
-              },
-              child: FocusScope(
-                debugLabel: 'MenuBar Stack',
-                node: _overlayFocusScope,
-                child: Stack(
-                  children: openNodes.where((_MenuNode node) => node.builder != null).map<Widget>((_MenuNode node) {
-                    return Builder(key: ValueKey<_MenuNode>(node), builder: node.builder!);
-                  }).toList(),
-                ),
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Shortcuts(
+            // Make sure that these override any shortcut bindings
+            // from the menu items when a menu is open. If someone
+            // wants to bind an arrow or tab to a menu item, it would
+            // otherwise override the default traversal keys. We want
+            // their shortcut to apply everywhere but in the menu
+            // itself, since there we have to do some special work for
+            // traversing menus.
+            shortcuts: const <ShortcutActivator, Intent>{
+              SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+              SingleActivator(LogicalKeyboardKey.tab): NextFocusIntent(),
+              SingleActivator(LogicalKeyboardKey.tab, shift: true): PreviousFocusIntent(),
+              SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
+              SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+              SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
+              SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
+            },
+            child: FocusScope(
+              debugLabel: 'MenuBar Stack',
+              node: _overlayFocusScope,
+              child: Stack(
+                children: openNodes.where((_MenuNode node) => node.builder != null).map<Widget>((_MenuNode node) {
+                  return Builder(key: ValueKey<_MenuNode>(node), builder: node.builder!);
+                }).toList(),
               ),
             ),
           ),
@@ -942,6 +940,9 @@ abstract class _MenuBarItemDefaults extends StatefulWidget implements PlatformMe
   List<MenuItem> get descendants => const <MenuItem>[];
 
   @override
+  Intent? get onSelectedIntent => null;
+
+  @override
   VoidCallback? get onSelected => null;
 
   @override
@@ -1208,12 +1209,12 @@ class _MenuBarState extends State<MenuBar> {
   }
 
   void _updateShortcuts() {
-    controller.shortcuts = <MenuSerializableShortcut, VoidCallback>{};
+    controller.callbackShortcuts = <MenuSerializableShortcut, VoidCallback>{};
     _addChildShortcuts(widget.menus);
     // Now wrap each shortcut in a call to _doSelect so that selecting them
     // will close the menus. We didn't do this when building the map because it
     // would preclude duplicate testing.
-    controller.shortcuts = controller.shortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
+    controller.callbackShortcuts = controller.callbackShortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
       return MapEntry<MenuSerializableShortcut, VoidCallback>(key, () => _doSelect(value));
     });
   }
@@ -1223,7 +1224,7 @@ class _MenuBarState extends State<MenuBar> {
       if (child.menus.isNotEmpty) {
         _addChildShortcuts(child.menus);
       } else if (child.shortcut != null && child.onSelected != null) {
-        if (controller.shortcuts.containsKey(child.shortcut) && controller.shortcuts[child.shortcut!] != child.onSelected) {
+        if (controller.callbackShortcuts.containsKey(child.shortcut) && controller.callbackShortcuts[child.shortcut!] != child.onSelected) {
           throw FlutterError(
             'More than one menu item is bound to ${child.shortcut}, and they have '
             'different callbacks.\n'
@@ -1234,7 +1235,7 @@ class _MenuBarState extends State<MenuBar> {
             'action to take (or do them all).',
           );
         }
-        controller.shortcuts[child.shortcut!] = child.onSelected!;
+        controller.callbackShortcuts[child.shortcut!] = child.onSelected!;
       } else if (child.members.isNotEmpty) {
         _addChildShortcuts(child.members);
       }
@@ -1264,11 +1265,11 @@ class _MenuBarState extends State<MenuBar> {
           ),
           DismissIntent: _MenuDismissAction(controller: controller),
         },
-        child: CallbackShortcuts(
-          // Handles user shortcuts.
-          bindings: controller.enabled
-              ? controller.shortcuts.cast<ShortcutActivator, VoidCallback>()
-              : const <ShortcutActivator, VoidCallback>{},
+        child: _ShortcutRegistration(
+          callbackShortcuts: controller.enabled
+              ? controller.callbackShortcuts
+              : const <MenuSerializableShortcut, VoidCallback>{},
+          shortcuts: const <MenuSerializableShortcut, Intent>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Column(
@@ -1991,6 +1992,9 @@ class MenuItemGroup extends StatelessWidget implements MenuItem {
   List<MenuItem> get descendants => const <MenuItem>[];
 
   @override
+  Intent? get onSelectedIntent => null;
+
+  @override
   VoidCallback? get onSelected => null;
 
   @override
@@ -2531,8 +2535,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
 
   /// The semantic label for this menu.
   ///
-  /// Defaults to [MaterialLocalizations.popupMenuLabel].
-  // TODO(gspencergoog): this should probably use its own label, not popupMenuLabel.
+  /// Defaults to [MaterialLocalizations.menuBarMenuLabel].
   final String? semanticLabel;
 
   /// The text direction to use for rendering this menu.
@@ -2545,7 +2548,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
     return _RenderMenuBarMenu(
       controller: controller,
       padding: padding,
-      semanticLabel: semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel,
+      semanticLabel: semanticLabel ?? MaterialLocalizations.of(context).menuBarMenuLabel,
       textDirection: textDirection ?? Directionality.of(context),
     );
   }
@@ -2555,7 +2558,7 @@ class _MenuBarMenuRenderWidget extends MultiChildRenderObjectWidget {
     renderObject
       ..controller = controller
       ..padding = padding
-      ..semanticLabel = semanticLabel ?? MaterialLocalizations.of(context).popupMenuLabel
+      ..semanticLabel = semanticLabel ?? MaterialLocalizations.of(context).menuBarMenuLabel
       ..textDirection = textDirection ?? Directionality.of(context);
   }
 
@@ -2874,6 +2877,62 @@ class _MenuBarFocusScopeNode extends FocusScopeNode {
       ...additionalNodes,
       ...super.descendants,
     ];
+  }
+}
+
+class _ShortcutRegistration extends StatefulWidget {
+  const _ShortcutRegistration({required this.callbackShortcuts, required this.shortcuts, required this.child});
+
+  final Map<MenuSerializableShortcut, VoidCallback> callbackShortcuts;
+  final Map<MenuSerializableShortcut, Intent> shortcuts;
+  final Widget child;
+
+  @override
+  State<_ShortcutRegistration> createState() => _ShortcutRegistrationState();
+}
+
+class _ShortcutRegistrationState extends State<_ShortcutRegistration> {
+  ShortcutsRegistry? _cachedRegistry;
+
+  void _addShortcuts() {
+    _cachedRegistry!.addAll(widget.callbackShortcuts.map<ShortcutActivator, Intent>((MenuSerializableShortcut shortcut, VoidCallback callback) {
+      return MapEntry<ShortcutActivator, Intent>(shortcut as ShortcutActivator, VoidCallbackIntent(callback));
+    }));
+    _cachedRegistry!.addAll(widget.shortcuts.cast<ShortcutActivator, Intent>());
+  }
+
+  void _removeShortcuts(_ShortcutRegistration target) {
+    _cachedRegistry!.removeAll(target.callbackShortcuts.keys.cast<ShortcutActivator>());
+    _cachedRegistry!.removeAll(target.shortcuts.keys.cast<ShortcutActivator>());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _removeShortcuts(widget);
+    _cachedRegistry ??= ShortcutsRegistrar.of(context);
+    _addShortcuts();
+  }
+
+  @override
+  void didUpdateWidget(_ShortcutRegistration oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.callbackShortcuts != oldWidget.callbackShortcuts || _cachedRegistry == null) {
+      _removeShortcuts(oldWidget);
+      _cachedRegistry = ShortcutsRegistrar.of(context);
+      _addShortcuts();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeShortcuts(widget);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
 
