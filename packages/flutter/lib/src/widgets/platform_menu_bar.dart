@@ -798,7 +798,7 @@ class PlatformMenuItem extends MenuItem {
     this.shortcut,
     this.onSelected,
     this.onSelectedIntent,
-  });
+  }) : assert(onSelected == null || onSelectedIntent == null, 'Only one of onSelected or onSelectedIntent may be specified');
 
   /// The required label used for rendering the menu item.
   final String label;

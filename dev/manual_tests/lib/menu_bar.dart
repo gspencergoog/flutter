@@ -95,7 +95,7 @@ class _HomeState extends State<Home> {
                       MenuBarItem(
                           label: subMenu[0],
                           shortcut: const SingleActivator(
-                            LogicalKeyboardKey.keyA,
+                            LogicalKeyboardKey.keyB,
                             control: true,
                           ),
                           leadingIcon: checked ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
@@ -149,9 +149,8 @@ class _HomeState extends State<Home> {
                       PlatformMenuItemGroup(members: <MenuItem>[
                         MenuBarItem(
                           label: subMenu[3],
-                          onSelected: () {
-                            _itemSelected(subMenu[3]);
-                          },
+                          shortcut: const SingleActivator(LogicalKeyboardKey.keyA, control: true),
+                          onSelectedIntent: const SelectAllTextIntent(SelectionChangedCause.keyboard),
                         ),
                       ]),
                       MenuBarMenu(
@@ -336,6 +335,7 @@ class _Controls extends StatelessWidget {
               const Text('Enabled')
             ],
           ),
+          const TextField(),
         ],
       ),
     );

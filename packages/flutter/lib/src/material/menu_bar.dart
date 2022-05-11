@@ -297,8 +297,6 @@ class _MenuBarController extends MenuBarController with ChangeNotifier, Diagnost
   // descendants with the top level menu buttons.
   _MenuBarFocusScopeNode? _overlayFocusScope;
 
-  // The shortcut mappings extracted from the menu items.
-  Map<MenuSerializableShortcut, VoidCallback> callbackShortcuts = <MenuSerializableShortcut, VoidCallback>{};
   // The intent-based mappings extracted from the menu items.
   Map<MenuSerializableShortcut, Intent> shortcuts = <MenuSerializableShortcut, Intent>{};
 
@@ -1203,43 +1201,70 @@ class _MenuBarState extends State<MenuBar> {
     controller.enabled = widget.enabled;
   }
 
-  void _doSelect(VoidCallback onSelected) {
-    onSelected();
+  void _doSelect(Intent onSelected) {
+    Actions.maybeInvoke(FocusManager.instance.primaryFocus!.context!, onSelected);
     controller.closeAll();
   }
 
+  /// These are only used in debug mode to make sure there aren't any
+  final Map<MenuSerializableShortcut, VoidCallback> _debugShortcutCallbacks =
+      <MenuSerializableShortcut, VoidCallback>{};
+  final Map<VoidCallback, MenuItem> _debugCallbackToMenuItem = <VoidCallback, MenuItem>{};
+  final Map<Intent, MenuItem> _debugIntentToMenuItem = <Intent, MenuItem>{};
+
   void _updateShortcuts() {
-    controller.callbackShortcuts = <MenuSerializableShortcut, VoidCallback>{};
-    _addChildShortcuts(widget.menus);
-    // Now wrap each shortcut in a call to _doSelect so that selecting them
-    // will close the menus. We didn't do this when building the map because it
-    // would preclude duplicate testing.
-    controller.callbackShortcuts = controller.callbackShortcuts.map((MenuSerializableShortcut key, VoidCallback value) {
-      return MapEntry<MenuSerializableShortcut, VoidCallback>(key, () => _doSelect(value));
+    assert(() {
+      _debugShortcutCallbacks.clear();
+      return true;
+    }());
+    final Map<MenuSerializableShortcut, Intent> shortcuts = _collectChildShortcuts(widget.menus);
+    controller.shortcuts = shortcuts.map((MenuSerializableShortcut key, Intent value) {
+      return MapEntry<MenuSerializableShortcut, Intent>(key, VoidCallbackIntent(() => _doSelect(value)));
     });
   }
 
-  void _addChildShortcuts(List<MenuItem> children) {
+  Map<MenuSerializableShortcut, Intent> _collectChildShortcuts(List<MenuItem> children) {
+    final Map<MenuSerializableShortcut, Intent> shortcuts = <MenuSerializableShortcut, Intent>{};
     for (final MenuItem child in children) {
-      if (child.menus.isNotEmpty) {
-        _addChildShortcuts(child.menus);
-      } else if (child.shortcut != null && child.onSelected != null) {
-        if (controller.callbackShortcuts.containsKey(child.shortcut) && controller.callbackShortcuts[child.shortcut!] != child.onSelected) {
-          throw FlutterError(
-            'More than one menu item is bound to ${child.shortcut}, and they have '
-            'different callbacks.\n'
-            "A ${child.runtimeType} (i.e. a MenuItem) can't contain the same "
-            'shortcut as another menu item if it triggers a different callback. '
-            'If your application needs to allow this, assign all the duplicated '
-            'shortcuts to the same callback which can then disambiguate which '
-            'action to take (or do them all).',
-          );
+      assert(() {
+        if (child.onSelected != null) {
+          _debugCallbackToMenuItem[child.onSelected!] = child;
         }
-        controller.callbackShortcuts[child.shortcut!] = child.onSelected!;
+        if (child.onSelectedIntent != null) {
+          _debugIntentToMenuItem[child.onSelectedIntent!] = child;
+        }
+        return true;
+      }());
+      if (child.menus.isNotEmpty) {
+        shortcuts.addAll(_collectChildShortcuts(child.menus));
+      } else if (child.shortcut != null && child.onSelected != null) {
+        assert(
+            !shortcuts.containsKey(child.shortcut) ||
+                (_debugShortcutCallbacks[child.shortcut!] == child.onSelected &&
+                    shortcuts[child.shortcut] is VoidCallbackIntent),
+            'Duplicate callback shortcut detected. The same shortcut has been bound to '
+            'two different menus with different select functions/intents: ${child.shortcut} is bound to '
+            '${shortcuts[child.shortcut] is VoidCallbackIntent ? _debugCallbackToMenuItem[_debugShortcutCallbacks[child.shortcut!]] : _debugIntentToMenuItem[shortcuts[child.shortcut!]]} and '
+            ' menu $child with different select callbacks or intents.');
+        assert(() {
+          _debugShortcutCallbacks[child.shortcut!] = child.onSelected!;
+          return true;
+        }());
+        shortcuts[child.shortcut!] = VoidCallbackIntent(child.onSelected!);
+      } else if (child.shortcut != null && child.onSelectedIntent != null) {
+        assert(
+            !shortcuts.containsKey(child.shortcut) || shortcuts[child.shortcut!] == child.onSelectedIntent,
+            'Duplicate intent shortcut mapping detected. The same shortcut has been bound to '
+            'two different intents: ${child.shortcut} is bound to '
+            '${shortcuts[child.shortcut!]} on '
+            '${_debugIntentToMenuItem[shortcuts[child.shortcut!]]} and '
+            '${child.onSelectedIntent} on menu $child.');
+        shortcuts[child.shortcut!] = child.onSelectedIntent!;
       } else if (child.members.isNotEmpty) {
-        _addChildShortcuts(child.members);
+        shortcuts.addAll(_collectChildShortcuts(child.members));
       }
     }
+    return shortcuts;
   }
 
   @override
@@ -1266,10 +1291,7 @@ class _MenuBarState extends State<MenuBar> {
           DismissIntent: _MenuDismissAction(controller: controller),
         },
         child: _ShortcutRegistration(
-          callbackShortcuts: controller.enabled
-              ? controller.callbackShortcuts
-              : const <MenuSerializableShortcut, VoidCallback>{},
-          shortcuts: const <MenuSerializableShortcut, Intent>{},
+          shortcuts: controller.enabled ? controller.shortcuts : const <MenuSerializableShortcut, Intent>{},
           child: FocusTraversalGroup(
             policy: OrderedTraversalPolicy(),
             child: Column(
@@ -1699,6 +1721,7 @@ class MenuBarItem extends _MenuBarItemDefaults {
     super.labelWidget,
     this.shortcut,
     this.onSelected,
+    this.onSelectedIntent,
     this.onHover,
     this.focusNode,
     this.leadingIcon,
@@ -1711,7 +1734,9 @@ class MenuBarItem extends _MenuBarItemDefaults {
     this.padding,
     this.shape,
   })  : _hasMenu = false,
-        _menuBuilder = null;
+        _menuBuilder = null,
+        assert(onSelected == null || onSelectedIntent == null,
+            'Only one of onSelected or onSelectedIntent may be specified');
 
   // Used for MenuBarMenu's button, which has some slightly different behavior.
   const MenuBarItem._forMenu({
@@ -1731,11 +1756,15 @@ class MenuBarItem extends _MenuBarItemDefaults {
     this.shape,
     required WidgetBuilder? menuBuilder,
   })  : _hasMenu = true,
+        onSelectedIntent = null,
         shortcut = null,
         _menuBuilder = menuBuilder;
 
   @override
   final MenuSerializableShortcut? shortcut;
+
+  @override
+  final Intent? onSelectedIntent;
 
   @override
   final VoidCallback? onSelected;
@@ -1805,7 +1834,7 @@ class MenuBarItem extends _MenuBarItemDefaults {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(FlagProperty('enabled', value: onSelected != null, ifFalse: 'DISABLED'));
+    properties.add(FlagProperty('enabled', value: onSelected != null || onSelectedIntent != null, ifFalse: 'DISABLED'));
     properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(StringProperty('label', label));
@@ -1880,11 +1909,12 @@ class _MenuBarItemState extends State<MenuBarItem> {
   }
 
   bool get enabled {
-    return widget.onSelected != null && controller.enabled;
+    return (widget.onSelected != null || widget.onSelectedIntent != null) && controller.enabled;
   }
 
   void _handleSelect() {
     widget.onSelected?.call();
+
     if (!widget._hasMenu) {
       controller.closeAll();
     }
@@ -2881,9 +2911,8 @@ class _MenuBarFocusScopeNode extends FocusScopeNode {
 }
 
 class _ShortcutRegistration extends StatefulWidget {
-  const _ShortcutRegistration({required this.callbackShortcuts, required this.shortcuts, required this.child});
+  const _ShortcutRegistration({required this.shortcuts, required this.child});
 
-  final Map<MenuSerializableShortcut, VoidCallback> callbackShortcuts;
   final Map<MenuSerializableShortcut, Intent> shortcuts;
   final Widget child;
 
@@ -2895,23 +2924,11 @@ class _ShortcutRegistrationState extends State<_ShortcutRegistration> {
   ShortcutsRegistry? _cachedRegistry;
 
   void _addShortcuts() {
-    _cachedRegistry!.addAll(
-      <ShortcutActivator, Intent>{
-        ...widget.callbackShortcuts.map<ShortcutActivator, Intent>(
-          (MenuSerializableShortcut shortcut, VoidCallback callback) {
-            return MapEntry<ShortcutActivator, Intent>(shortcut as ShortcutActivator, VoidCallbackIntent(callback));
-          },
-        ),
-        ...widget.shortcuts.cast<ShortcutActivator, Intent>(),
-      },
-    );
+    _cachedRegistry!.addAll(widget.shortcuts.cast<ShortcutActivator, Intent>());
   }
 
   void _removeShortcuts(_ShortcutRegistration target) {
-    _cachedRegistry?.removeAll(<ShortcutActivator>[
-      ...target.callbackShortcuts.keys.cast<ShortcutActivator>(),
-      ...target.shortcuts.keys.cast<ShortcutActivator>(),
-    ]);
+    _cachedRegistry?.removeAll(target.shortcuts.keys.cast<ShortcutActivator>());
   }
 
   @override
@@ -2925,7 +2942,7 @@ class _ShortcutRegistrationState extends State<_ShortcutRegistration> {
   @override
   void didUpdateWidget(_ShortcutRegistration oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.callbackShortcuts != oldWidget.callbackShortcuts || _cachedRegistry == null) {
+    if (widget.shortcuts != oldWidget.shortcuts || _cachedRegistry == null) {
       _removeShortcuts(oldWidget);
       _cachedRegistry = ShortcutsRegistrar.of(context);
       _addShortcuts();
