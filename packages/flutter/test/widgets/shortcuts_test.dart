@@ -1420,8 +1420,8 @@ void main() {
     });
   });
 
-  group('CallbackShortcutRegistry', () {
-    testWidgets('trigger CallbackShortcutRegistry on key events', (WidgetTester tester) async {
+  group('ShortcutsRegistrar', () {
+    testWidgets('trigger ShortcutsRegistrar on key events', (WidgetTester tester) async {
       int invokedA = 0;
       int invokedB = 0;
       await tester.pumpWidget(
@@ -1498,7 +1498,7 @@ void main() {
       expect(controller.selection.extentOffset, equals(7));
     });
 
-    testWidgets('nested CallbackShortcutRegistries stop propagation', (WidgetTester tester) async {
+    testWidgets('nested ShortcutsRegistrars stop propagation', (WidgetTester tester) async {
       int invokedOuter = 0;
       int invokedInner = 0;
       await tester.pumpWidget(
@@ -1539,7 +1539,7 @@ void main() {
       expect(invokedInner, equals(1));
     });
 
-    testWidgets('non-overlapping nested CallbackShortcutRegistries fire appropriately', (WidgetTester tester) async {
+    testWidgets('non-overlapping nested ShortcutsRegistrars fire appropriately', (WidgetTester tester) async {
       int invokedOuter = 0;
       int invokedInner = 0;
       await tester.pumpWidget(

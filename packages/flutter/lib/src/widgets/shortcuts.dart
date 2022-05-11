@@ -14,6 +14,7 @@ import 'focus_scope.dart';
 import 'framework.dart';
 import 'inherited_notifier.dart';
 import 'platform_menu_bar.dart';
+import 'transitions.dart';
 
 /// A set of [KeyboardKey]s that can be used as the keys in a [Map].
 ///
@@ -1062,11 +1063,16 @@ class CallbackShortcuts extends StatelessWidget {
   }
 }
 
-/// An interface that allows adding or removing shortcut bindings to a
+/// A class that allows adding or removing shortcut bindings to a
 /// [ShortcutsRegistrar].
 ///
-/// Objects that implement this interface are returned from
-/// [ShortcutsRegistrar.of] and [ShortcutsRegistrar.maybeOf].
+/// Objects of this type are returned from [ShortcutsRegistrar.of] and
+/// [ShortcutsRegistrar.maybeOf].
+///
+/// The registry may be listened to (with [addListener]/[removeListener]) for
+/// change notifications when the registered shortcuts change. When shortcuts
+/// are added or removed, change notifications will be dispatched after the
+/// current frame is finished.
 class ShortcutsRegistry extends ChangeNotifier {
   /// Gets the shortcut bindings that are registered with this
   /// [ShortcutsRegistry].
@@ -1074,6 +1080,31 @@ class ShortcutsRegistry extends ChangeNotifier {
   /// Do not modify the returned map, as that will bypass the change
   /// notification mechanism..
   final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{};
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  bool _notificationScheduled = false;
+  void _notifyListenersNextFrame() {
+    if (_disposed) {
+      return;
+    }
+    // Limit it to one notification per frame.
+    if (!_notificationScheduled) {
+      _notificationScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
+        if (_notificationScheduled && !_disposed) {
+          notifyListeners();
+          _notificationScheduled = false;
+        }
+      });
+    }
+  }
 
   /// Adds a shortcut binding to this [ShortcutsRegistry].
   ///
@@ -1088,7 +1119,7 @@ class ShortcutsRegistry extends ChangeNotifier {
     assert(!shortcuts.containsKey(activator),
     '$ShortcutsRegistrar: Received a duplicate registration for the shortcut activator $activator.');
     shortcuts[activator] = intent;
-    notifyListeners();
+    _notifyListenersNextFrame();
   }
 
   /// Adds all given shortcut bindings to this [ShortcutsRegistry].
@@ -1112,14 +1143,14 @@ class ShortcutsRegistry extends ChangeNotifier {
     } (),
     '$ShortcutsRegistrar: Received a duplicate registration for the shortcut activator $found.');
     shortcuts.addAll(bindings);
-    notifyListeners();
+    _notifyListenersNextFrame();
   }
 
   /// Removes the shortcut with the given [ShortcutActivator] binding.
   void remove(ShortcutActivator activator) {
     if (shortcuts.containsKey(activator)) {
       shortcuts.remove(activator);
-      notifyListeners();
+      _notifyListenersNextFrame();
     }
   }
 
@@ -1134,16 +1165,15 @@ class ShortcutsRegistry extends ChangeNotifier {
       return false;
     });
     if (removed) {
-      notifyListeners();
+      _notifyListenersNextFrame();
     }
   }
-  
 }
 
 /// A registry for shortcuts which allows descendants to add or remove shortcuts
 /// that act at the level where this registry is defined.
 ///
-/// The registered callbacks are valid whenever a widget below this one in the
+/// The registered shortcuts are valid whenever a widget below this one in the
 /// hierarchy has focus.
 ///
 /// To add shortcuts to the registry, call [ShortcutsRegistrar.of] or
@@ -1169,6 +1199,11 @@ class ShortcutsRegistrar extends StatefulWidget {
   ///
   /// If no [ShortcutsRegistrar] widget encloses the context given, `of` will
   /// throw an exception in debug mode.
+  ///
+  /// The dependencies of [ShortcutsRegistrar] will only have their
+  /// [State.didChangeDependencies] called if the registry is swapped out for
+  /// another registry. The registry itself can be listened to for changes in
+  /// the registered shortcuts.
   ///
   /// See also:
   ///
@@ -1201,6 +1236,11 @@ class ShortcutsRegistrar extends StatefulWidget {
   /// If no [ShortcutsRegistrar] widget encloses the given context,
   /// `maybeOf` will return null.
   ///
+  /// The dependencies of [ShortcutsRegistrar] will only have their
+  /// [State.didChangeDependencies] called if the registry is swapped out for
+  /// another registry. The registry itself can be listened to for changes in
+  /// the registered shortcuts.
+  ///
   /// See also:
   ///
   ///  * [of], which is similar to this function, but returns a non-nullable
@@ -1224,39 +1264,27 @@ class _ShortcutsRegistrarState extends State<ShortcutsRegistrar> {
   void initState() {
     super.initState();
     registry = ShortcutsRegistry();
-    registry.addListener(_markDirty);
   }
 
   @override
   void dispose() {
-    registry.removeListener(_markDirty);
+    registry.dispose();
     super.dispose();
-  }
-  
-  int rebuild = 0;
-
-  void _markDirty() {
-    if (!mounted) {
-      return;
-    }
-    SchedulerBinding.instance.addPostFrameCallback((Duration _) {
-      if (mounted) {
-        setState(() {
-          rebuild += 1;
-        });
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return _ShortcutsRegistrarMarker(
-      rebuild: rebuild,
-      registry: registry,
-      child: Shortcuts(
-        shortcuts: registry.shortcuts,
-        child: widget.child,
-      ),
+    return AnimatedBuilder(
+      animation: registry,
+      builder: (BuildContext context, Widget? child) {
+        return Shortcuts(
+          shortcuts: registry.shortcuts,
+          child: _ShortcutsRegistrarMarker(
+            registry: registry,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }
@@ -1264,15 +1292,11 @@ class _ShortcutsRegistrarState extends State<ShortcutsRegistrar> {
 class _ShortcutsRegistrarMarker extends InheritedWidget {
   const _ShortcutsRegistrarMarker({
     required this.registry,
-    required this.rebuild,
     required super.child,
   });
 
   final ShortcutsRegistry registry;
-  final int rebuild;
 
   @override
-  bool updateShouldNotify(covariant _ShortcutsRegistrarMarker oldWidget) {
-    return rebuild != oldWidget.rebuild || registry.shortcuts != oldWidget.registry.shortcuts;
-  }
+  bool updateShouldNotify(covariant _ShortcutsRegistrarMarker oldWidget) => registry != oldWidget.registry;
 }
