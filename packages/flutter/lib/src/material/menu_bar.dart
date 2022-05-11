@@ -2895,15 +2895,23 @@ class _ShortcutRegistrationState extends State<_ShortcutRegistration> {
   ShortcutsRegistry? _cachedRegistry;
 
   void _addShortcuts() {
-    _cachedRegistry!.addAll(widget.callbackShortcuts.map<ShortcutActivator, Intent>((MenuSerializableShortcut shortcut, VoidCallback callback) {
-      return MapEntry<ShortcutActivator, Intent>(shortcut as ShortcutActivator, VoidCallbackIntent(callback));
-    }));
-    _cachedRegistry!.addAll(widget.shortcuts.cast<ShortcutActivator, Intent>());
+    _cachedRegistry!.addAll(
+      <ShortcutActivator, Intent>{
+        ...widget.callbackShortcuts.map<ShortcutActivator, Intent>(
+          (MenuSerializableShortcut shortcut, VoidCallback callback) {
+            return MapEntry<ShortcutActivator, Intent>(shortcut as ShortcutActivator, VoidCallbackIntent(callback));
+          },
+        ),
+        ...widget.shortcuts.cast<ShortcutActivator, Intent>(),
+      },
+    );
   }
 
   void _removeShortcuts(_ShortcutRegistration target) {
-    _cachedRegistry!.removeAll(target.callbackShortcuts.keys.cast<ShortcutActivator>());
-    _cachedRegistry!.removeAll(target.shortcuts.keys.cast<ShortcutActivator>());
+    _cachedRegistry?.removeAll(<ShortcutActivator>[
+      ...target.callbackShortcuts.keys.cast<ShortcutActivator>(),
+      ...target.shortcuts.keys.cast<ShortcutActivator>(),
+    ]);
   }
 
   @override
