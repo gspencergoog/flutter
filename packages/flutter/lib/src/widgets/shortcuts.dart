@@ -1081,34 +1081,6 @@ class ShortcutsRegistry extends ChangeNotifier {
   /// notification mechanism..
   final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{};
 
-  bool _disposed = false;
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
-  }
-
-  bool _notificationScheduled = false;
-  // Since the registry resides above the widgets that could modify it,
-  // notifications need to be sent out after the frame is done building to avoid
-  // marking widgets as dirty too early.
-  void _notifyListenersNextFrame() {
-    if (_disposed) {
-      return;
-    }
-    // Limit it to one notification per frame.
-    if (!_notificationScheduled) {
-      _notificationScheduled = true;
-      SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
-        if (_notificationScheduled && !_disposed) {
-          notifyListeners();
-          _notificationScheduled = false;
-        }
-      });
-    }
-  }
-
   /// Adds a shortcut binding to this [ShortcutsRegistry].
   ///
   /// Will assert in debug mode if the given shortcut is already bound to an
@@ -1122,7 +1094,7 @@ class ShortcutsRegistry extends ChangeNotifier {
     assert(!shortcuts.containsKey(activator),
     '$ShortcutsRegistrar: Received a duplicate registration for the shortcut activator $activator.');
     shortcuts[activator] = intent;
-    _notifyListenersNextFrame();
+    notifyListeners();
   }
 
   /// Adds the given shortcut bindings to this [ShortcutsRegistry].
@@ -1145,14 +1117,14 @@ class ShortcutsRegistry extends ChangeNotifier {
     } (),
     '$ShortcutsRegistrar: Received a duplicate registration for the shortcut activator $found.');
     shortcuts.addAll(bindings);
-    _notifyListenersNextFrame();
+    notifyListeners();
   }
 
   /// Removes the shortcut with the given [ShortcutActivator] binding.
   void remove(ShortcutActivator activator) {
     if (shortcuts.containsKey(activator)) {
       shortcuts.remove(activator);
-      _notifyListenersNextFrame();
+      notifyListeners();
     }
   }
 
@@ -1167,7 +1139,7 @@ class ShortcutsRegistry extends ChangeNotifier {
       return false;
     });
     if (removed) {
-      _notifyListenersNextFrame();
+      notifyListeners();
     }
   }
 }
@@ -1202,10 +1174,8 @@ class ShortcutsRegistrar extends StatefulWidget {
   /// If no [ShortcutsRegistrar] widget encloses the context given, `of` will
   /// throw an exception in debug mode.
   ///
-  /// The dependencies of [ShortcutsRegistrar] will only have their
-  /// [State.didChangeDependencies] called if the registry is swapped out for
-  /// another registry. The registry itself can be listened to for changes in
-  /// the registered shortcuts.
+  /// The dependencies of [ShortcutsRegistrar] will have their
+  /// [State.didChangeDependencies] called whenever the shortcuts have changed.
   ///
   /// See also:
   ///
@@ -1238,10 +1208,8 @@ class ShortcutsRegistrar extends StatefulWidget {
   /// If no [ShortcutsRegistrar] widget encloses the given context,
   /// `maybeOf` will return null.
   ///
-  /// The dependencies of [ShortcutsRegistrar] will only have their
-  /// [State.didChangeDependencies] called if the registry is swapped out for
-  /// another registry. The registry itself can be listened to for changes in
-  /// the registered shortcuts.
+  /// The dependencies of [ShortcutsRegistrar] will have their
+  /// [State.didChangeDependencies] called whenever the shortcuts have changed.
   ///
   /// See also:
   ///
@@ -1261,32 +1229,45 @@ class ShortcutsRegistrar extends StatefulWidget {
 
 class _ShortcutsRegistrarState extends State<ShortcutsRegistrar> {
   late ShortcutsRegistry registry;
-  
+  int registryChangeSerial = 0;
+  bool updateScheduled = false;
+
   @override
   void initState() {
     super.initState();
     registry = ShortcutsRegistry();
+    registry.addListener(handleRegistryChange);
   }
 
   @override
   void dispose() {
+    registry.removeListener(handleRegistryChange);
     registry.dispose();
     super.dispose();
   }
 
+  void handleRegistryChange() {
+    registryChangeSerial += 1;
+    if (!updateScheduled) {
+      updateScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+        if (mounted && updateScheduled) {
+          updateScheduled = false;
+          setState((){});
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: registry,
-      builder: (BuildContext context, Widget? child) {
-        return Shortcuts(
-          shortcuts: registry.shortcuts,
-          child: _ShortcutsRegistrarMarker(
-            registry: registry,
-            child: widget.child,
-          ),
-        );
-      },
+    return Shortcuts(
+      shortcuts: registry.shortcuts,
+      child: _ShortcutsRegistrarMarker(
+        registry: registry,
+        changeSerial: registryChangeSerial,
+        child: widget.child,
+      ),
     );
   }
 }
@@ -1294,11 +1275,15 @@ class _ShortcutsRegistrarState extends State<ShortcutsRegistrar> {
 class _ShortcutsRegistrarMarker extends InheritedWidget {
   const _ShortcutsRegistrarMarker({
     required this.registry,
+    required this.changeSerial,
     required super.child,
   });
 
   final ShortcutsRegistry registry;
+  final int changeSerial;
 
   @override
-  bool updateShouldNotify(covariant _ShortcutsRegistrarMarker oldWidget) => registry != oldWidget.registry;
+  bool updateShouldNotify(covariant _ShortcutsRegistrarMarker oldWidget) {
+    return registry != oldWidget.registry || changeSerial != oldWidget.changeSerial;
+  }
 }
