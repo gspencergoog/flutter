@@ -1687,7 +1687,7 @@ class _TestCallbackRegistrationState extends State<TestCallbackRegistration> {
   void didUpdateWidget(TestCallbackRegistration oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.bindings != oldWidget.bindings || _cachedRegistry == null) {
-      ShortcutsRegistrar.of(context).removeAll(oldWidget.bindings.keys);
+      _cachedRegistry?.removeAll(oldWidget.bindings.keys);
       _cachedRegistry = ShortcutsRegistrar.of(context)..addAll(widget.bindings);
     }
   }
@@ -1701,5 +1701,28 @@ class _TestCallbackRegistrationState extends State<TestCallbackRegistration> {
   @override
   Widget build(BuildContext context) {
     return widget.child;
+  }
+}
+
+/// An intent that encapsulates a [VoidCallback] to be invoked by a
+/// [VoidCallbackAction] when it receives this intent.
+class VoidCallbackIntent extends Intent {
+  /// Creates a [VoidCallbackIntent].
+  ///
+  /// The [callback] argument is required.
+  const VoidCallbackIntent(this.callback);
+
+  /// The callback that is to be called by the [VoidCallbackAction] that
+  /// receives this intent.
+  final VoidCallback callback;
+}
+
+/// An action that invokes the [VoidCallback] given to it by the
+/// [VoidCallbackIntent] that configures it when invoked.
+class VoidCallbackAction extends Action<VoidCallbackIntent> {
+  @override
+  Object? invoke(VoidCallbackIntent intent) {
+    intent.callback();
+    return null;
   }
 }

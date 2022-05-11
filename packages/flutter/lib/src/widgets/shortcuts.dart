@@ -1090,6 +1090,9 @@ class ShortcutsRegistry extends ChangeNotifier {
   }
 
   bool _notificationScheduled = false;
+  // Since the registry resides above the widgets that could modify it,
+  // notifications need to be sent out after the frame is done building to avoid
+  // marking widgets as dirty too early.
   void _notifyListenersNextFrame() {
     if (_disposed) {
       return;
@@ -1122,10 +1125,9 @@ class ShortcutsRegistry extends ChangeNotifier {
     _notifyListenersNextFrame();
   }
 
-  /// Adds all given shortcut bindings to this [ShortcutsRegistry].
+  /// Adds the given shortcut bindings to this [ShortcutsRegistry].
   ///
-  /// Will assert in debug mode if a given shortcut in the map is already bound
-  /// to an intent.
+  /// Will assert in debug mode if a shortcut key in the map is already added.
   ///
   /// If two equivalent, but different, [ShortcutActivator]s are added, all
   /// of them will be executed. For example, if both
