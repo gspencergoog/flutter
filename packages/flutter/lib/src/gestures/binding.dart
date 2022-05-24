@@ -378,12 +378,9 @@ mixin GestureBinding on BindingBase implements HitTestable, HitTestDispatcher, H
       }
       return true;
     }());
-    if (hitTestResult != null ||
-        event is PointerAddedEvent ||
-        event is PointerRemovedEvent) {
-      assert(event.position != null);
-      dispatchEvent(event, hitTestResult);
-    }
+    assert(hitTestResult != null || event is PointerAddedEvent || event is PointerRemovedEvent);
+    assert(event.position != null);
+    dispatchEvent(event, hitTestResult);
   }
 
   /// Determine which [HitTestTarget] objects are located at a given position.

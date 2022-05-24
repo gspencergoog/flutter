@@ -160,7 +160,7 @@ mixin MenuSerializableShortcut {
 }
 
 /// An abstract class for describing cascading menu hierarchies that are part of
-/// a [PlatformMenuBar].
+/// a [MenuBar] or [PlatformMenuBar].
 ///
 /// This type is also used by [PlatformMenuDelegate.setMenus] to accept the menu
 /// hierarchy to be sent to the platform, and by [PlatformMenuBar] to define the
@@ -171,8 +171,13 @@ mixin MenuSerializableShortcut {
 ///
 /// See also:
 ///
+///  * [MenuBar], a widget that renders menus in Flutter with a Material design
+///    style.
 ///  * [PlatformMenuBar], a widget that renders menu items using platform APIs
 ///    instead of Flutter.
+///  * [MenuBar.adaptive], a factory constructor for [MenuBar] that renders the
+///    given menu hierarchy using [PlatformMenuBar] on platforms that support
+///    it, and [MenuBar] everywhere else.
 abstract class MenuItem with Diagnosticable {
   /// Allows subclasses to have const constructors.
   const MenuItem();
@@ -222,6 +227,19 @@ abstract class MenuItem with Diagnosticable {
   ///
   /// The default implementation returns null.
   VoidCallback? get onSelected => null;
+
+  /// Returns an intent, if any, to be invoked if the platform receives a
+  /// "Menu.selectedCallback" method call from the platform for this item.
+  ///
+  /// Only items that do not have submenus will have this intent invoked.
+  ///
+  /// Only one of [onSelected] or [onSelectedIntent] may be specified.
+  ///
+  /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
+  /// menu item is considered to be disabled.
+  ///
+  /// The default implementation returns null.
+  Intent? get onSelectedIntent => null;
 
   /// Returns an intent, if any, to be invoked if the platform receives a
   /// "Menu.selectedCallback" method call from the platform for this item.
