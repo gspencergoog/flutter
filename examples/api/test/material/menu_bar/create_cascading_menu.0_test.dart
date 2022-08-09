@@ -16,14 +16,12 @@ void main() {
     await tester.tap(find.byType(TextButton));
     await tester.pump();
 
-    final Finder findMenuState =
-        find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MyCascadingMenuState');
-    final State<example.MyCascadingMenu> menuState = tester.state(findMenuState);
+    final State<example.MyCascadingMenu> menuState = tester.state(find.byType(example.MyCascadingMenu));
 
     // ignore: avoid_dynamic_calls
-    expect((menuState as dynamic).children, isNotEmpty);
+    expect((menuState as dynamic).menuEntry.children, isNotEmpty);
     // ignore: avoid_dynamic_calls
-    expect((menuState as dynamic).children.length, equals(1));
+    expect((menuState as dynamic).menuEntry.children.length, equals(4));
 
     expect(find.text(example.MenuSelection.about.label), findsOneWidget);
     expect(find.text(example.MenuSelection.showMessage.label), findsOneWidget);
@@ -43,6 +41,10 @@ void main() {
     expect(find.text(example.MenuSelection.showMessage.label), findsOneWidget);
     expect(find.text(example.MenuSelection.resetMessage.label), findsOneWidget);
     expect(find.text('Background Color'), findsOneWidget);
+
+    await tester.tap(find.text('Background Color'));
+    await tester.pump();
+
     expect(find.text(example.MenuSelection.colorRed.label), findsOneWidget);
     expect(find.text(example.MenuSelection.colorGreen.label), findsOneWidget);
     expect(find.text(example.MenuSelection.colorBlue.label), findsOneWidget);
@@ -59,7 +61,7 @@ void main() {
       const example.MenuBarApp(),
     );
 
-    await tester.tap(find.byType(MenuItemButton).first);
+    await tester.tap(find.byType(TextButton).first);
     await tester.pump();
 
     expect(find.text(example.kMessage), findsNothing);

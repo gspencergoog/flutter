@@ -18,7 +18,7 @@ void main() {
     expect(menuBar.children, isNotEmpty);
     expect(menuBar.children.length, equals(1));
 
-    final Finder menuButtonFinder = find.byType(MenuItemButton).first;
+    final Finder menuButtonFinder = find.byType(MenuButton).first;
     await tester.tap(menuButtonFinder);
     await tester.pump();
 
@@ -56,9 +56,6 @@ void main() {
       const example.MenuBarApp(),
     );
 
-    await tester.tap(find.byType(MenuItemButton).first);
-    await tester.pump();
-
     expect(find.text(example.kMessage), findsNothing);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
@@ -67,7 +64,6 @@ void main() {
     await tester.pump();
 
     expect(find.text(example.kMessage), findsOneWidget);
-
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
 

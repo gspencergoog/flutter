@@ -13,16 +13,17 @@ void main() => runApp(const MenuBarApp());
 
 enum MenuSelection {
   about('About'),
-  showMessage('Show Message'),
-  resetMessage('Reset Message'),
+  showMessage('Show Message', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
+  resetMessage('Reset Message', SingleActivator(LogicalKeyboardKey.escape)),
   hideMessage('Hide Message'),
   colorMenu('Color Menu'),
-  colorRed('Red Background'),
-  colorGreen('Green Background'),
-  colorBlue('Blue Background');
+  colorRed('Red Background', SingleActivator(LogicalKeyboardKey.keyR, control: true)),
+  colorGreen('Green Background', SingleActivator(LogicalKeyboardKey.keyG, control: true)),
+  colorBlue('Blue Background', SingleActivator(LogicalKeyboardKey.keyB, control: true));
 
-  const MenuSelection(this.label);
+  const MenuSelection(this.label, [this.shortcut]);
   final String label;
+  final MenuSerializableShortcut? shortcut;
 }
 
 class MenuBarApp extends StatelessWidget {
@@ -46,6 +47,7 @@ class MyMenuBar extends StatefulWidget {
 
 class _MyMenuBarState extends State<MyMenuBar> {
   MenuSelection? lastSelection;
+  ShortcutRegistryEntry? shortcutsEntry;
 
   bool get showingMessage => _showMessage;
   bool _showMessage = false;
@@ -67,6 +69,23 @@ class _MyMenuBarState extends State<MyMenuBar> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    shortcutsEntry?.dispose();
+    final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
+      for (final MenuSelection item in MenuSelection.values)
+        if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
+    };
+    shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
+  }
+
+  @override
+  void dispose() {
+    shortcutsEntry?.dispose();
+    super.dispose();
+  }
+
   void _activate(MenuSelection selection) {
     setState(() {
       lastSelection = selection;
@@ -80,7 +99,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
         );
         break;
       case MenuSelection.showMessage:
-        showingMessage = true;
+        showingMessage = !showingMessage;
         break;
       case MenuSelection.resetMessage:
       case MenuSelection.hideMessage:
@@ -116,14 +135,14 @@ class _MyMenuBarState extends State<MyMenuBar> {
                 ),
                 // Toggles the message.
                 MenuItemButton(
-                  onSelected: () => _activate(showingMessage ? MenuSelection.hideMessage : MenuSelection.showMessage),
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyS, control: true),
+                  onSelected: () => _activate(MenuSelection.showMessage),
+                  shortcut: MenuSelection.showMessage.shortcut,
                   child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
                 ),
                 // Hides the message, but is only enabled if the message isn't already hidden.
                 MenuItemButton(
                   onSelected: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
-                  shortcut: const SingleActivator(LogicalKeyboardKey.escape),
+                  shortcut: MenuSelection.resetMessage.shortcut,
                   child: Text(MenuSelection.resetMessage.label),
                 ),
                 MenuButton(
@@ -132,18 +151,18 @@ class _MyMenuBarState extends State<MyMenuBar> {
                     MenuItemGroup(members: <Widget>[
                       MenuItemButton(
                         onSelected: () => _activate(MenuSelection.colorRed),
-                        shortcut: const SingleActivator(LogicalKeyboardKey.keyR, control: true),
+                        shortcut: MenuSelection.colorRed.shortcut,
                         child: Text(MenuSelection.colorRed.label),
                       ),
                       MenuItemButton(
                         onSelected: () => _activate(MenuSelection.colorGreen),
-                        shortcut: const SingleActivator(LogicalKeyboardKey.keyG, control: true),
+                        shortcut: MenuSelection.colorGreen.shortcut,
                         child: Text(MenuSelection.colorGreen.label),
                       ),
                     ]),
                     MenuItemButton(
                       onSelected: () => _activate(MenuSelection.colorBlue),
-                      shortcut: const SingleActivator(LogicalKeyboardKey.keyB, control: true),
+                      shortcut: MenuSelection.colorBlue.shortcut,
                       child: Text(MenuSelection.colorBlue.label),
                     ),
                   ],
@@ -161,7 +180,8 @@ class _MyMenuBarState extends State<MyMenuBar> {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.all(12.0),
-                  child: Text(showingMessage ? kMessage : '',
+                  child: Text(
+                    showingMessage ? kMessage : '',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),

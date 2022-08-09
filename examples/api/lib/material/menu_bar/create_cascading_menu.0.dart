@@ -13,16 +13,17 @@ void main() => runApp(const MenuBarApp());
 
 enum MenuSelection {
   about('About'),
-  showMessage('Show Message'),
-  resetMessage('Reset Message'),
+  showMessage('Show Message', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
+  resetMessage('Reset Message', SingleActivator(LogicalKeyboardKey.escape)),
   hideMessage('Hide Message'),
   colorMenu('Color Menu'),
-  colorRed('Red Background'),
-  colorGreen('Green Background'),
-  colorBlue('Blue Background');
+  colorRed('Red Background', SingleActivator(LogicalKeyboardKey.keyR, control: true)),
+  colorGreen('Green Background', SingleActivator(LogicalKeyboardKey.keyG, control: true)),
+  colorBlue('Blue Background', SingleActivator(LogicalKeyboardKey.keyB, control: true));
 
-  const MenuSelection(this.label);
+  const MenuSelection(this.label, [this.shortcut]);
   final String label;
+  final MenuSerializableShortcut? shortcut;
 }
 
 class MenuBarApp extends StatelessWidget {
@@ -49,6 +50,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   late MenuController controller;
   late FocusNode buttonFocusNode;
   late MenuEntry menuEntry;
+  ShortcutRegistryEntry? shortcutsEntry;
 
   @override
   void initState() {
@@ -60,7 +62,19 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    shortcutsEntry?.dispose();
+    final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
+      for (final MenuSelection item in MenuSelection.values)
+        if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
+    };
+    shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
+  }
+
+  @override
   void dispose() {
+    shortcutsEntry?.dispose();
     menuEntry.dispose();
     controller.dispose();
     buttonFocusNode.dispose();
@@ -74,53 +88,46 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   void updateMenuEntry() {
-    final List<Widget> children = <Widget>[
+    menuEntry.children = <Widget>[
+      MenuItemButton(
+        child: Text(MenuSelection.about.label),
+        onSelected: () => _activate(MenuSelection.about),
+      ),
+      // Toggles the message.
+      MenuItemButton(
+        onSelected: () => _activate(MenuSelection.showMessage),
+        shortcut: MenuSelection.showMessage.shortcut,
+        child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
+      ),
+      // Hides the message, but is only enabled if the message isn't already hidden.
+      MenuItemButton(
+        onSelected: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
+        shortcut: MenuSelection.resetMessage.shortcut,
+        child: Text(MenuSelection.resetMessage.label),
+      ),
       MenuButton(
-        autofocus: true,
-        label: const Text('Menu App'),
+        label: const Text('Background Color'),
         children: <Widget>[
+          MenuItemGroup(members: <Widget>[
+            MenuItemButton(
+              onSelected: () => _activate(MenuSelection.colorRed),
+              shortcut: MenuSelection.colorRed.shortcut,
+              child: Text(MenuSelection.colorRed.label),
+            ),
+            MenuItemButton(
+              onSelected: () => _activate(MenuSelection.colorGreen),
+              shortcut: MenuSelection.colorGreen.shortcut,
+              child: Text(MenuSelection.colorGreen.label),
+            ),
+          ]),
           MenuItemButton(
-            child: Text(MenuSelection.about.label),
-            onSelected: () => _activate(MenuSelection.about),
-          ),
-          // Toggles the message.
-          MenuItemButton(
-            onSelected: () => _activate(showingMessage ? MenuSelection.hideMessage : MenuSelection.showMessage),
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, control: true),
-            child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
-          ),
-          // Hides the message, but is only enabled if the message isn't already hidden.
-          MenuItemButton(
-            onSelected: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
-            shortcut: const SingleActivator(LogicalKeyboardKey.escape),
-            child: Text(MenuSelection.resetMessage.label),
-          ),
-          MenuButton(
-            label: const Text('Background Color'),
-            children: <Widget>[
-              MenuItemGroup(members: <Widget>[
-                MenuItemButton(
-                  onSelected: () => _activate(MenuSelection.colorRed),
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyR, control: true),
-                  child: Text(MenuSelection.colorRed.label),
-                ),
-                MenuItemButton(
-                  onSelected: () => _activate(MenuSelection.colorGreen),
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyG, control: true),
-                  child: Text(MenuSelection.colorGreen.label),
-                ),
-              ]),
-              MenuItemButton(
-                onSelected: () => _activate(MenuSelection.colorBlue),
-                shortcut: const SingleActivator(LogicalKeyboardKey.keyB, control: true),
-                child: Text(MenuSelection.colorBlue.label),
-              ),
-            ],
+            onSelected: () => _activate(MenuSelection.colorBlue),
+            shortcut: MenuSelection.colorBlue.shortcut,
+            child: Text(MenuSelection.colorBlue.label),
           ),
         ],
       ),
     ];
-    menuEntry.children = children;
   }
 
   bool get showingMessage => _showMessage;
@@ -156,7 +163,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         );
         break;
       case MenuSelection.showMessage:
-        showingMessage = true;
+        showingMessage = !showingMessage;
         break;
       case MenuSelection.resetMessage:
       case MenuSelection.hideMessage:

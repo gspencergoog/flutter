@@ -153,7 +153,7 @@ class ShortcutSerialization {
 ///
 ///  * [SingleActivator], a [ShortcutActivator] which implements this mixin.
 ///  * [CharacterActivator], another [ShortcutActivator] which implements this mixin.
-mixin MenuSerializableShortcut {
+mixin MenuSerializableShortcut implements ShortcutActivator {
   /// Implement this in a [ShortcutActivator] subclass to allow it to be
   /// serialized for use in a [PlatformMenuBar].
   ShortcutSerialization serializeForMenu();
