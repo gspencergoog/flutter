@@ -27,6 +27,9 @@ import 'theme_data.dart';
 // Enable if you want verbose logging about menu changes.
 const bool _kDebugMenus = false;
 
+// How close to the edge of the safe area the menu will be placed.
+const double _kMenuViewPadding = 8.0;
+
 bool _menuDebug(String message, [Iterable<String>? details]) {
   if (_kDebugMenus) {
     debugPrint('MENU: $message');
@@ -219,7 +222,8 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<MenuController?>('controller', controller, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DiagnosticsProperty<double?>('minimumHeight', minimumHeight, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>?>('elevation', elevation, defaultValue: null));
@@ -511,9 +515,12 @@ class MenuItemButton extends StatefulWidget {
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(StringProperty('semanticsLabel', semanticsLabel, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('foregroundColor', foregroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('overlayColor', overlayColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('foregroundColor', foregroundColor, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<Color?>>('overlayColor', overlayColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('textStyle', textStyle, defaultValue: null));
   }
 }
@@ -816,16 +823,22 @@ class MenuButton extends StatefulWidget {
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(StringProperty('semanticLabel', semanticsLabel, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('shape', shape, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('buttonPadding', buttonPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonBackgroundColor', buttonBackgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonForegroundColor', buttonForegroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonOverlayColor', buttonOverlayColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('buttonShape', buttonShape, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('buttonTextStyle', buttonTextStyle, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonBackgroundColor', buttonBackgroundColor,
+        defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonForegroundColor', buttonForegroundColor,
+        defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonOverlayColor', buttonOverlayColor,
+        defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('buttonShape', buttonShape, defaultValue: null));
+    properties.add(
+        DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('buttonTextStyle', buttonTextStyle, defaultValue: null));
   }
 }
 
@@ -1276,16 +1289,23 @@ class _Menu extends StatelessWidget {
         (entry.theme?.menuBackgroundColor ?? menuTheme.menuBackgroundColor ?? defaultTheme.menuBackgroundColor)
             .resolve(state)!;
     final EdgeInsetsDirectional padding = entry.theme?.menuPadding ?? menuTheme.menuPadding ?? defaultTheme.menuPadding;
+    final EdgeInsetsDirectional buttonPadding =
+        entry.theme?.itemPadding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding;
     final ShapeBorder shape = (entry.theme?.menuShape ?? menuTheme.menuShape ?? defaultTheme.menuShape).resolve(state)!;
 
     return AnimatedBuilder(
       animation: entry,
       builder: (BuildContext context, Widget? ignoredChild) {
-        final Offset menuOrigin = _getMenuPosition();
-        return Positioned.directional(
-          textDirection: textDirection,
-          top: menuOrigin.dy,
-          start: menuOrigin.dx,
+        return CustomSingleChildLayout(
+          delegate: _MenuLayout(
+            buttonRect: _getMenuButtonRect(),
+            textDirection: textDirection,
+            buttonPadding: buttonPadding,
+            avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
+            alignment: entry.alignment,
+            alignmentOffset: entry.alignmentOffset,
+            menuNode: entry,
+          ),
           child: FocusScope(
             node: entry.menuScopeNode,
             child: Actions(
@@ -1320,29 +1340,12 @@ class _Menu extends StatelessWidget {
     );
   }
 
-  Offset _getMenuPosition() {
-    final BuildContext menuButtonContext = entry.context;
-    final TextDirection textDirection = Directionality.of(menuButtonContext);
-    final RenderBox button = menuButtonContext.findRenderObject()! as RenderBox;
-    final RenderBox overlay = Overlay.of(menuButtonContext)!.context.findRenderObject()! as RenderBox;
-    final Alignment alignment = entry.alignment.resolve(textDirection);
-
-    final Offset alignmentPoint = alignment.withinRect(button.paintBounds);
-    Offset menuOrigin = button.localToGlobal(alignmentPoint, ancestor: overlay);
-    switch (textDirection) {
-      case TextDirection.rtl:
-        // Because we need to use Alignment.directional to account for the width
-        // of the submenu, we have to make the origin relative to the "start" of
-        // the overlay instead of the upper left.
-        menuOrigin = Offset(
-          overlay.paintBounds.topRight.dx - menuOrigin.dx,
-          menuOrigin.dy,
-        );
-        break;
-      case TextDirection.ltr:
-        break;
-    }
-    return menuOrigin + entry.alignmentOffset;
+  RelativeRect _getMenuButtonRect() {
+    final RenderBox button = entry.context.findRenderObject()! as RenderBox;
+    final RenderBox overlay = Overlay.of(entry.context)!.context.findRenderObject()! as RenderBox;
+    final Offset upperLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Offset lowerRight = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
+    return RelativeRect.fromRect(Rect.fromPoints(upperLeft, lowerRight), overlay.paintBounds);
   }
 }
 
@@ -1808,6 +1811,164 @@ class _MenuItemLabel extends StatelessWidget {
   }
 }
 
+// Positions the menu in the view while trying to keep as much as possible
+// visible in the view.
+class _MenuLayout extends SingleChildLayoutDelegate {
+  _MenuLayout({
+    required this.buttonRect,
+    required this.textDirection,
+    required this.buttonPadding,
+    required this.alignment,
+    required this.alignmentOffset,
+    required this.avoidBounds,
+    required this.menuNode,
+  });
+
+  // Rectangle of underlying button, relative to the overlay's dimensions.
+  final RelativeRect buttonRect;
+
+  // Whether to prefer going to the left or to the right.
+  final TextDirection textDirection;
+
+  // The padding around the button opening the menu. This is used to determine
+  // how far away from the edge of the screen to place the menu, since otherwise
+  // the first menu in a menu bar will be closer to the edge of the screen than
+  // allowed, and will get moved over.
+  final EdgeInsetsGeometry buttonPadding;
+
+  // The alignment to use when finding the ideal location for the menu.
+  AlignmentGeometry alignment;
+
+  // The offset from the alignment to add to the alignment position to find the
+  // ideal location for the menu.
+  Offset alignmentOffset;
+
+  // List of rectangles that we should avoid overlapping. Unusable screen area.
+  final Set<Rect> avoidBounds;
+
+  final _MenuNode menuNode;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    // The menu can be at most the size of the overlay minus 8.0 pixels in each
+    // direction.
+    return BoxConstraints.loose(constraints.biggest).deflate(
+      const EdgeInsets.all(_kMenuViewPadding),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    // size: The size of the overlay.
+    // childSize: The size of the menu, when fully open, as determined by
+    // getConstraintsForChild.
+    final Rect overlayRect = Offset.zero & size;
+    final Rect absoluteButtonRect = buttonRect.toRect(overlayRect);
+    final Alignment alignment = this.alignment.resolve(textDirection);
+    final Offset desiredPosition = alignment.withinRect(absoluteButtonRect) + alignmentOffset;
+    final Offset originCenter = absoluteButtonRect.center;
+    final Iterable<Rect> subScreens = DisplayFeatureSubScreen.subScreensInBounds(overlayRect, avoidBounds);
+    final Rect screen = _closestScreen(subScreens, originCenter);
+    final EdgeInsets resolvedButtonPadding = buttonPadding.resolve(textDirection);
+
+    double x = desiredPosition.dx;
+    double y = desiredPosition.dy;
+    final Rect allowedRect = Rect.fromLTRB(
+      screen.left + resolvedButtonPadding.left,
+      screen.top + resolvedButtonPadding.top,
+      screen.right - resolvedButtonPadding.right,
+      screen.bottom - resolvedButtonPadding.bottom,
+    );
+
+    switch (textDirection) {
+      case TextDirection.rtl:
+        x -= childSize.width;
+        break;
+      case TextDirection.ltr:
+        break;
+    }
+
+    bool offLeftSide(double x) => x < allowedRect.left;
+    bool offRightSide(double x) => x + childSize.width > allowedRect.right;
+    bool offTop(double y) => y < allowedRect.top;
+    bool offBottom(double y) => y + childSize.height > allowedRect.bottom;
+    // Avoid going outside an area defined as the rectangle offset from the
+    // edge of the screen by the button padding. If the menu is off of the screen,
+    // move the menu to the other side of the button first, and then if it
+    // doesn't fit there, then just move it over as much as needed to make it
+    // fit.
+    if (childSize.width >= allowedRect.width) {
+      // It just doesn't fit, so put as much on the screen as possible.
+      x = allowedRect.left;
+    } else {
+      if (offLeftSide(x)) {
+        // If the parent is a different orientation than the current one, then
+        // just push it over instead of trying the other side.
+        if (menuNode.parent.orientation != menuNode.orientation) {
+          x = allowedRect.left;
+        } else {
+          final double newX = absoluteButtonRect.right;
+          if (!offRightSide(newX)) {
+            x = newX;
+          } else {
+            x = allowedRect.left;
+          }
+        }
+      } else if (offRightSide(x)) {
+        if (menuNode.parent.orientation != menuNode.orientation) {
+          x = allowedRect.right - childSize.width;
+        } else {
+          final double newX = absoluteButtonRect.left - childSize.width;
+          if (!offLeftSide(newX)) {
+            x = newX;
+          } else {
+            x = allowedRect.right - childSize.width;
+          }
+        }
+      }
+    }
+    if (childSize.height >= allowedRect.height) {
+      // Too tall to fit, fit as much on as possible.
+      y = allowedRect.top;
+    } else {
+      if (offTop(y)) {
+        final double newY = absoluteButtonRect.bottom;
+        if (!offBottom(newY)) {
+          y = newY;
+        } else {
+          y = allowedRect.top;
+        }
+      } else if (offBottom(y)) {
+        final double newY = absoluteButtonRect.top - childSize.height;
+        if (!offTop(newY)) {
+          y = newY;
+        } else {
+          y = allowedRect.bottom - childSize.height;
+        }
+      }
+    }
+    debugPrint(
+        'Fitting $childSize into $allowedRect with alignment $alignment and preferred position $desiredPosition button rect $absoluteButtonRect, picked ${Offset(x, y)}');
+    return Offset(x, y);
+  }
+
+  Rect _closestScreen(Iterable<Rect> screens, Offset point) {
+    Rect closest = screens.first;
+    for (final Rect screen in screens) {
+      if ((screen.center - point).distance < (closest.center - point).distance) {
+        closest = screen;
+      }
+    }
+    return closest;
+  }
+
+  @override
+  bool shouldRelayout(_MenuLayout oldDelegate) {
+    return buttonRect != oldDelegate.buttonRect ||
+        textDirection != oldDelegate.textDirection ||
+        !setEquals(avoidBounds, oldDelegate.avoidBounds);
+  }
+}
 
 // Base class for all menu nodes that make up the menu tree, to allow walking of
 // the tree for navigation.
@@ -2482,8 +2643,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
       orientation = currentMenu.orientation;
     }
     final bool firstItemIsFocused = currentMenu.firstItemFocusNode?.hasPrimaryFocus ?? false;
-    assert(_menuDebug(
-        'In _MenuDirectionalFocusAction, current node is ${currentMenu.buttonFocusNode.debugLabel}, '
+    assert(_menuDebug('In _MenuDirectionalFocusAction, current node is ${currentMenu.buttonFocusNode.debugLabel}, '
         'button is${buttonIsFocused ? '' : ' not'} focused. Assuming ${orientation.name} orientation.'));
 
     switch (intent.direction) {

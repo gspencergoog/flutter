@@ -177,12 +177,28 @@ class _HomeState extends State<Home> {
                         ],
                       ),
                       MenuButton(
-                        label: Text(TestMenu.mainMenu3.label),
+                          label: Text(TestMenu.mainMenu3.label),
+                          onOpen: () {
+                            _openItem(TestMenu.mainMenu3);
+                          },
+                          onClose: () {
+                            _closeItem(TestMenu.mainMenu3);
+                          },
+                          children: <Widget>[
+                            MenuItemButton(
+                              label: Text(TestMenu.subMenu8.label),
+                              onSelected: () {
+                                _itemSelected(TestMenu.subMenu8);
+                              },
+                            ),
+                          ]),
+                      MenuButton(
+                        label: Text(TestMenu.mainMenu4.label),
                         onOpen: () {
-                          _openItem(TestMenu.mainMenu3);
+                          _openItem(TestMenu.mainMenu4);
                         },
                         onClose: () {
-                          _closeItem(TestMenu.mainMenu3);
+                          _closeItem(TestMenu.mainMenu4);
                         },
                         children: <Widget>[
                           MenuItemGroup(members: <Widget>[
