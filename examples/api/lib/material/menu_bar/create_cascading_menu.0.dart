@@ -90,20 +90,20 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   void updateMenuEntry() {
     menuEntry.children = <Widget>[
       MenuItemButton(
-        child: Text(MenuSelection.about.label),
+        label: Text(MenuSelection.about.label),
         onSelected: () => _activate(MenuSelection.about),
       ),
       // Toggles the message.
       MenuItemButton(
         onSelected: () => _activate(MenuSelection.showMessage),
         shortcut: MenuSelection.showMessage.shortcut,
-        child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
+        label: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
       ),
       // Hides the message, but is only enabled if the message isn't already hidden.
       MenuItemButton(
         onSelected: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
         shortcut: MenuSelection.resetMessage.shortcut,
-        child: Text(MenuSelection.resetMessage.label),
+        label: Text(MenuSelection.resetMessage.label),
       ),
       MenuButton(
         label: const Text('Background Color'),
@@ -112,18 +112,18 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
             MenuItemButton(
               onSelected: () => _activate(MenuSelection.colorRed),
               shortcut: MenuSelection.colorRed.shortcut,
-              child: Text(MenuSelection.colorRed.label),
+              label: Text(MenuSelection.colorRed.label),
             ),
             MenuItemButton(
               onSelected: () => _activate(MenuSelection.colorGreen),
               shortcut: MenuSelection.colorGreen.shortcut,
-              child: Text(MenuSelection.colorGreen.label),
+              label: Text(MenuSelection.colorGreen.label),
             ),
           ]),
           MenuItemButton(
             onSelected: () => _activate(MenuSelection.colorBlue),
             shortcut: MenuSelection.colorBlue.shortcut,
-            child: Text(MenuSelection.colorBlue.label),
+            label: Text(MenuSelection.colorBlue.label),
           ),
         ],
       ),

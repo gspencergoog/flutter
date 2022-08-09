@@ -134,8 +134,9 @@ class ShortcutSerialization {
   /// equivalents) being down.
   static const int _shortcutModifierControl = 1 << 3;
 
-  /// Converts the internal representation to the format needed for a [MenuItem]
-  /// to include it in its serialized form for sending to the platform.
+  /// Converts the internal representation to the format needed for a
+  /// [PlatformMenuItem] to include it in its serialized form for sending to the
+  /// platform.
   Map<String, Object?> toChannelRepresentation() => _internal;
 }
 
@@ -246,7 +247,7 @@ abstract class PlatformMenuDelegate {
 }
 
 /// The signature for a function that generates unique menu item IDs for
-/// serialization of a [MenuItem].
+/// serialization of a [PlatformMenuItem].
 typedef MenuItemSerializableIdGenerator = int Function(PlatformMenuItem item);
 
 /// The platform menu delegate that handles the built-in macOS platform menu
@@ -360,7 +361,7 @@ class DefaultPlatformMenuDelegate extends PlatformMenuDelegate {
     final PlatformMenuItem item = _idMap[id]!;
     if (call.method == _kMenuSelectedCallbackMethod) {
       assert(item.onSelected == null || item.onSelectedIntent == null,
-        'Only one of MenuItem.onSelected or MenuItem.onSelectedIntent may be specified');
+        'Only one of PlatformMenuItem.onSelected or PlatformMenuItem.onSelectedIntent may be specified');
       item.onSelected?.call();
       if (item.onSelectedIntent != null) {
         Actions.maybeInvoke(FocusManager.instance.primaryFocus!.context!, item.onSelectedIntent!);
@@ -381,11 +382,11 @@ class DefaultPlatformMenuDelegate extends PlatformMenuDelegate {
 /// the box, but support for other platforms may be provided via plugins that
 /// set [WidgetsBinding.platformMenuDelegate] in their initialization.
 ///
-/// The [menus] member contains [MenuItem]s. They will not be part of the
-/// widget tree, since they are not required to be widgets (even if they happen
-/// to be widgets that implement [MenuItem], they still won't be part of the
-/// widget tree). They are provided to configure the properties of the menus on
-/// the platform menu bar.
+/// The [menus] member contains [PlatformMenuItem]s. They will not be part of
+/// the widget tree, since they are not required to be widgets (even if they
+/// happen to be widgets that implement [PlatformMenuItem], they still won't be
+/// part of the widget tree). They are provided to configure the properties of
+/// the menus on the platform menu bar.
 ///
 /// As far as Flutter is concerned, this widget has no visual representation,
 /// and intercepts no events: it just returns the [child] from its build
@@ -396,7 +397,7 @@ class DefaultPlatformMenuDelegate extends PlatformMenuDelegate {
 /// [PlatformMenuDelegate]. It will assert if more than one is detected.
 ///
 /// When calling [toStringDeep] on this widget, it will give a tree of
-/// [MenuItem]s, not a tree of widgets.
+/// [PlatformMenuItem]s, not a tree of widgets.
 ///
 /// {@tool sample}
 /// This example shows a [PlatformMenuBar] that contains a single top level
@@ -440,8 +441,8 @@ class PlatformMenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// The list of menu items that are the top level children of the
   /// [PlatformMenuBar].
   ///
-  /// The `menus` member contains [MenuItem]s. They will not be part
-  /// of the widget tree, since they are not widgets. They are provided to
+  /// The `menus` member contains [PlatformMenuItem]s. They will not be part of
+  /// the widget tree, since they are not widgets. They are provided to
   /// configure the properties of the menus on the platform menu bar.
   ///
   /// Also, a Widget in Flutter is immutable, so directly modifying the
@@ -539,7 +540,7 @@ class PlatformMenu extends PlatformMenuItem with DiagnosticableTreeMixin {
   /// If this is an empty list, this [PlatformMenu] will be disabled.
   final List<PlatformMenuItem> menus;
 
-  /// Returns all descendant [MenuItem]s of this item.
+  /// Returns all descendant [PlatformMenuItem]s of this item.
   @override
   List<PlatformMenuItem> get descendants => getDescendants(this);
 
@@ -633,7 +634,7 @@ class PlatformMenuItemGroup extends PlatformMenuItem {
   /// The [members] field is required.
   const PlatformMenuItemGroup({required this.members}) : super(label: '');
 
-  /// The [MenuItem]s that are members of this menu item group.
+  /// The [PlatformMenuItem]s that are members of this menu item group.
   ///
   /// An assertion will be thrown if there isn't at least one member of the group.
   @override
@@ -683,10 +684,10 @@ class PlatformMenuItemGroup extends PlatformMenuItem {
   }
 }
 
-/// A class for [MenuItem]s that do not have submenus (as a [PlatformMenu]
+/// A class for [PlatformMenuItem]s that do not have submenus (as a [PlatformMenu]
 /// would), but can be selected.
 ///
-/// These [MenuItem]s are the leaves of the menu item tree, and [onSelected]
+/// These [PlatformMenuItem]s are the leaves of the menu item tree, and [onSelected]
 /// will be called when they are selected by clicking on them, or via an
 /// optional keyboard [shortcut].
 ///
@@ -740,7 +741,7 @@ class PlatformMenuItem with Diagnosticable {
   /// If unset, this menu item will be disabled.
   final Intent? onSelectedIntent;
 
-  /// Returns all descendant [MenuItem]s of this item.
+  /// Returns all descendant [PlatformMenuItem]s of this item.
   ///
   /// Returns an empty list if this type of menu item doesn't have
   /// descendants.

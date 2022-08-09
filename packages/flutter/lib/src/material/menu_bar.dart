@@ -358,7 +358,7 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 class MenuItemButton extends StatefulWidget {
   /// Creates a const [MenuItemButton].
   ///
-  /// The [child] attribute is required.
+  /// The [label] attribute is required.
   const MenuItemButton({
     super.key,
     this.shortcut,
@@ -375,14 +375,14 @@ class MenuItemButton extends StatefulWidget {
     this.textStyle,
     this.padding,
     this.shape,
-    required this.child,
+    required this.label,
   }) : assert(onSelected == null || onSelectedIntent == null,
             'Only one of onSelected or onSelectedIntent may be specified');
 
   /// A required widget displaying the label for this item in the menu.
-  final Widget child;
+  final Widget label;
 
-  /// The optional shortcut that selects this [MenuItem].
+  /// The optional shortcut that selects this [MenuItemButton].
   ///
   /// This shortcut is only enabled when [onSelected] is set.
   final MenuSerializableShortcut? shortcut;
@@ -420,17 +420,17 @@ class MenuItemButton extends StatefulWidget {
   /// The focus node to use for the menu item button.
   final FocusNode? focusNode;
 
-  /// An optional icon to display before the [child] label.
+  /// An optional icon to display before the [label] label.
   final Widget? leadingIcon;
 
-  /// An optional icon to display after the [child] label.
+  /// An optional icon to display after the [label] label.
   final Widget? trailingIcon;
 
   /// The semantic label of the menu item used by accessibility frameworks to
   /// announce its label when the menu is focused.
   ///
   /// This semantics information will take precedence over semantics information
-  /// provided in [child].
+  /// provided in [label].
   final String? semanticsLabel;
 
   /// The background color for this [MenuItemButton].
@@ -477,7 +477,7 @@ class MenuItemButton extends StatefulWidget {
 
   /// The text style for the text in this menu bar item.
   ///
-  /// May be overridden inside of [child].
+  /// May be overridden inside of [label].
   ///
   /// Defaults to the ambient [ThemeData.textTheme]'s [TextTheme.labelLarge] if null.
   ///
@@ -504,7 +504,7 @@ class MenuItemButton extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('child', child.toString(), defaultValue: null));
+    properties.add(DiagnosticsProperty<String>('label', label.toString(), defaultValue: null));
     properties.add(FlagProperty('enabled', value: onSelected != null || onSelectedIntent != null, ifFalse: 'DISABLED'));
     properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
@@ -525,7 +525,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
     final FocusNode result = widget.focusNode ?? (_internalFocusNode ??= FocusNode());
     assert(() {
       if (_internalFocusNode != null) {
-        _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.child})';
+        _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.label})';
       }
       return true;
     }());
@@ -599,7 +599,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
           shortcut: widget.shortcut,
           trailingIcon: widget.trailingIcon,
           hasSubmenu: false,
-          child: widget.child,
+          child: widget.label,
         ),
       ),
     );
@@ -616,7 +616,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   }
 
   void _handleSelect() {
-    assert(_menuDebug('Selected ${widget.child} menu'));
+    assert(_menuDebug('Selected ${widget.label} menu'));
     if (widget.onSelectedIntent != null) {
       Actions.invoke<Intent>(context, widget.onSelectedIntent!);
     } else {
@@ -629,16 +629,16 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 /// A menu item widget that displays a hierarchical cascading menu as part of a
 /// [MenuBar].
 ///
-/// This widget represents an entry in [MenuBar.menus] that has a submenu. Like
-/// the leaf [MenuItemButton], it shows a label with an optional leading or
-/// trailing icon.
+/// This widget represents an item in a [MenuBar] that has a submenu. Like the
+/// leaf [MenuItemButton], it shows a label with an optional leading or trailing
+/// icon.
 ///
 /// By default the submenu will appear to the side of the controlling button.
 /// The alignment and offset of the submenu can be controlled by setting
 /// [alignment] and [alignmentOffset], respectively.
 ///
 /// When activated (clicked, through keyboard navigation, or via hovering with a
-/// mouse), it will open a submenu containing the [menus].
+/// mouse), it will open a submenu containing the [children].
 ///
 /// See also:
 ///
@@ -716,13 +716,13 @@ class MenuButton extends StatefulWidget {
   /// else has focus.
   final bool autofocus;
 
-  /// The background color of the cascading menu specified by [menus].
+  /// The background color of the cascading menu specified by [children].
   ///
   /// Defaults to the value of [MenuThemeData.menuBackgroundColor] of the
   /// ambient [MenuTheme].
   final MaterialStateProperty<Color?>? backgroundColor;
 
-  /// The shape of the cascading menu specified by [menus].
+  /// The shape of the cascading menu specified by [children].
   ///
   /// Defaults to the value of [MenuThemeData.menuShape] of the
   /// ambient [MenuTheme].
@@ -936,7 +936,7 @@ class _MenuButtonState extends State<MenuButton> {
         alignmentOffset: menuPaddingOffset,
         widgetChildren: widget.children,
       );
-      childMenu = _createMenuEntryFromExistingEntry(entry);
+      childMenu = _createMenuEntryFromExistingNode(entry);
     }
     entry
       ..buttonFocusNode = _buttonFocusNode
@@ -1234,10 +1234,10 @@ MenuEntry createCascadingMenu(
     alignmentOffset: alignmentOffset,
     widgetChildren: children,
   );
-  return _createMenuEntryFromExistingEntry(entry);
+  return _createMenuEntryFromExistingNode(entry);
 }
 
-MenuEntry _createMenuEntryFromExistingEntry(_ChildMenuNode entry) {
+MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode entry) {
   assert(_menuDebug('Creating menu entry from $entry'));
   final MenuEntry menu = MenuEntry._(entry);
   entry.overlayEntry = OverlayEntry(builder: (BuildContext context) {
@@ -1568,6 +1568,247 @@ class _MenuControllerMarker extends InheritedWidget {
   }
 }
 
+// The InheritedWidget marker for _MenuEntry, used to find the nearest
+// ancestor _MenuEntry for a menu.
+class _MenuEntryMarker extends InheritedWidget {
+  const _MenuEntryMarker({
+    required this.entry,
+    required super.child,
+  });
+
+  final _MenuNode entry;
+
+  @override
+  bool updateShouldNotify(_MenuEntryMarker oldWidget) {
+    return entry != oldWidget.entry;
+  }
+}
+
+class _MenuItemDivider extends StatelessWidget {
+  const _MenuItemDivider({this.menuOrientation = Axis.vertical});
+
+  final Axis menuOrientation;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (menuOrientation) {
+      case Axis.horizontal:
+        return VerticalDivider(width: math.max(2, 16 + Theme.of(context).visualDensity.horizontal * 4));
+      case Axis.vertical:
+        return Divider(height: math.max(2, 16 + Theme.of(context).visualDensity.vertical * 4));
+    }
+  }
+}
+
+/// A widget that manages a list of menu buttons in a menu.
+///
+/// It sizes itself to the widest/tallest item it contains, and then sizes all
+/// the other entries to match.
+class _MenuPanel extends StatefulWidget implements PreferredSizeWidget {
+  const _MenuPanel({
+    required this.elevation,
+    required this.crossAxisMinSize,
+    required this.color,
+    required this.padding,
+    required this.orientation,
+    required this.shape,
+    required this.expand,
+    required this.children,
+  });
+
+  /// The elevation to give the material behind the menu bar.
+  final double elevation;
+
+  /// The minimum size to give the menu bar in the axis perpendicular to [orientation].
+  final double crossAxisMinSize;
+
+  /// The background color of the menu app bar.
+  final Color color;
+
+  /// The padding around the outside of the menu bar contents.
+  final EdgeInsetsDirectional padding;
+
+  /// Whether or not the panel will expand to fill extra space when horizontal.
+  final bool expand;
+
+  /// The shape of the menu.
+  final ShapeBorder shape;
+
+  @override
+  Size get preferredSize {
+    switch (orientation) {
+      case Axis.horizontal:
+        return Size.fromHeight(crossAxisMinSize);
+      case Axis.vertical:
+        return Size.fromWidth(crossAxisMinSize);
+    }
+  }
+
+  /// The main axis of this panel.
+  final Axis orientation;
+
+  /// The list of widgets to use as children of this menu bar.
+  ///
+  /// These are the top level [MenuButton]s.
+  final List<Widget> children;
+
+  @override
+  State<_MenuPanel> createState() => _MenuPanelState();
+}
+
+class _MenuPanelState extends State<_MenuPanel> {
+  Widget _intrinsicCrossSize({required Widget child}) {
+    switch (widget.orientation) {
+      case Axis.horizontal:
+        return IntrinsicHeight(child: child);
+      case Axis.vertical:
+        return IntrinsicWidth(child: child);
+    }
+  }
+
+  BoxConstraints _getMinSizeConstraint() {
+    switch (widget.orientation) {
+      case Axis.horizontal:
+        return BoxConstraints(minHeight: widget.crossAxisMinSize);
+      case Axis.vertical:
+        return BoxConstraints(minWidth: widget.crossAxisMinSize);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MenuController controller = MenuController.of(context);
+    return TapRegion(
+      groupId: controller,
+      onTapOutside: (PointerDownEvent event) {
+        MenuController.of(context).closeAll();
+      },
+      child: ConstrainedBox(
+        constraints: _getMinSizeConstraint(),
+        child: _intrinsicCrossSize(
+          child: Material(
+            color: widget.color,
+            shape: widget.shape,
+            elevation: widget.elevation,
+            child: Padding(
+              padding: widget.padding,
+              child: Flex(
+                textDirection: Directionality.of(context),
+                direction: widget.orientation,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ...widget.children,
+                  if (widget.expand && widget.orientation == Axis.horizontal) const Spacer(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A label widget that is used as the default label for a [MenuItemButton] or
+/// [MenuButton].
+///
+/// It not only shows the [MenuButton.label] or [MenuItemButton.label], but if
+/// there is a shortcut associated with the [MenuItemButton], it will display a
+/// mnemonic for the shortcut. For [MenuButton]s, it will display a visual
+/// indicator that there is a submenu.
+class _MenuItemLabel extends StatelessWidget {
+  /// Creates a const [_MenuItemLabel].
+  ///
+  /// The [child] and [hasSubmenu] arguments are required.
+  const _MenuItemLabel({
+    super.key,
+    required this.child,
+    required this.hasSubmenu,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.shortcut,
+    this.showDecoration = true,
+  });
+
+  /// The required label widget.
+  final Widget child;
+
+  /// Whether or not this menu has a submenu.
+  ///
+  /// Determines whether the submenu arrow is shown or not.
+  final bool hasSubmenu;
+
+  /// The optional icon that comes before the [child].
+  final Widget? leadingIcon;
+
+  /// The optional icon that comes after the [child].
+  final Widget? trailingIcon;
+
+  /// The shortcut for this label, so that it can generate a string describing
+  /// the shortcut.
+  final MenuSerializableShortcut? shortcut;
+
+  /// Whether or not this item should show decorations like shortcut labels or
+  /// submenu arrows.
+  final bool showDecoration;
+
+  @override
+  Widget build(BuildContext context) {
+    final VisualDensity density = Theme.of(context).visualDensity;
+    final double horizontalPadding = math.max(
+      _kLabelItemMinSpacing,
+      _kLabelItemDefaultSpacing + density.horizontal * 2,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (leadingIcon != null) leadingIcon!,
+            Padding(
+              padding: leadingIcon != null ? EdgeInsetsDirectional.only(start: horizontalPadding) : EdgeInsets.zero,
+              child: child,
+            ),
+            if (trailingIcon != null)
+              Padding(
+                padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+                child: trailingIcon,
+              ),
+          ],
+        ),
+        if (showDecoration && (shortcut != null || hasSubmenu)) SizedBox(width: horizontalPadding),
+        if (showDecoration && shortcut != null)
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+            child: Text(
+              _LocalizedShortcutLabeler.instance.getShortcutLabel(
+                shortcut!,
+                MaterialLocalizations.of(context),
+              ),
+            ),
+          ),
+        if (showDecoration && hasSubmenu)
+          Padding(
+            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
+            child: const Icon(
+              Icons.arrow_right, // Automatically switches with text direction.
+              size: _kDefaultSubmenuIconSize,
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<String>('child', child.toString()));
+    properties.add(DiagnosticsProperty<MenuSerializableShortcut>('shortcut', shortcut, defaultValue: null));
+  }
+}
+
+
 // Base class for all menu nodes that make up the menu tree, to allow walking of
 // the tree for navigation.
 abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
@@ -1640,6 +1881,31 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
     properties.add(FlagProperty('isRoot', value: isRoot, ifTrue: 'ROOT', defaultValue: false));
     properties.add(DiagnosticsProperty<_MenuNode?>('parent', isRoot ? null : parent, defaultValue: null));
   }
+}
+
+class _RootMenuNode extends _MenuNode {
+  _RootMenuNode(this.controller) : menuScopeNode = FocusScopeNode();
+
+  @override
+  MenuController controller;
+
+  // A list of descendant menus that are currently open.
+  final Set<_MenuNode> openMenus = <_MenuNode>{};
+
+  @override
+  bool get isRoot => true;
+
+  @override
+  _RootMenuNode get root => this;
+
+  @override
+  _MenuNode get parent => throw UnimplementedError('Tried to get the parent of the root node');
+
+  @override
+  Axis get orientation => Axis.horizontal;
+
+  @override
+  FocusScopeNode menuScopeNode;
 }
 
 class _ChildMenuNode extends _MenuNode {
@@ -1877,271 +2143,6 @@ class _ChildMenuNode extends _MenuNode {
     properties.add(DiagnosticsProperty<FocusNode>('buttonFocusNode', buttonFocusNode));
     properties.add(DiagnosticsProperty<GlobalKey>('buttonKey', buttonKey));
     properties.add(DiagnosticsProperty<FocusScopeNode>('menuScopeNode', menuScopeNode));
-  }
-}
-
-class _RootMenuNode extends _MenuNode {
-  _RootMenuNode(this.controller) : menuScopeNode = FocusScopeNode();
-
-  @override
-  MenuController controller;
-
-  // A list of descendant menus that are currently open.
-  final Set<_MenuNode> openMenus = <_MenuNode>{};
-
-  @override
-  bool get isRoot => true;
-
-  @override
-  _RootMenuNode get root => this;
-
-  @override
-  _MenuNode get parent => throw UnimplementedError('Tried to get the parent of the root node');
-
-  @override
-  Axis get orientation => Axis.horizontal;
-
-  @override
-  FocusScopeNode menuScopeNode;
-}
-
-// The InheritedWidget marker for _MenuEntry, used to find the nearest
-// ancestor _MenuEntry for a menu.
-class _MenuEntryMarker extends InheritedWidget {
-  const _MenuEntryMarker({
-    required this.entry,
-    required super.child,
-  });
-
-  final _MenuNode entry;
-
-  @override
-  bool updateShouldNotify(_MenuEntryMarker oldWidget) {
-    return entry != oldWidget.entry;
-  }
-}
-
-class _MenuItemDivider extends StatelessWidget {
-  const _MenuItemDivider({this.menuOrientation = Axis.vertical});
-
-  final Axis menuOrientation;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (menuOrientation) {
-      case Axis.horizontal:
-        return VerticalDivider(width: math.max(2, 16 + Theme.of(context).visualDensity.horizontal * 4));
-      case Axis.vertical:
-        return Divider(height: math.max(2, 16 + Theme.of(context).visualDensity.vertical * 4));
-    }
-  }
-}
-
-/// A widget that manages a list of menu buttons in a menu.
-///
-/// It sizes itself to the widest/tallest item it contains, and then sizes all
-/// the other entries to match.
-class _MenuPanel extends StatefulWidget implements PreferredSizeWidget {
-  const _MenuPanel({
-    required this.elevation,
-    required this.crossAxisMinSize,
-    required this.color,
-    required this.padding,
-    required this.orientation,
-    required this.shape,
-    required this.expand,
-    required this.children,
-  });
-
-  /// The elevation to give the material behind the menu bar.
-  final double elevation;
-
-  /// The minimum size to give the menu bar in the axis perpendicular to [orientation].
-  final double crossAxisMinSize;
-
-  /// The background color of the menu app bar.
-  final Color color;
-
-  /// The padding around the outside of the menu bar contents.
-  final EdgeInsetsDirectional padding;
-
-  /// Whether or not the panel will expand to fill extra space when horizontal.
-  final bool expand;
-
-  /// The shape of the menu.
-  final ShapeBorder shape;
-
-  @override
-  Size get preferredSize {
-    switch (orientation) {
-      case Axis.horizontal:
-        return Size.fromHeight(crossAxisMinSize);
-      case Axis.vertical:
-        return Size.fromWidth(crossAxisMinSize);
-    }
-  }
-
-  /// The main axis of this panel.
-  final Axis orientation;
-
-  /// The list of widgets to use as children of this menu bar.
-  ///
-  /// These are the top level [MenuButton]s.
-  final List<Widget> children;
-
-  @override
-  State<_MenuPanel> createState() => _MenuPanelState();
-}
-
-class _MenuPanelState extends State<_MenuPanel> {
-  Widget _intrinsicCrossSize({required Widget child}) {
-    switch (widget.orientation) {
-      case Axis.horizontal:
-        return IntrinsicHeight(child: child);
-      case Axis.vertical:
-        return IntrinsicWidth(child: child);
-    }
-  }
-
-  BoxConstraints _getMinSizeConstraint() {
-    switch (widget.orientation) {
-      case Axis.horizontal:
-        return BoxConstraints(minHeight: widget.crossAxisMinSize);
-      case Axis.vertical:
-        return BoxConstraints(minWidth: widget.crossAxisMinSize);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final MenuController controller = MenuController.of(context);
-    return TapRegion(
-      groupId: controller,
-      onTapOutside: (PointerDownEvent event) {
-        MenuController.of(context).closeAll();
-      },
-      child: ConstrainedBox(
-        constraints: _getMinSizeConstraint(),
-        child: _intrinsicCrossSize(
-          child: Material(
-            color: widget.color,
-            shape: widget.shape,
-            elevation: widget.elevation,
-            child: Padding(
-              padding: widget.padding,
-              child: Flex(
-                textDirection: Directionality.of(context),
-                direction: widget.orientation,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ...widget.children,
-                  if (widget.expand && widget.orientation == Axis.horizontal) const Spacer(),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A label widget that is used as the default label for a [MenuItemButton] or
-/// [MenuButton].
-///
-/// It not only shows the [MenuButton.label] or [MenuItemButton.child], but if
-/// there is a shortcut associated with the [MenuItemButton], it will display a
-/// mnemonic for the shortcut. For [MenuButton]s, it will display a visual
-/// indicator that there is a submenu.
-class _MenuItemLabel extends StatelessWidget {
-  /// Creates a const [_MenuItemLabel].
-  ///
-  /// The [child] and [hasSubmenu] arguments are required.
-  const _MenuItemLabel({
-    super.key,
-    required this.child,
-    required this.hasSubmenu,
-    this.leadingIcon,
-    this.trailingIcon,
-    this.shortcut,
-    this.showDecoration = true,
-  });
-
-  /// The required label widget.
-  final Widget child;
-
-  /// Whether or not this menu has a submenu.
-  ///
-  /// Determines whether the submenu arrow is shown or not.
-  final bool hasSubmenu;
-
-  /// The optional icon that comes before the [child].
-  final Widget? leadingIcon;
-
-  /// The optional icon that comes after the [child].
-  final Widget? trailingIcon;
-
-  /// The shortcut for this label, so that it can generate a string describing
-  /// the shortcut.
-  final MenuSerializableShortcut? shortcut;
-
-  /// Whether or not this item should show decorations like shortcut labels or
-  /// submenu arrows.
-  final bool showDecoration;
-
-  @override
-  Widget build(BuildContext context) {
-    final VisualDensity density = Theme.of(context).visualDensity;
-    final double horizontalPadding = math.max(
-      _kLabelItemMinSpacing,
-      _kLabelItemDefaultSpacing + density.horizontal * 2,
-    );
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (leadingIcon != null) leadingIcon!,
-            Padding(
-              padding: leadingIcon != null ? EdgeInsetsDirectional.only(start: horizontalPadding) : EdgeInsets.zero,
-              child: child,
-            ),
-            if (trailingIcon != null)
-              Padding(
-                padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-                child: trailingIcon,
-              ),
-          ],
-        ),
-        if (showDecoration && (shortcut != null || hasSubmenu)) SizedBox(width: horizontalPadding),
-        if (showDecoration && shortcut != null)
-          Padding(
-            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-            child: Text(
-              _LocalizedShortcutLabeler.instance.getShortcutLabel(
-                shortcut!,
-                MaterialLocalizations.of(context),
-              ),
-            ),
-          ),
-        if (showDecoration && hasSubmenu)
-          Padding(
-            padding: EdgeInsetsDirectional.only(start: horizontalPadding),
-            child: const Icon(
-              Icons.arrow_right, // Automatically switches with text direction.
-              size: _kDefaultSubmenuIconSize,
-            ),
-          ),
-      ],
-    );
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('child', child.toString()));
-    properties.add(DiagnosticsProperty<MenuSerializableShortcut>('shortcut', shortcut, defaultValue: null));
   }
 }
 

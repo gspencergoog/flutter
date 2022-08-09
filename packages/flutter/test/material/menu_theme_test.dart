@@ -215,7 +215,7 @@ List<Widget> createTestMenus({
         MenuItemButton(
           onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
-          child: Text(TestMenu.subMenu00.label),
+          label: Text(TestMenu.subMenu00.label),
         ),
       ],
     ),
@@ -238,7 +238,7 @@ List<Widget> createTestMenus({
               foregroundColor: itemForeground != null ? MaterialStatePropertyAll<Color?>(itemForeground) : null,
               backgroundColor: itemBackground != null ? MaterialStatePropertyAll<Color?>(itemBackground) : null,
               overlayColor: itemOverlay != null ? MaterialStatePropertyAll<Color?>(itemOverlay) : null,
-              child: Text(TestMenu.subMenu10.label),
+              label: Text(TestMenu.subMenu10.label),
             ),
           ],
         ),
@@ -252,31 +252,31 @@ List<Widget> createTestMenus({
                 MenuItemButton(
                   onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
                   shortcut: shortcuts[TestMenu.subSubMenu100],
-                  child: Text(TestMenu.subSubMenu100.label),
+                  label: Text(TestMenu.subSubMenu100.label),
                 ),
               ],
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
               shortcut: shortcuts[TestMenu.subSubMenu101],
-              child: Text(TestMenu.subSubMenu101.label),
+              label: Text(TestMenu.subSubMenu101.label),
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
               shortcut: shortcuts[TestMenu.subSubMenu102],
-              child: Text(TestMenu.subSubMenu102.label),
+              label: Text(TestMenu.subSubMenu102.label),
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
               shortcut: shortcuts[TestMenu.subSubMenu103],
-              child: Text(TestMenu.subSubMenu103.label),
+              label: Text(TestMenu.subSubMenu103.label),
             ),
           ],
         ),
         MenuItemButton(
           onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
           shortcut: shortcuts[TestMenu.subMenu12],
-          child: Text(TestMenu.subMenu12.label),
+          label: Text(TestMenu.subMenu12.label),
         ),
       ],
     ),
@@ -289,7 +289,7 @@ List<Widget> createTestMenus({
           // Always disabled.
           shortcut: shortcuts[TestMenu.subMenu20],
           // Always disabled.
-          child: Text(TestMenu.subMenu20.label),
+          label: Text(TestMenu.subMenu20.label),
         ),
       ],
     ),

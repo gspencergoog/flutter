@@ -269,13 +269,13 @@ void main() {
               control: true,
             ),
             onSelected: () {},
-            child: Text(TestMenu.subMenu00.label),
+            label: Text(TestMenu.subMenu00.label),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Icons.send),
             trailingIcon: const Icon(Icons.mail),
             onSelected: () {},
-            child: Text(TestMenu.subMenu00.label),
+            label: Text(TestMenu.subMenu00.label),
           ),
         ],
       );
@@ -347,13 +347,13 @@ void main() {
               control: true,
             ),
             onSelected: () {},
-            child: Text(TestMenu.subMenu00.label),
+            label: Text(TestMenu.subMenu00.label),
           ),
           MenuItemButton(
             leadingIcon: const Icon(Icons.send),
             trailingIcon: const Icon(Icons.mail),
             onSelected: () {},
-            child: Text(TestMenu.subMenu00.label),
+            label: Text(TestMenu.subMenu00.label),
           ),
         ],
       );
@@ -612,7 +612,7 @@ void main() {
     testWidgets('diagnostics', (WidgetTester tester) async {
       const MenuItemButton item = MenuItemButton(
         shortcut: SingleActivator(LogicalKeyboardKey.keyA),
-        child: Text('label2'),
+        label: Text('label2'),
       );
       final MenuBar menuBar = MenuBar(
         controller: MenuController(),
@@ -1247,7 +1247,7 @@ void main() {
                   children: <Widget>[
                     MenuItemButton(
                       leadingIcon: const Text('leadingIcon'),
-                      child: Text(TestMenu.subMenu00.label),
+                      label: Text(TestMenu.subMenu00.label),
                     ),
                   ],
                 ),
@@ -1275,7 +1275,7 @@ void main() {
                   children: <Widget>[
                     MenuItemButton(
                       trailingIcon: const Text('trailingIcon'),
-                      child: Text(TestMenu.subMenu00.label),
+                      label: Text(TestMenu.subMenu00.label),
                     ),
                   ],
                 ),
@@ -1307,7 +1307,7 @@ void main() {
                       members: <Widget>[
                         MenuItemButton(
                           semanticsLabel: 'semanticLabel',
-                          child: Text(TestMenu.subMenu00.label),
+                          label: Text(TestMenu.subMenu00.label),
                         ),
                       ],
                     ),
@@ -1386,11 +1386,11 @@ void main() {
                   children: <Widget>[
                     MenuItemButton(
                       shortcut: allModifiers,
-                      child: Text(TestMenu.subMenu10.label),
+                      label: Text(TestMenu.subMenu10.label),
                     ),
                     MenuItemButton(
                       shortcut: charShortcuts,
-                      child: Text(TestMenu.subMenu11.label),
+                      label: Text(TestMenu.subMenu11.label),
                     ),
                   ],
                 ),
@@ -1449,7 +1449,7 @@ List<Widget> createTestMenus({
         MenuItemButton(
           onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
-          child: Text(TestMenu.subMenu00.label),
+          label: Text(TestMenu.subMenu00.label),
         ),
       ],
     ),
@@ -1463,7 +1463,7 @@ List<Widget> createTestMenus({
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu10) : null,
               shortcut: shortcuts[TestMenu.subMenu10],
-              child: Text(TestMenu.subMenu10.label),
+              label: Text(TestMenu.subMenu10.label),
             ),
           ],
         ),
@@ -1478,31 +1478,31 @@ List<Widget> createTestMenus({
                   key: UniqueKey(),
                   onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
                   shortcut: shortcuts[TestMenu.subSubMenu100],
-                  child: Text(TestMenu.subSubMenu100.label),
+                  label: Text(TestMenu.subSubMenu100.label),
                 ),
               ],
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
               shortcut: shortcuts[TestMenu.subSubMenu101],
-              child: Text(TestMenu.subSubMenu101.label),
+              label: Text(TestMenu.subSubMenu101.label),
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
               shortcut: shortcuts[TestMenu.subSubMenu102],
-              child: Text(TestMenu.subSubMenu102.label),
+              label: Text(TestMenu.subSubMenu102.label),
             ),
             MenuItemButton(
               onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
               shortcut: shortcuts[TestMenu.subSubMenu103],
-              child: Text(TestMenu.subSubMenu103.label),
+              label: Text(TestMenu.subSubMenu103.label),
             ),
           ],
         ),
         MenuItemButton(
           onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
           shortcut: shortcuts[TestMenu.subMenu12],
-          child: Text(TestMenu.subMenu12.label),
+          label: Text(TestMenu.subMenu12.label),
         ),
       ],
     ),
@@ -1514,7 +1514,7 @@ List<Widget> createTestMenus({
         MenuItemButton(
           // Always disabled.
           shortcut: shortcuts[TestMenu.subMenu20],
-          child: Text(TestMenu.subMenu20.label),
+          label: Text(TestMenu.subMenu20.label),
         ),
       ],
     ),
@@ -1529,7 +1529,7 @@ List<Widget> createTestMenus({
               // Always disabled.
               shortcut: shortcuts[TestMenu.subMenu30],
               // Always disabled.
-              child: Text(TestMenu.subMenu30.label),
+              label: Text(TestMenu.subMenu30.label),
             ),
           ],
         ),
@@ -1545,14 +1545,14 @@ List<Widget> createTestMenus({
               // Always disabled.
               shortcut: shortcuts[TestMenu.subMenu40],
               // Always disabled.
-              child: Text(TestMenu.subMenu40.label),
+              label: Text(TestMenu.subMenu40.label),
             ),
             MenuItemGroup(members: <Widget>[
               MenuItemButton(
                 // Always disabled.
                 shortcut: shortcuts[TestMenu.subMenu41],
                 // Always disabled.
-                child: Text(TestMenu.subMenu41.label),
+                label: Text(TestMenu.subMenu41.label),
               ),
             ]),
             MenuItemGroup(members: <Widget>[
@@ -1560,7 +1560,7 @@ List<Widget> createTestMenus({
                 // Always disabled.
                 shortcut: shortcuts[TestMenu.subMenu42],
                 // Always disabled.
-                child: Text(TestMenu.subMenu42.label),
+                label: Text(TestMenu.subMenu42.label),
               ),
             ]),
           ],

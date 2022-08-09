@@ -133,7 +133,7 @@ class _HomeState extends State<Home> {
                                 _addItem = !_addItem;
                               });
                             },
-                            child: Text(TestMenu.subMenu1.label),
+                            label: Text(TestMenu.subMenu1.label),
                           ),
                           MenuItemButton(
                             leadingIcon: const Icon(Icons.send),
@@ -141,7 +141,7 @@ class _HomeState extends State<Home> {
                             onSelected: () {
                               _itemSelected(TestMenu.subMenu2);
                             },
-                            child: Text(TestMenu.subMenu2.label),
+                            label: Text(TestMenu.subMenu2.label),
                           ),
                         ],
                       ),
@@ -170,7 +170,7 @@ class _HomeState extends State<Home> {
                                 onSelected: () {
                                   _itemSelected(TestMenu.subMenu3);
                                 },
-                                child: Text(TestMenu.subMenu3.label),
+                                label: Text(TestMenu.subMenu3.label),
                               ),
                             ],
                           ),
@@ -198,7 +198,7 @@ class _HomeState extends State<Home> {
                               child: const MenuItemButton(
                                 shortcut: SingleActivator(LogicalKeyboardKey.keyA, control: true),
                                 onSelectedIntent: ActivateIntent(),
-                                child: SizedBox(width: 200, child: TextField()),
+                                label: SizedBox(width: 200, child: TextField()),
                               ),
                             ),
                           ]),
@@ -224,17 +224,17 @@ class _HomeState extends State<Home> {
                                 onSelected: () {
                                   _itemSelected(TestMenu.subSubMenu1);
                                 },
-                                child: Text(TestMenu.subSubMenu1.label),
+                                label: Text(TestMenu.subSubMenu1.label),
                               ),
                               MenuItemButton(
-                                child: Text(TestMenu.subSubMenu2.label),
+                                label: Text(TestMenu.subSubMenu2.label),
                                 onSelected: () {
                                   _itemSelected(TestMenu.subSubMenu2);
                                 },
                               ),
                               if (_addItem)
                                 MenuItemButton(
-                                  child: Text(TestMenu.subSubMenu3.label),
+                                  label: Text(TestMenu.subSubMenu3.label),
                                   onSelected: () {
                                     _itemSelected(TestMenu.subSubMenu3);
                                   },
@@ -246,22 +246,22 @@ class _HomeState extends State<Home> {
                               LogicalKeyboardKey.tab,
                               control: true,
                             ),
-                            child: Text(TestMenu.subMenu6.label),
+                            label: Text(TestMenu.subMenu6.label),
                           ),
                           MenuItemButton(
-                            child: Text(TestMenu.subMenu7.label),
+                            label: Text(TestMenu.subMenu7.label),
                             onSelected: () {
                               _itemSelected(TestMenu.subMenu7);
                             },
                           ),
                           MenuItemButton(
-                            child: Text(TestMenu.subMenu7.label),
+                            label: Text(TestMenu.subMenu7.label),
                             onSelected: () {
                               _itemSelected(TestMenu.subMenu7);
                             },
                           ),
                           MenuItemButton(
-                            child: Text(TestMenu.subMenu8.label),
+                            label: Text(TestMenu.subMenu8.label),
                             onSelected: () {
                               _itemSelected(TestMenu.subMenu8);
                             },
@@ -386,13 +386,13 @@ class _ControlsState extends State<_Controls> {
             control: true,
           ),
           onSelected: () {},
-          child: Text(TestMenu.subMenu1.label),
+          label: Text(TestMenu.subMenu1.label),
         ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.send),
           trailingIcon: const Icon(Icons.mail),
           onSelected: () {},
-          child: Text(TestMenu.subMenu2.label),
+          label: Text(TestMenu.subMenu2.label),
         ),
       ],
     );
