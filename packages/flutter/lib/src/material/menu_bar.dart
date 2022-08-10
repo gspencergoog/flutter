@@ -1695,14 +1695,14 @@ class _MenuPanelState extends State<_MenuPanel> {
             elevation: widget.elevation,
             child: Padding(
               padding: widget.padding,
-              child: Flex(
-                textDirection: Directionality.of(context),
-                direction: widget.orientation,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ...widget.children,
-                  if (widget.expand && widget.orientation == Axis.horizontal) const Spacer(),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: widget.orientation,
+                child: Flex(
+                  textDirection: Directionality.of(context),
+                  direction: widget.orientation,
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.children,
+                ),
               ),
             ),
           ),

@@ -1021,7 +1021,7 @@ void main() {
       );
     });
   });
-  group('MenuBarController', () {
+  group('MenuController', () {
     testWidgets("disposed controllers don't notify listeners", (WidgetTester tester) async {
       final MenuController controller = MenuController();
       await tester.pumpWidget(
@@ -1109,7 +1109,7 @@ void main() {
       expect(opened, isEmpty);
     });
   });
-  group('MenuBarItem', () {
+  group('MenuItemButton', () {
     testWidgets('Shortcut mnemonics are displayed', (WidgetTester tester) async {
       final MenuController controller = MenuController();
       await tester.pumpWidget(
@@ -1337,6 +1337,159 @@ void main() {
         'shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero))',
         'elevation: MaterialStatePropertyAll(10.0)'
       ]);
+    });
+  });
+  group('Layout', () {
+    List<Rect> collectMenuRects() {
+      final List<Rect> menuRects = <Rect>[];
+      final List<Element> candidates = find.byType(MenuButton).evaluate().toList();
+      for (final Element candidate in candidates) {
+        final RenderBox box = candidate.renderObject! as RenderBox;
+        final Offset topLeft = box.localToGlobal(box.size.topLeft(Offset.zero));
+        final Offset bottomRight = box.localToGlobal(box.size.bottomRight(Offset.zero));
+        menuRects.add(Rect.fromPoints(topLeft, bottomRight));
+      }
+      return menuRects;
+    }
+
+    testWidgets('unconstrained menus show up in the right place in LTR', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBar(
+                  children: createTestMenus(onSelected: onSelected),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
+
+      expect(find.byType(MenuItemButton), findsNWidgets(6));
+      expect(find.byType(MenuButton), findsNWidgets(4));
+      final List<Rect> menuRects = collectMenuRects();
+      expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 136.0, 48.0)));
+      expect(menuRects[1], equals(const Rect.fromLTRB(136.0, 0.0, 268.0, 48.0)));
+      expect(menuRects[2], equals(const Rect.fromLTRB(268.0, 0.0, 400.0, 48.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(136.0, 120.0, 398.0, 168.0)));
+    });
+    testWidgets('unconstrained menus show up in the right place in RTL', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Material(
+              child: Column(
+                children: <Widget>[
+                  MenuBar(
+                    children: createTestMenus(onSelected: onSelected),
+                  ),
+                  const Expanded(child: Placeholder()),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
+
+      expect(find.byType(MenuItemButton), findsNWidgets(6));
+      expect(find.byType(MenuButton), findsNWidgets(4));
+      final List<Rect> menuRects = collectMenuRects();
+      expect(menuRects[0], equals(const Rect.fromLTRB(664.0, 0.0, 796.0, 48.0)));
+      expect(menuRects[1], equals(const Rect.fromLTRB(532.0, 0.0, 664.0, 48.0)));
+      expect(menuRects[2], equals(const Rect.fromLTRB(400.0, 0.0, 532.0, 48.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(402.0, 120.0, 664.0, 168.0)));
+    });
+    testWidgets('constrained menus show up in the right place in LTR', (WidgetTester tester) async {
+            await tester.binding.setSurfaceSize(const Size(300, 300));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (BuildContext context) {
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Material(
+                  child: Column(
+                    children: <Widget>[
+                      MenuBar(
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                      const Expanded(child: Placeholder()),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
+
+      expect(find.byType(MenuItemButton), findsNWidgets(6));
+      expect(find.byType(MenuButton), findsNWidgets(4));
+      final List<Rect> menuRects = collectMenuRects();
+      expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 136.0, 48.0)));
+      expect(menuRects[1], equals(const Rect.fromLTRB(136.0, 0.0, 268.0, 48.0)));
+      expect(menuRects[2], equals(const Rect.fromLTRB(268.0, 0.0, 400.0, 48.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(24.0, 120.0, 286.0, 168.0)));
+    });
+    testWidgets('constrained menus show up in the right place in RTL', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(300, 300));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (BuildContext context) {
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: Material(
+                  child: Column(
+                    children: <Widget>[
+                      MenuBar(
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                      const Expanded(child: Placeholder()),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
+
+      expect(find.byType(MenuItemButton), findsNWidgets(6));
+      expect(find.byType(MenuButton), findsNWidgets(4));
+      final List<Rect> menuRects = collectMenuRects();
+      expect(menuRects[0], equals(const Rect.fromLTRB(164.0, 0.0, 296.0, 48.0)));
+      expect(menuRects[1], equals(const Rect.fromLTRB(32.0, 0.0, 164.0, 48.0)));
+      expect(menuRects[2], equals(const Rect.fromLTRB(-100.0, 0.0, 32.0, 48.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(24.0, 120.0, 286.0, 168.0)));
     });
   });
   group('LocalizedShortcutLabeler', () {

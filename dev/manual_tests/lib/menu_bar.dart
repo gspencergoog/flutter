@@ -106,183 +106,188 @@ class _HomeState extends State<Home> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  MenuBar(
-                    controller: _controller,
-                    expand: false,
+                  Row(
                     children: <Widget>[
-                      MenuButton(
-                        label: Text(TestMenu.mainMenu1.label),
-                        onOpen: () {
-                          _openItem(TestMenu.mainMenu1);
-                        },
-                        onClose: () {
-                          _closeItem(TestMenu.mainMenu1);
-                        },
-                        children: <Widget>[
-                          MenuItemButton(
-                            shortcut: const SingleActivator(
-                              LogicalKeyboardKey.keyB,
-                              control: true,
-                            ),
-                            leadingIcon:
-                                _addItem ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
-                            trailingIcon: const Icon(Icons.assessment),
-                            onSelected: () {
-                              _itemSelected(TestMenu.subMenu1);
-                              setState(() {
-                                _addItem = !_addItem;
-                              });
-                            },
-                            label: Text(TestMenu.subMenu1.label),
-                          ),
-                          MenuItemButton(
-                            leadingIcon: const Icon(Icons.send),
-                            trailingIcon: const Icon(Icons.mail),
-                            onSelected: () {
-                              _itemSelected(TestMenu.subMenu2);
-                            },
-                            label: Text(TestMenu.subMenu2.label),
-                          ),
-                        ],
-                      ),
-                      MenuItemGroup(
-                        members: <Widget>[
-                          MenuButton(
-                            label: Text(TestMenu.mainMenu2.label),
-                            onOpen: () {
-                              _openItem(TestMenu.mainMenu2);
-                            },
-                            onClose: () {
-                              _closeItem(TestMenu.mainMenu2);
-                            },
-                            children: <Widget>[
-                              TextButton(
-                                  child: const Text('TEST'),
-                                  onPressed: () {
-                                    debugPrint('App: Selected item TEST button');
-                                    _controller.closeAll();
-                                  }),
-                              MenuItemButton(
-                                shortcut: const SingleActivator(
-                                  LogicalKeyboardKey.enter,
-                                  control: true,
-                                ),
-                                onSelected: () {
-                                  _itemSelected(TestMenu.subMenu3);
-                                },
-                                label: Text(TestMenu.subMenu3.label),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      MenuButton(
-                          label: Text(TestMenu.mainMenu3.label),
-                          onOpen: () {
-                            _openItem(TestMenu.mainMenu3);
-                          },
-                          onClose: () {
-                            _closeItem(TestMenu.mainMenu3);
-                          },
+                      Expanded(
+                        child: MenuBar(
+                          controller: _controller,
                           children: <Widget>[
-                            MenuItemButton(
-                              label: Text(TestMenu.subMenu8.label),
-                              onSelected: () {
-                                _itemSelected(TestMenu.subMenu8);
+                            MenuButton(
+                              label: Text(TestMenu.mainMenu1.label),
+                              onOpen: () {
+                                _openItem(TestMenu.mainMenu1);
                               },
-                            ),
-                          ]),
-                      MenuButton(
-                        label: Text(TestMenu.mainMenu4.label),
-                        onOpen: () {
-                          _openItem(TestMenu.mainMenu4);
-                        },
-                        onClose: () {
-                          _closeItem(TestMenu.mainMenu4);
-                        },
-                        children: <Widget>[
-                          MenuItemGroup(members: <Widget>[
-                            Actions(
-                              actions: <Type, Action<Intent>>{
-                                ActivateIntent: CallbackAction<ActivateIntent>(
-                                  onInvoke: (ActivateIntent? intent) {
-                                    debugPrint('Activated!');
-                                    return;
+                              onClose: () {
+                                _closeItem(TestMenu.mainMenu1);
+                              },
+                              children: <Widget>[
+                                MenuItemButton(
+                                  shortcut: const SingleActivator(
+                                    LogicalKeyboardKey.keyB,
+                                    control: true,
+                                  ),
+                                  leadingIcon:
+                                      _addItem ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
+                                  trailingIcon: const Icon(Icons.assessment),
+                                  onSelected: () {
+                                    _itemSelected(TestMenu.subMenu1);
+                                    setState(() {
+                                      _addItem = !_addItem;
+                                    });
                                   },
-                                )
-                              },
-                              child: const MenuItemButton(
-                                shortcut: SingleActivator(LogicalKeyboardKey.keyA, control: true),
-                                onSelectedIntent: ActivateIntent(),
-                                label: SizedBox(width: 200, child: TextField()),
-                              ),
+                                  label: Text(TestMenu.subMenu1.label),
+                                ),
+                                MenuItemButton(
+                                  leadingIcon: const Icon(Icons.send),
+                                  trailingIcon: const Icon(Icons.mail),
+                                  onSelected: () {
+                                    _itemSelected(TestMenu.subMenu2);
+                                  },
+                                  label: Text(TestMenu.subMenu2.label),
+                                ),
+                              ],
                             ),
-                          ]),
-                          MenuButton(
-                            label: Text(TestMenu.subMenu5.label),
-                            onOpen: () {
-                              _openItem(TestMenu.subMenu5);
-                            },
-                            onClose: () {
-                              _closeItem(TestMenu.subMenu5);
-                            },
-                            children: <Widget>[
-                              MenuItemButton(
-                                shortcut: _addItem
-                                    ? const SingleActivator(
-                                        LogicalKeyboardKey.f11,
-                                        control: true,
-                                      )
-                                    : const SingleActivator(
-                                        LogicalKeyboardKey.f10,
+                            MenuItemGroup(
+                              members: <Widget>[
+                                MenuButton(
+                                  label: Text(TestMenu.mainMenu2.label),
+                                  onOpen: () {
+                                    _openItem(TestMenu.mainMenu2);
+                                  },
+                                  onClose: () {
+                                    _closeItem(TestMenu.mainMenu2);
+                                  },
+                                  children: <Widget>[
+                                    TextButton(
+                                        child: const Text('TEST'),
+                                        onPressed: () {
+                                          debugPrint('App: Selected item TEST button');
+                                          _controller.closeAll();
+                                        }),
+                                    MenuItemButton(
+                                      shortcut: const SingleActivator(
+                                        LogicalKeyboardKey.enter,
                                         control: true,
                                       ),
-                                onSelected: () {
-                                  _itemSelected(TestMenu.subSubMenu1);
+                                      onSelected: () {
+                                        _itemSelected(TestMenu.subMenu3);
+                                      },
+                                      label: Text(TestMenu.subMenu3.label),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            MenuButton(
+                                label: Text(TestMenu.mainMenu3.label),
+                                onOpen: () {
+                                  _openItem(TestMenu.mainMenu3);
                                 },
-                                label: Text(TestMenu.subSubMenu1.label),
-                              ),
-                              MenuItemButton(
-                                label: Text(TestMenu.subSubMenu2.label),
-                                onSelected: () {
-                                  _itemSelected(TestMenu.subSubMenu2);
+                                onClose: () {
+                                  _closeItem(TestMenu.mainMenu3);
                                 },
-                              ),
-                              if (_addItem)
+                                children: <Widget>[
+                                  MenuItemButton(
+                                    label: Text(TestMenu.subMenu8.label),
+                                    onSelected: () {
+                                      _itemSelected(TestMenu.subMenu8);
+                                    },
+                                  ),
+                                ]),
+                            MenuButton(
+                              label: Text(TestMenu.mainMenu4.label),
+                              onOpen: () {
+                                _openItem(TestMenu.mainMenu4);
+                              },
+                              onClose: () {
+                                _closeItem(TestMenu.mainMenu4);
+                              },
+                              children: <Widget>[
+                                MenuItemGroup(members: <Widget>[
+                                  Actions(
+                                    actions: <Type, Action<Intent>>{
+                                      ActivateIntent: CallbackAction<ActivateIntent>(
+                                        onInvoke: (ActivateIntent? intent) {
+                                          debugPrint('Activated!');
+                                          return;
+                                        },
+                                      )
+                                    },
+                                    child: const MenuItemButton(
+                                      shortcut: SingleActivator(LogicalKeyboardKey.keyA, control: true),
+                                      onSelectedIntent: ActivateIntent(),
+                                      label: SizedBox(width: 200, child: TextField()),
+                                    ),
+                                  ),
+                                ]),
+                                MenuButton(
+                                  label: Text(TestMenu.subMenu5.label),
+                                  onOpen: () {
+                                    _openItem(TestMenu.subMenu5);
+                                  },
+                                  onClose: () {
+                                    _closeItem(TestMenu.subMenu5);
+                                  },
+                                  children: <Widget>[
+                                    MenuItemButton(
+                                      shortcut: _addItem
+                                          ? const SingleActivator(
+                                              LogicalKeyboardKey.f11,
+                                              control: true,
+                                            )
+                                          : const SingleActivator(
+                                              LogicalKeyboardKey.f10,
+                                              control: true,
+                                            ),
+                                      onSelected: () {
+                                        _itemSelected(TestMenu.subSubMenu1);
+                                      },
+                                      label: Text(TestMenu.subSubMenu1.label),
+                                    ),
+                                    MenuItemButton(
+                                      label: Text(TestMenu.subSubMenu2.label),
+                                      onSelected: () {
+                                        _itemSelected(TestMenu.subSubMenu2);
+                                      },
+                                    ),
+                                    if (_addItem)
+                                      MenuItemButton(
+                                        label: Text(TestMenu.subSubMenu3.label),
+                                        onSelected: () {
+                                          _itemSelected(TestMenu.subSubMenu3);
+                                        },
+                                      ),
+                                  ],
+                                ),
                                 MenuItemButton(
-                                  label: Text(TestMenu.subSubMenu3.label),
+                                  shortcut: const SingleActivator(
+                                    LogicalKeyboardKey.tab,
+                                    control: true,
+                                  ),
+                                  label: Text(TestMenu.subMenu6.label),
+                                ),
+                                MenuItemButton(
+                                  label: Text(TestMenu.subMenu7.label),
                                   onSelected: () {
-                                    _itemSelected(TestMenu.subSubMenu3);
+                                    _itemSelected(TestMenu.subMenu7);
                                   },
                                 ),
-                            ],
-                          ),
-                          MenuItemButton(
-                            shortcut: const SingleActivator(
-                              LogicalKeyboardKey.tab,
-                              control: true,
+                                MenuItemButton(
+                                  label: Text(TestMenu.subMenu7.label),
+                                  onSelected: () {
+                                    _itemSelected(TestMenu.subMenu7);
+                                  },
+                                ),
+                                MenuItemButton(
+                                  label: Text(TestMenu.subMenu8.label),
+                                  onSelected: () {
+                                    _itemSelected(TestMenu.subMenu8);
+                                  },
+                                ),
+                              ],
                             ),
-                            label: Text(TestMenu.subMenu6.label),
-                          ),
-                          MenuItemButton(
-                            label: Text(TestMenu.subMenu7.label),
-                            onSelected: () {
-                              _itemSelected(TestMenu.subMenu7);
-                            },
-                          ),
-                          MenuItemButton(
-                            label: Text(TestMenu.subMenu7.label),
-                            onSelected: () {
-                              _itemSelected(TestMenu.subMenu7);
-                            },
-                          ),
-                          MenuItemButton(
-                            label: Text(TestMenu.subMenu8.label),
-                            onSelected: () {
-                              _itemSelected(TestMenu.subMenu8);
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
