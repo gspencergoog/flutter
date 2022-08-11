@@ -187,15 +187,15 @@ void main() {
               textDirection: TextDirection.rtl,
               child: Column(
                 children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: MenuBar(
+                          children: createTestMenus(onSelected: onSelected),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                   const Expanded(child: Placeholder()),
                 ],
               ),
@@ -1009,7 +1009,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text(TestMenu.mainMenu4.label));
+      await tester.tap(find.text(TestMenu.mainMenu0.label));
       await tester.pumpAndSettle();
 
       expect(findDividers(), findsNWidgets(4));
@@ -1369,6 +1369,7 @@ void main() {
     }
 
     testWidgets('unconstrained menus show up in the right place in LTR', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 600));
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
@@ -1405,6 +1406,7 @@ void main() {
       expect(menuRects[3], equals(const Rect.fromLTRB(136.0, 120.0, 398.0, 168.0)));
     });
     testWidgets('unconstrained menus show up in the right place in RTL', (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 600));
       await tester.pumpWidget(
         MaterialApp(
           home: Directionality(
@@ -1444,7 +1446,7 @@ void main() {
       expect(menuRects[3], equals(const Rect.fromLTRB(402.0, 120.0, 664.0, 168.0)));
     });
     testWidgets('constrained menus show up in the right place in LTR', (WidgetTester tester) async {
-            await tester.binding.setSurfaceSize(const Size(300, 300));
+      await tester.binding.setSurfaceSize(const Size(300, 300));
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
@@ -1596,6 +1598,8 @@ enum TestMenu {
   mainMenu3('Menu 3'),
   mainMenu4('Menu 4'),
   subMenu00('Sub Menu 00'),
+  subMenu01('Sub Menu 01'),
+  subMenu02('Sub Menu 02'),
   subMenu10('Sub Menu 10'),
   subMenu11('Sub Menu 11'),
   subMenu12('Sub Menu 12'),
@@ -1631,6 +1635,24 @@ List<Widget> createTestMenus({
           onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
           label: Text(TestMenu.subMenu00.label),
+        ),
+        MenuItemGroup(
+          members: <Widget>[
+            MenuItemButton(
+              onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu01) : null,
+              shortcut: shortcuts[TestMenu.subMenu01],
+              label: Text(TestMenu.subMenu01.label),
+            ),
+          ],
+        ),
+        MenuItemGroup(
+          members: <Widget>[
+            MenuItemButton(
+              onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu02) : null,
+              shortcut: shortcuts[TestMenu.subMenu02],
+              label: Text(TestMenu.subMenu02.label),
+            ),
+          ],
         ),
       ],
     ),
@@ -1716,37 +1738,43 @@ List<Widget> createTestMenus({
         ),
       ]),
     if (includeExtraGroups)
-      MenuItemGroup(members: <Widget>[
-        MenuButton(
-          label: Text(TestMenu.mainMenu4.label),
-          onOpen: onOpen != null ? () => onOpen(TestMenu.mainMenu4) : null,
-          onClose: onClose != null ? () => onClose(TestMenu.mainMenu4) : null,
-          children: <Widget>[
-            MenuItemButton(
-              // Always disabled.
-              shortcut: shortcuts[TestMenu.subMenu40],
-              // Always disabled.
-              label: Text(TestMenu.subMenu40.label),
-            ),
-            MenuItemGroup(members: <Widget>[
+      MenuItemGroup(
+        members: <Widget>[
+          MenuButton(
+            label: Text(TestMenu.mainMenu4.label),
+            onOpen: onOpen != null ? () => onOpen(TestMenu.mainMenu4) : null,
+            onClose: onClose != null ? () => onClose(TestMenu.mainMenu4) : null,
+            children: <Widget>[
               MenuItemButton(
                 // Always disabled.
-                shortcut: shortcuts[TestMenu.subMenu41],
+                shortcut: shortcuts[TestMenu.subMenu40],
                 // Always disabled.
-                label: Text(TestMenu.subMenu41.label),
+                label: Text(TestMenu.subMenu40.label),
               ),
-            ]),
-            MenuItemGroup(members: <Widget>[
-              MenuItemButton(
-                // Always disabled.
-                shortcut: shortcuts[TestMenu.subMenu42],
-                // Always disabled.
-                label: Text(TestMenu.subMenu42.label),
+              MenuItemGroup(
+                members: <Widget>[
+                  MenuItemButton(
+                    // Always disabled.
+                    shortcut: shortcuts[TestMenu.subMenu41],
+                    // Always disabled.
+                    label: Text(TestMenu.subMenu41.label),
+                  ),
+                ],
               ),
-            ]),
-          ],
-        ),
-      ]),
+              MenuItemGroup(
+                members: <Widget>[
+                  MenuItemButton(
+                    // Always disabled.
+                    shortcut: shortcuts[TestMenu.subMenu42],
+                    // Always disabled.
+                    label: Text(TestMenu.subMenu42.label),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
   ];
   return result;
 }
