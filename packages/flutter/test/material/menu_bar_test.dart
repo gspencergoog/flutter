@@ -142,8 +142,14 @@ void main() {
           home: Material(
             child: Column(
               children: <Widget>[
-                MenuBar(
-                  children: createTestMenus(onSelected: onSelected),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: MenuBar(
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                    ),
+                  ],
                 ),
                 const Expanded(child: Placeholder()),
               ],
@@ -172,28 +178,6 @@ void main() {
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
       await tester.pump();
-
-      expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(0, 0, 800, 48)));
-
-      // Test menu bar size when not expanded.
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Column(
-              children: <Widget>[
-                MenuBar(
-                  expand: false,
-                  children: createTestMenus(onSelected: onSelected),
-                ),
-                const Expanded(child: Placeholder()),
-              ],
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(198.0, 0.0, 602.0, 48.0)));
     });
     testWidgets('geometry with RTL direction', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -203,9 +187,15 @@ void main() {
               textDirection: TextDirection.rtl,
               child: Column(
                 children: <Widget>[
-                  MenuBar(
-                    children: createTestMenus(onSelected: onSelected),
-                  ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: MenuBar(
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                    ),
+                  ],
+                ),
                   const Expanded(child: Placeholder()),
                 ],
               ),
@@ -258,7 +248,7 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(198.0, 0.0, 602.0, 48.0)));
     });
 
-    testWidgets('menu alignment and offset', (WidgetTester tester) async {
+    testWidgets('menu alignment and offset in LTR', (WidgetTester tester) async {
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createCascadingMenu(
         focusNode,
@@ -328,13 +318,17 @@ void main() {
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(472.0, 318.0, 794.0, 430.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(454.0, 318.0, 776.0, 430.0)));
+
+      menuEntry.alignment = AlignmentDirectional.topStart;
+      await tester.pump();
+      await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(10, 20)));
+      expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(10.0, 20.0)));
     });
     testWidgets('menu alignment and offset in RTL direction', (WidgetTester tester) async {
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
@@ -409,7 +403,11 @@ void main() {
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(6.0, 318.0, 328.0, 430.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(24.0, 318.0, 346.0, 430.0)));
+
+      menuEntry.alignment = AlignmentDirectional.topStart;
+      await tester.pump();
+      await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuEntry.alignmentOffset = const Offset(10, 20);
@@ -427,8 +425,14 @@ void main() {
                 children: <Widget>[
                   Padding(
                     padding: const EdgeInsets.all(12.0),
-                    child: MenuBar(
-                      children: createTestMenus(onSelected: onSelected),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: MenuBar(
+                            children: createTestMenus(onSelected: onSelected),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const Expanded(child: Placeholder()),
@@ -475,8 +479,14 @@ void main() {
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.all(12.0),
-                      child: MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: MenuBar(
+                              children: createTestMenus(onSelected: onSelected),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Expanded(child: Placeholder()),
@@ -518,11 +528,17 @@ void main() {
           home: Material(
             child: Column(
               children: <Widget>[
-                MenuBar(
-                  minimumHeight: 50,
-                  elevation: MaterialStateProperty.all<double?>(10),
-                  backgroundColor: MaterialStateProperty.all(Colors.red),
-                  children: createTestMenus(onSelected: onSelected),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: MenuBar(
+                        minimumHeight: 50,
+                        elevation: MaterialStateProperty.all<double?>(10),
+                        backgroundColor: MaterialStateProperty.all(Colors.red),
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                    ),
+                  ],
                 ),
                 const Expanded(child: Placeholder()),
               ],
@@ -1358,8 +1374,14 @@ void main() {
           home: Material(
             child: Column(
               children: <Widget>[
-                MenuBar(
-                  children: createTestMenus(onSelected: onSelected),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: MenuBar(
+                        children: createTestMenus(onSelected: onSelected),
+                      ),
+                    ),
+                  ],
                 ),
                 const Expanded(child: Placeholder()),
               ],
@@ -1390,8 +1412,14 @@ void main() {
             child: Material(
               child: Column(
                 children: <Widget>[
-                  MenuBar(
-                    children: createTestMenus(onSelected: onSelected),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: MenuBar(
+                          children: createTestMenus(onSelected: onSelected),
+                        ),
+                      ),
+                    ],
                   ),
                   const Expanded(child: Placeholder()),
                 ],

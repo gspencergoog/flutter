@@ -86,13 +86,13 @@ void main() {
     // Open a test menu.
     await tester.tap(find.text(TestMenu.mainMenu1.label));
     await tester.pump();
-    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 52.0)));
+    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(180.0, 0.0, 620.0, 52.0)));
     final Material menuBarMaterial = getMenuBarPanelMaterial(tester);
     expect(menuBarMaterial.elevation, equals(20));
     expect(menuBarMaterial.color, equals(Colors.green));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(138.0, 50.0, 442.0, 230.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(318.0, 48.0, 622.0, 228.0)));
     expect(subMenuMaterial.elevation, equals(15));
     expect(subMenuMaterial.color, equals(Colors.red));
   });
@@ -146,19 +146,19 @@ void main() {
     await tester.tap(find.text(TestMenu.mainMenu1.label));
     await tester.pump();
 
-    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 72.0)));
+    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(182.0, 0.0, 618.0, 72.0)));
     final Material menuBarMaterial = getMenuBarPanelMaterial(tester);
     expect(menuBarMaterial.elevation, equals(10.0));
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(142.0, 60.0, 454.0, 248.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(324.0, 60.0, 636.0, 248.0)));
     expect(subMenuMaterial.elevation, equals(15));
     expect(subMenuMaterial.color, equals(Colors.cyan));
     expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));
 
     final Finder menuItem = findSubMenuItem();
-    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(156.0, 74.0, 440.0, 122.0)));
+    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(338.0, 74.0, 622.0, 122.0)));
     final Material menuItemMaterial = tester.widget<Material>(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));
     expect(menuItemMaterial.elevation, equals(0.0));

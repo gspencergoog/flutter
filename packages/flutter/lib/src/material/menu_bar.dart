@@ -30,19 +30,6 @@ const bool _kDebugMenus = false;
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
 
-bool _menuDebug(String message, [Iterable<String>? details]) {
-  if (_kDebugMenus) {
-    debugPrint('MENU: $message');
-    if (details != null && details.isNotEmpty) {
-      for (final String detail in details) {
-        debugPrint('    $detail');
-      }
-    }
-  }
-  // Return true so that it can be easily used inside of an assert.
-  return true;
-}
-
 // The default size of the arrow in _MenuItemLabel that indicates that a menu
 // has a submenu.
 const double _kDefaultSubmenuIconSize = 24.0;
@@ -224,7 +211,7 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
     properties.add(DiagnosticsProperty<MenuController?>('controller', controller, defaultValue: null));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<double?>('minimumHeight', minimumHeight, defaultValue: null));
+    properties.add(DoubleProperty('minimumHeight', minimumHeight, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>?>('elevation', elevation, defaultValue: null));
   }
@@ -1688,20 +1675,27 @@ class _MenuPanelState extends State<_MenuPanel> {
       },
       child: ConstrainedBox(
         constraints: _getMinSizeConstraint(),
-        child: _intrinsicCrossSize(
-          child: Material(
-            color: widget.color,
-            shape: widget.shape,
-            elevation: widget.elevation,
-            child: Padding(
-              padding: widget.padding,
-              child: SingleChildScrollView(
-                scrollDirection: widget.orientation,
-                child: Flex(
-                  textDirection: Directionality.of(context),
-                  direction: widget.orientation,
-                  mainAxisSize: MainAxisSize.min,
-                  children: widget.children,
+        // This scroll view is just here to get the proper clipping behavior,
+        // since other combinations of ClipRect, etc. didn't work.
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+          child: _intrinsicCrossSize(
+            child: Material(
+              color: widget.color,
+              shape: widget.shape,
+              elevation: widget.elevation,
+              child: Padding(
+                padding: widget.padding,
+                child: SingleChildScrollView(
+                  scrollDirection: widget.orientation,
+                  child: Flex(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: Directionality.of(context),
+                    direction: widget.orientation,
+                    mainAxisSize: MainAxisSize.min,
+                    children: widget.children,
+                  ),
                 ),
               ),
             ),
@@ -1865,14 +1859,14 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     final Rect overlayRect = Offset.zero & size;
     final Rect absoluteButtonRect = buttonRect.toRect(overlayRect);
     final Alignment alignment = this.alignment.resolve(textDirection);
-    final Offset desiredPosition = alignment.withinRect(absoluteButtonRect) + alignmentOffset;
+    final Offset desiredPosition = alignment.withinRect(absoluteButtonRect);
     final Offset originCenter = absoluteButtonRect.center;
     final Iterable<Rect> subScreens = DisplayFeatureSubScreen.subScreensInBounds(overlayRect, avoidBounds);
     final Rect screen = _closestScreen(subScreens, originCenter);
     final EdgeInsets resolvedButtonPadding = buttonPadding.resolve(textDirection);
 
     double x = desiredPosition.dx;
-    double y = desiredPosition.dy;
+    double y = desiredPosition.dy + alignmentOffset.dy;
     final Rect allowedRect = Rect.fromLTRB(
       screen.left + resolvedButtonPadding.left,
       screen.top + resolvedButtonPadding.top,
@@ -1882,9 +1876,10 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
     switch (textDirection) {
       case TextDirection.rtl:
-        x -= childSize.width;
+        x -= childSize.width + alignmentOffset.dx;
         break;
       case TextDirection.ltr:
+        x += alignmentOffset.dx;
         break;
     }
 
@@ -1947,8 +1942,6 @@ class _MenuLayout extends SingleChildLayoutDelegate {
         }
       }
     }
-    debugPrint(
-        'Fitting $childSize into $allowedRect with alignment $alignment and preferred position $desiredPosition button rect $absoluteButtonRect, picked ${Offset(x, y)}');
     return Offset(x, y);
   }
 
@@ -1966,6 +1959,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   bool shouldRelayout(_MenuLayout oldDelegate) {
     return buttonRect != oldDelegate.buttonRect ||
         textDirection != oldDelegate.textDirection ||
+        alignment != oldDelegate.alignment ||
+        alignmentOffset != oldDelegate.alignmentOffset ||
         !setEquals(avoidBounds, oldDelegate.avoidBounds);
   }
 }
@@ -2783,6 +2778,19 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     }
     super.invoke(intent);
   }
+}
+
+bool _menuDebug(String message, [Iterable<String>? details]) {
+  if (_kDebugMenus) {
+    debugPrint('MENU: $message');
+    if (details != null && details.isNotEmpty) {
+      for (final String detail in details) {
+        debugPrint('    $detail');
+      }
+    }
+  }
+  // Return true so that it can be easily used inside of an assert.
+  return true;
 }
 
 // This class will eventually be auto-generated, so it should remain at the end
