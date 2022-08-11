@@ -11,6 +11,9 @@ import 'material_state.dart';
 import 'menu_bar.dart';
 import 'theme.dart';
 
+// Examples can assume:
+// const Widget child = SizedBox();
+
 /// Defines the visual properties of [MenuBar], [MenuButton] and
 /// [MenuItemButton] widgets.
 ///
@@ -326,7 +329,15 @@ class MenuTheme extends InheritedTheme {
   /// Typical usage is as follows:
   ///
   /// ```dart
-  /// MenuThemeData theme = MenuTheme.of(context);
+  /// Widget build(BuildContext context) {
+  ///   final MenuThemeData theme = MenuTheme.of(context);
+  ///   return MenuTheme(
+  ///     data: theme.copyWith(
+  ///       barBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.red),
+  ///     ),
+  ///     child: child,
+  ///   );
+  /// }
   /// ```
   static MenuThemeData of(BuildContext context) {
     final MenuTheme? menuTheme = context.dependOnInheritedWidgetOfExactType<MenuTheme>();
