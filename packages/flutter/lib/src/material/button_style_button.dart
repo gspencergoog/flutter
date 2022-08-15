@@ -79,10 +79,14 @@ abstract class ButtonStyleButton extends StatefulWidget {
 
   /// Customizes this button's appearance.
   ///
-  /// Non-null properties of this style override the corresponding
-  /// properties in [themeStyleOf] and [defaultStyleOf]. [MaterialStateProperty]s
-  /// that resolve to non-null values will similarly override the corresponding
+  /// Non-null properties of this style override the corresponding properties in
+  /// [themeStyleOf] and [defaultStyleOf]. [MaterialStateProperty]s that resolve
+  /// to non-null values will similarly override the corresponding
   /// [MaterialStateProperty]s in [themeStyleOf] and [defaultStyleOf].
+  ///
+  /// If the [ButtonStyle.side] property is set, and the [ButtonStyle.shape]
+  /// property is set to an [OutlinedBorder] subclass, then the button will use
+  /// the [ButtonStyle.side] value as its [OutlinedBorder.side].
   ///
   /// Null by default.
   final ButtonStyle? style;
@@ -287,7 +291,10 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
     final Size? resolvedMaximumSize = resolve<Size?>((ButtonStyle? style) => style?.maximumSize);
     final double? resolvedIconSize = resolve<double?>((ButtonStyle? style) => style?.iconSize);
     final BorderSide? resolvedSide = resolve<BorderSide?>((ButtonStyle? style) => style?.side);
-    final OutlinedBorder? resolvedShape = resolve<OutlinedBorder?>((ButtonStyle? style) => style?.shape);
+    ShapeBorder? resolvedShape = resolve<ShapeBorder?>((ButtonStyle? style) => style?.shape);
+    if (resolvedShape is OutlinedBorder) {
+      resolvedShape = resolvedShape.copyWith(side: resolvedSide);
+    }
 
     final MaterialStateMouseCursor mouseCursor = _MouseCursor(
       (Set<MaterialState> states) => effectiveValue((ButtonStyle? style) => style?.mouseCursor?.resolve(states)),
@@ -375,7 +382,7 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
       child: Material(
         elevation: resolvedElevation!,
         textStyle: resolvedTextStyle?.copyWith(color: resolvedForegroundColor),
-        shape: resolvedShape!.copyWith(side: resolvedSide),
+        shape: resolvedShape,
         color: resolvedBackgroundColor,
         shadowColor: resolvedShadowColor,
         surfaceTintColor: resolvedSurfaceTintColor,
@@ -395,7 +402,7 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
           splashFactory: resolvedSplashFactory,
           overlayColor: overlayColor,
           highlightColor: Colors.transparent,
-          customBorder: resolvedShape.copyWith(side: resolvedSide),
+          customBorder: resolvedShape,
           statesController: statesController,
           child: IconTheme.merge(
             data: IconThemeData(color: resolvedForegroundColor, size: resolvedIconSize),
