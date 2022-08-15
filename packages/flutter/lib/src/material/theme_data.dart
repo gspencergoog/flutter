@@ -36,6 +36,7 @@ import 'ink_well.dart' show InteractiveInkFeatureFactory;
 import 'input_decorator.dart';
 import 'list_tile.dart';
 import 'list_tile_theme.dart';
+import 'menu_theme.dart';
 import 'navigation_bar_theme.dart';
 import 'navigation_rail_theme.dart';
 import 'outlined_button_theme.dart';
@@ -346,6 +347,7 @@ class ThemeData with Diagnosticable {
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     IconButtonThemeData? iconButtonTheme,
     ListTileThemeData? listTileTheme,
+    MenuThemeData? menuTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
     OutlinedButtonThemeData? outlinedButtonTheme,
@@ -576,6 +578,7 @@ class ThemeData with Diagnosticable {
     floatingActionButtonTheme ??= const FloatingActionButtonThemeData();
     iconButtonTheme ??= const IconButtonThemeData();
     listTileTheme ??= const ListTileThemeData();
+    menuTheme ??= const MenuThemeData();
     navigationBarTheme ??= const NavigationBarThemeData();
     navigationRailTheme ??= const NavigationRailThemeData();
     outlinedButtonTheme ??= const OutlinedButtonThemeData();
@@ -668,6 +671,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: floatingActionButtonTheme,
       iconButtonTheme: iconButtonTheme,
       listTileTheme: listTileTheme,
+      menuTheme: menuTheme,
       navigationBarTheme: navigationBarTheme,
       navigationRailTheme: navigationRailTheme,
       outlinedButtonTheme: outlinedButtonTheme,
@@ -775,6 +779,7 @@ class ThemeData with Diagnosticable {
     required this.floatingActionButtonTheme,
     required this.iconButtonTheme,
     required this.listTileTheme,
+    required this.menuTheme,
     required this.navigationBarTheme,
     required this.navigationRailTheme,
     required this.outlinedButtonTheme,
@@ -934,6 +939,7 @@ class ThemeData with Diagnosticable {
        assert(floatingActionButtonTheme != null),
        assert(iconButtonTheme != null),
        assert(listTileTheme != null),
+       assert(menuTheme != null),
        assert(navigationBarTheme != null),
        assert(navigationRailTheme != null),
        assert(outlinedButtonTheme != null),
@@ -1509,6 +1515,10 @@ class ThemeData with Diagnosticable {
   /// A theme for customizing the appearance of [ListTile] widgets.
   final ListTileThemeData listTileTheme;
 
+  /// A theme for customizing the color, shape, elevation, and text style of
+  /// cascading menus.
+  final MenuThemeData menuTheme;
+
   /// A theme for customizing the background color, text style, and icon themes
   /// of a [NavigationBar].
   final NavigationBarThemeData navigationBarTheme;
@@ -1793,6 +1803,7 @@ class ThemeData with Diagnosticable {
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     IconButtonThemeData? iconButtonTheme,
     ListTileThemeData? listTileTheme,
+    MenuThemeData? menuTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
     OutlinedButtonThemeData? outlinedButtonTheme,
@@ -1947,6 +1958,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: floatingActionButtonTheme ?? this.floatingActionButtonTheme,
       iconButtonTheme: iconButtonTheme ?? this.iconButtonTheme,
       listTileTheme: listTileTheme ?? this.listTileTheme,
+      menuTheme: menuTheme ?? this.menuTheme,
       navigationBarTheme: navigationBarTheme ?? this.navigationBarTheme,
       navigationRailTheme: navigationRailTheme ?? this.navigationRailTheme,
       outlinedButtonTheme: outlinedButtonTheme ?? this.outlinedButtonTheme,
@@ -2147,6 +2159,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: FloatingActionButtonThemeData.lerp(a.floatingActionButtonTheme, b.floatingActionButtonTheme, t)!,
       iconButtonTheme: IconButtonThemeData.lerp(a.iconButtonTheme, b.iconButtonTheme, t)!,
       listTileTheme: ListTileThemeData.lerp(a.listTileTheme, b.listTileTheme, t)!,
+      menuTheme: MenuThemeData.lerp(a.menuTheme, b.menuTheme, t)!,
       navigationBarTheme: NavigationBarThemeData.lerp(a.navigationBarTheme, b.navigationBarTheme, t)!,
       navigationRailTheme: NavigationRailThemeData.lerp(a.navigationRailTheme, b.navigationRailTheme, t)!,
       outlinedButtonTheme: OutlinedButtonThemeData.lerp(a.outlinedButtonTheme, b.outlinedButtonTheme, t)!,
@@ -2249,6 +2262,7 @@ class ThemeData with Diagnosticable {
         other.floatingActionButtonTheme == floatingActionButtonTheme &&
         other.iconButtonTheme == iconButtonTheme &&
         other.listTileTheme == listTileTheme &&
+        other.menuTheme == menuTheme &&
         other.navigationBarTheme == navigationBarTheme &&
         other.navigationRailTheme == navigationRailTheme &&
         other.outlinedButtonTheme == outlinedButtonTheme &&
@@ -2348,6 +2362,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme,
       iconButtonTheme,
       listTileTheme,
+      menuTheme,
       navigationBarTheme,
       navigationRailTheme,
       outlinedButtonTheme,
@@ -2449,6 +2464,7 @@ class ThemeData with Diagnosticable {
     properties.add(DiagnosticsProperty<FloatingActionButtonThemeData>('floatingActionButtonTheme', floatingActionButtonTheme, defaultValue: defaultData.floatingActionButtonTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<IconButtonThemeData>('iconButtonTheme', iconButtonTheme, defaultValue: defaultData.iconButtonTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ListTileThemeData>('listTileTheme', listTileTheme, defaultValue: defaultData.listTileTheme, level: DiagnosticLevel.debug));
+    properties.add(DiagnosticsProperty<MenuThemeData>('menuTheme', menuTheme, defaultValue: defaultData.menuTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<NavigationBarThemeData>('navigationBarTheme', navigationBarTheme, defaultValue: defaultData.navigationBarTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<NavigationRailThemeData>('navigationRailTheme', navigationRailTheme, defaultValue: defaultData.navigationRailTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<OutlinedButtonThemeData>('outlinedButtonTheme', outlinedButtonTheme, defaultValue: defaultData.outlinedButtonTheme, level: DiagnosticLevel.debug));
@@ -2814,7 +2830,7 @@ class VisualDensity with Diagnosticable {
   Offset get baseSizeAdjustment {
     // The number of logical pixels represented by an increase or decrease in
     // density by one. The Material Design guidelines say to increment/decrement
-    // sized in terms of four pixel increments.
+    // sizes in terms of four pixel increments.
     const double interval = 4.0;
 
     return Offset(horizontal, vertical) * interval;
