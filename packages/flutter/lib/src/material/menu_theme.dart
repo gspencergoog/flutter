@@ -113,7 +113,7 @@ class MenuThemeData with Diagnosticable {
   final EdgeInsetsDirectional? itemPadding;
 
   /// The shape of an individual [MenuItemButton].
-  final MaterialStateProperty<ShapeBorder?>? itemShape;
+  final MaterialStateProperty<OutlinedBorder?>? itemShape;
 
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
@@ -178,12 +178,12 @@ class MenuThemeData with Diagnosticable {
       itemOverlayColor: _lerpProperties<Color?>(a?.itemOverlayColor, b?.itemOverlayColor, t, Color.lerp),
       itemTextStyle: _lerpProperties<TextStyle?>(a?.itemTextStyle, b?.itemTextStyle, t, TextStyle.lerp),
       itemPadding: EdgeInsetsDirectional.lerp(a?.itemPadding, b?.itemPadding, t),
-      itemShape: _lerpProperties<ShapeBorder?>(
+      itemShape: _lerpProperties<OutlinedBorder?>(
         a?.itemShape,
         b?.itemShape,
         t,
-        (ShapeBorder? a, ShapeBorder? b, double t) {
-          return ShapeBorder.lerp(a, b, t) as OutlinedBorder?;
+        (OutlinedBorder? a, OutlinedBorder? b, double t) {
+          return OutlinedBorder.lerp(a, b, t);
         },
       ),
     );

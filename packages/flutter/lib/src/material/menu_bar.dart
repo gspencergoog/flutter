@@ -2801,9 +2801,9 @@ class _TokenDefaultsM3 extends MenuThemeData {
           barElevation: MaterialStateProperty.all<double?>(2.0),
           menuElevation: MaterialStateProperty.all<double?>(4.0),
           menuPadding: const EdgeInsetsDirectional.only(top: 8.0, bottom: 8.0),
-          menuShape: MaterialStateProperty.all<ShapeBorder?>(_defaultMenuBorder),
-          itemShape: MaterialStateProperty.all<ShapeBorder?>(_defaultItemBorder),
-          barShape: MaterialStateProperty.all<ShapeBorder?>(_defaultBarBorder),
+          menuShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultMenuBorder),
+          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder),
+          barShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultBarBorder),
         );
 
   static const RoundedRectangleBorder _defaultMenuBorder =
@@ -2892,5 +2892,5 @@ class _TokenDefaultsM3 extends MenuThemeData {
   }
 
   @override
-  MaterialStateProperty<ShapeBorder?> get itemShape => super.itemShape!;
+  MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
 }
