@@ -64,7 +64,7 @@ void main() {
       side: MaterialStatePropertyAll<BorderSide>(BorderSide(width: 4.0, color: Color(0xfffffff6))),
       maximumSize: MaterialStatePropertyAll<Size>(Size(100.0, 200.0)),
       iconSize: MaterialStatePropertyAll<double>(48.1),
-      shape: MaterialStatePropertyAll<ShapeBorder>(Border()),
+      shape: MaterialStatePropertyAll<OutlinedBorder>(StadiumBorder()),
       mouseCursor: MaterialStatePropertyAll<MouseCursor>(SystemMouseCursors.forbidden),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       animationDuration: Duration(seconds: 1),
@@ -111,7 +111,7 @@ void main() {
     const MaterialStateProperty<Size> maximumSize = MaterialStatePropertyAll<Size>(Size(5, 6));
     const MaterialStateProperty<double> iconSize = MaterialStatePropertyAll<double>(48.0);
     const MaterialStateProperty<BorderSide> side = MaterialStatePropertyAll<BorderSide>(BorderSide());
-    const MaterialStateProperty<ShapeBorder> shape = MaterialStatePropertyAll<ShapeBorder>(StadiumBorder());
+    const MaterialStateProperty<OutlinedBorder> shape = MaterialStatePropertyAll<OutlinedBorder>(StadiumBorder());
     const MaterialStateProperty<MouseCursor> mouseCursor = MaterialStatePropertyAll<MouseCursor>(SystemMouseCursors.forbidden);
     const VisualDensity visualDensity = VisualDensity.compact;
     const MaterialTapTargetSize tapTargetSize = MaterialTapTargetSize.shrinkWrap;

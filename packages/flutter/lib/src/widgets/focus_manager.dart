@@ -1448,8 +1448,6 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     rootScope._manager = this;
   }
 
-  bool _disposed = false;
-
   /// Registers global input event handlers that are needed to manage focus.
   ///
   /// This sets the [RawKeyboard.keyEventHandler] for the shared instance of
@@ -1471,7 +1469,6 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
       GestureBinding.instance.pointerRouter.removeGlobalRoute(_handlePointerEvent);
     }
     super.dispose();
-    _disposed = true;
   }
 
   /// Provides convenient access to the current [FocusManager] singleton from
@@ -1765,9 +1762,6 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   }
 
   void _applyFocusChange() {
-    if (_disposed) {
-      return;
-    }
     _haveScheduledUpdate = false;
     final FocusNode? previousFocus = _primaryFocus;
 
