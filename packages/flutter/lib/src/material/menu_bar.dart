@@ -8,19 +8,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/src/material/ink_well.dart';
 import 'package:flutter/widgets.dart';
 
 import 'button_style.dart';
+import 'button_style_button.dart';
 import 'color_scheme.dart';
 import 'divider.dart';
-import 'icons.dart';
 import 'material.dart';
 import 'material_localizations.dart';
 import 'material_state.dart';
 import 'menu_theme.dart';
 import 'text_button.dart';
-import 'text_button_theme.dart';
-import 'text_theme.dart';
 import 'theme.dart';
 import 'theme_data.dart';
 
@@ -41,7 +40,6 @@ const double _kLabelItemDefaultSpacing = 18.0;
 // The minimum spacing between the the leading icon, label, trailing icon, and
 // shortcut label in a _MenuItemLabel.
 const double _kLabelItemMinSpacing = 4.0;
-
 // The minimum horizontal spacing on the outside of the top level menu.
 const double _kTopLevelMenuHorizontalMinPadding = 4.0;
 
@@ -276,15 +274,15 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
                     child: _MenuPanel(
                       elevation: widget.elevation?.resolve(state) ??
                           menuTheme.barElevation?.resolve(state) ??
-                          _TokenDefaultsM3(context).barElevation.resolve(state)!,
+                          _MenuDefaultsM3(context).barElevation.resolve(state)!,
                       color: widget.backgroundColor?.resolve(state) ??
                           menuTheme.barBackgroundColor?.resolve(state) ??
-                          _TokenDefaultsM3(context).barBackgroundColor.resolve(state)!,
-                      padding: widget.padding ?? menuTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
+                          _MenuDefaultsM3(context).barBackgroundColor.resolve(state)!,
+                      padding: widget.padding ?? menuTheme.barPadding ?? _MenuDefaultsM3(context).barPadding,
                       orientation: Axis.horizontal,
                       shape: widget.shape?.resolve(state) ??
                           menuTheme.barShape?.resolve(state) ??
-                          _TokenDefaultsM3(context).barShape!.resolve(state)!,
+                          _MenuDefaultsM3(context).barShape!.resolve(state)!,
                       children: MenuItemGroup._expandGroups(widget.children, Axis.horizontal),
                     ),
                   ),
@@ -313,7 +311,7 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 ///
 /// It shows a hint for an associated shortcut, if any. When selected via click,
 /// hitting enter while focused, or activating the associated [shortcut], it
-/// will call its [onSelected] callback or fire its [onSelectedIntent] intent,
+/// will call its [onPressed] callback or fire its [onPressedIntent] intent,
 /// depending on which is defined. If neither is defined, then this item will be
 /// disabled.
 ///
@@ -341,166 +339,202 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 ///   don't involve using [Actions].
 /// * [PlatformMenuBar], a class that renders similar menu bar items from a
 ///   [PlatformMenuItem] using platform-native APIs.
-class MenuItemButton extends StatefulWidget {
+class MenuItemButton extends ButtonStyleButton {
   /// Creates a const [MenuItemButton].
   ///
-  /// The [label] attribute is required.
+  /// The [child] attribute is required.
   const MenuItemButton({
     super.key,
     this.shortcut,
-    this.onSelected,
-    this.onSelectedIntent,
-    this.onHover,
-    this.focusNode,
+    super.onPressed,
+    super.onLongPress,
+    super.onHover,
+    super.onFocusChange,
+    super.focusNode,
+    super.style,
+    super.clipBehavior = Clip.hardEdge,
     this.leadingIcon,
     this.trailingIcon,
-    this.semanticsLabel,
-    this.backgroundColor,
-    this.foregroundColor,
-    this.overlayColor,
-    this.textStyle,
-    this.padding,
-    this.shape,
-    required this.label,
-  }) : assert(onSelected == null || onSelectedIntent == null,
-            'Only one of onSelected or onSelectedIntent may be specified');
-
-  /// A required widget displaying the label for this item in the menu.
-  final Widget label;
+    required super.child,
+  }) : super(autofocus: false);
 
   /// The optional shortcut that selects this [MenuItemButton].
   ///
-  /// This shortcut is only enabled when [onSelected] is set.
+  /// This shortcut is only enabled when [onPressed] is set.
   final MenuSerializableShortcut? shortcut;
 
-  /// The function called when the mouse leaves or enters this menu item's
-  /// button.
-  final ValueChanged<bool>? onHover;
-
-  /// The callback, if any, to be invoked if this item is selected.
-  ///
-  /// Only items that do not have submenus will have this callback invoked.
-  ///
-  /// Only one of [onSelected] or [onSelectedIntent] may be specified.
-  ///
-  /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
-  /// menu item is considered to be disabled.
-  final VoidCallback? onSelected;
-
-  /// An intent, if any, to be invoked if the item is selected.
-  ///
-  /// Only items that do not have submenus will have this intent invoked.
-  ///
-  /// Only one of [onSelected] or [onSelectedIntent] may be specified.
-  ///
-  /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
-  /// menu item is considered to be disabled.
-  ///
-  /// The default implementation returns null.
-  final Intent? onSelectedIntent;
-
-  /// The focus node to use for the menu item button.
-  final FocusNode? focusNode;
-
-  /// An optional icon to display before the [label] label.
+  /// An optional icon to display before the [child] label.
   final Widget? leadingIcon;
 
-  /// An optional icon to display after the [label] label.
+  /// An optional icon to display after the [child] label.
   final Widget? trailingIcon;
-
-  /// The semantic label of the menu item used by accessibility frameworks to
-  /// announce its label when the menu is focused.
-  ///
-  /// This semantics information will take precedence over semantics information
-  /// provided in [label].
-  final String? semanticsLabel;
-
-  /// The background color for this [MenuItemButton].
-  ///
-  /// Uses [MenuThemeData.itemBackgroundColor] if null. If that is also null,
-  /// defaults to the ambient [Theme]'s [ColorScheme.surface].
-  ///
-  /// See also:
-  ///
-  /// * [MenuThemeData.itemBackgroundColor], for the value in the [MenuTheme]
-  ///   that can be set instead of this property.
-  final MaterialStateProperty<Color?>? backgroundColor;
-
-  /// The foreground color for this [MenuItemButton].
-  ///
-  /// Defaults to the ambient [Theme]'s [ColorScheme.primary] if null.
-  ///
-  /// See also:
-  ///
-  /// * [MenuThemeData.itemForegroundColor], for the value in the [MenuTheme]
-  ///   that can be set instead of this property.
-  final MaterialStateProperty<Color?>? foregroundColor;
-
-  /// The overlay color for this [MenuItemButton].
-  ///
-  /// Defaults to the ambient [Theme]'s [ColorScheme.primary] (with appropriate
-  /// state-dependent opacity) if null.
-  ///
-  /// See also:
-  ///
-  ///  * [MenuThemeData.itemOverlayColor], for the value in the [MenuTheme] that
-  ///    can be set instead of this property.
-  final MaterialStateProperty<Color?>? overlayColor;
-
-  /// The padding around the contents of the [MenuItemButton].
-  ///
-  /// Defaults to zero in the vertical direction, and 24 pixels on each side in
-  /// the horizontal direction.
-  ///
-  /// See also:
-  ///
-  ///  * [MenuThemeData.itemPadding], for the value in the [MenuTheme] that
-  ///    can be set instead of this property.
-  final EdgeInsetsDirectional? padding;
-
-  /// The text style for the text in this menu bar item.
-  ///
-  /// May be overridden inside of [label].
-  ///
-  /// Defaults to the ambient [ThemeData.textTheme]'s [TextTheme.labelLarge] if null.
-  ///
-  /// See also:
-  ///
-  ///  * [MenuThemeData.itemTextStyle], for the value in the [MenuTheme] that
-  ///    can be set instead of this property.
-  final MaterialStateProperty<TextStyle?>? textStyle;
-
-  /// The shape of this menu bar item.
-  ///
-  /// Defaults to a [RoundedRectangleBorder] with a border radius of zero (i.e.
-  /// a rectangle) if null.
-  ///
-  /// See also:
-  ///
-  ///  * [MenuThemeData.itemShape], for the value in the [MenuTheme] that
-  ///    can be set instead of this property.
-  final MaterialStateProperty<OutlinedBorder?>? shape;
 
   @override
   State<MenuItemButton> createState() => _MenuItemButtonState();
 
+  /// Defines the button's default appearance.
+  ///
+  /// The button [child]'s [Text] and [Icon] widgets are rendered with
+  /// the [ButtonStyle]'s foreground color. The button's [InkWell] adds
+  /// the style's overlay color when the button is focused, hovered
+  /// or pressed. The button's background color becomes its [Material]
+  /// color and is transparent by default.
+  ///
+  /// All of the ButtonStyle's defaults appear below.
+  ///
+  /// In this list "Theme.foo" is shorthand for
+  /// `Theme.of(context).foo`. Color scheme values like
+  /// "onSurface(0.38)" are shorthand for
+  /// `onSurface.withOpacity(0.38)`. [MaterialStateProperty] valued
+  /// properties that are not followed by a sublist have the same
+  /// value for all states, otherwise the values are as specified for
+  /// each state and "others" means all other states.
+  ///
+  /// The `textScaleFactor` is the value of
+  /// `MediaQuery.of(context).textScaleFactor` and the names of the
+  /// EdgeInsets constructors and `EdgeInsetsGeometry.lerp` have been
+  /// abbreviated for readability.
+  ///
+  /// The color of the [ButtonStyle.textStyle] is not used, the
+  /// [ButtonStyle.foregroundColor] color is used instead.
+  ///
+  /// * `textStyle` - Theme.textTheme.labelLarge
+  /// * `backgroundColor` - transparent
+  /// * `foregroundColor`
+  ///   * disabled - Theme.colorScheme.onSurface(0.38)
+  ///   * others - Theme.colorScheme.primary
+  /// * `overlayColor`
+  ///   * hovered - Theme.colorScheme.primary(0.08)
+  ///   * focused or pressed - Theme.colorScheme.primary(0.12)
+  ///   * others - null
+  /// * `shadowColor` - null
+  /// * `surfaceTintColor` - null
+  /// * `elevation` - 0
+  /// * `padding`
+  ///   * `textScaleFactor <= 1` - all(8)
+  ///   * `1 < textScaleFactor <= 2` - lerp(all(8), horizontal(8))
+  ///   * `2 < textScaleFactor <= 3` - lerp(horizontal(8), horizontal(4))
+  ///   * `3 < textScaleFactor` - horizontal(4)
+  /// * `minimumSize` - Size(64, 40)
+  /// * `fixedSize` - null
+  /// * `maximumSize` - Size.infinite
+  /// * `side` - null
+  /// * `shape` - StadiumBorder()
+  /// * `mouseCursor`
+  ///   * disabled - SystemMouseCursors.basic
+  ///   * others - SystemMouseCursors.click
+  /// * `visualDensity` - theme.visualDensity
+  /// * `tapTargetSize` - theme.materialTapTargetSize
+  /// * `animationDuration` - kThemeChangeDuration
+  /// * `enableFeedback` - true
+  /// * `alignment` - Alignment.center
+  /// * `splashFactory` - Theme.splashFactory
+  @override
+  ButtonStyle defaultStyleOf(BuildContext context) {
+    return _MenuButtonDefaultsM3(context);
+  }
+
+  /// Returns the [MenuButtonThemeData.style] of the closest
+  /// [MenuButtonTheme] ancestor.
+  @override
+  ButtonStyle? themeStyleOf(BuildContext context) {
+    return MenuButtonTheme.of(context).style;
+  }
+
+  /// A static convenience method that constructs a menu item button
+  /// [ButtonStyle] given simple values.
+  ///
+  /// The [foregroundColor] color is used to create a [MaterialStateProperty]
+  /// [ButtonStyle.foregroundColor] value. Specify a value for [foregroundColor]
+  /// to specify the color of the button's icons. The [hoverColor], [focusColor]
+  /// and [highlightColor] colors are used to indicate the hover, focus,
+  /// and pressed states. Use [backgroundColor] for the button's background
+  /// fill color. Use [disabledForegroundColor] and [disabledBackgroundColor]
+  /// to specify the button's disabled icon and fill color.
+  ///
+  /// Similarly, the [enabledMouseCursor] and [disabledMouseCursor]
+  /// parameters are used to construct [ButtonStyle].mouseCursor.
+  ///
+  /// All of the other parameters are either used directly or used to
+  /// create a [MaterialStateProperty] with a single value for all
+  /// states.
+  ///
+  /// All parameters default to null, by default this method returns
+  /// a [ButtonStyle] that doesn't override anything.
+  ///
+  /// For example, to override the default foreground color for a
+  /// [MenuItemButton], as well as its overlay color, with all of the
+  /// standard opacity adjustments for the pressed, focused, and
+  /// hovered states, one could write:
+  ///
+  /// ```dart
+  /// MenuItemButton(
+  ///   leadingIcon: const Icon(Icons.pets),
+  ///   style: IconButton.styleFrom(foregroundColor: Colors.green),
+  ///   onPressed: () {
+  ///     // ...
+  ///   },
+  ///   child: const Text('Button Label'),
+  /// ),
+  /// ```
+  static ButtonStyle styleFrom({
+    Color? foregroundColor,
+    Color? backgroundColor,
+    Color? overlayColor,
+    Color? disabledForegroundColor,
+    Color? disabledBackgroundColor,
+    Color? focusColor,
+    Color? hoverColor,
+    Color? highlightColor,
+    Color? shadowColor,
+    Color? surfaceTintColor,
+    double? elevation,
+    Size? minimumSize,
+    Size? fixedSize,
+    Size? maximumSize,
+    double? iconSize,
+    BorderSide? side,
+    OutlinedBorder? shape,
+    EdgeInsetsGeometry? padding,
+    MouseCursor? mouseCursor,
+    VisualDensity? visualDensity,
+    MaterialTapTargetSize? tapTargetSize,
+    Duration? animationDuration,
+    bool? enableFeedback,
+    AlignmentGeometry? alignment,
+    InteractiveInkFeatureFactory? splashFactory,
+  }) {
+    return ButtonStyle(
+      backgroundColor: ButtonStyleButton.allOrNull<Color>(backgroundColor),
+      foregroundColor: ButtonStyleButton.allOrNull<Color>(foregroundColor),
+      overlayColor: ButtonStyleButton.allOrNull<Color>(overlayColor),
+      shadowColor: ButtonStyleButton.allOrNull<Color>(shadowColor),
+      surfaceTintColor: ButtonStyleButton.allOrNull<Color>(surfaceTintColor),
+      elevation: ButtonStyleButton.allOrNull<double>(elevation),
+      padding: ButtonStyleButton.allOrNull<EdgeInsetsGeometry>(padding),
+      minimumSize: ButtonStyleButton.allOrNull<Size>(minimumSize),
+      fixedSize: ButtonStyleButton.allOrNull<Size>(fixedSize),
+      maximumSize: ButtonStyleButton.allOrNull<Size>(maximumSize),
+      iconSize: ButtonStyleButton.allOrNull<double>(iconSize),
+      side: ButtonStyleButton.allOrNull<BorderSide>(side),
+      shape: ButtonStyleButton.allOrNull<OutlinedBorder>(shape),
+      mouseCursor: ButtonStyleButton.allOrNull<MouseCursor>(mouseCursor),
+      visualDensity: visualDensity,
+      tapTargetSize: tapTargetSize,
+      animationDuration: animationDuration,
+      enableFeedback: enableFeedback,
+      alignment: alignment,
+      splashFactory: splashFactory,
+    );
+  }
+
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('label', label.toString(), defaultValue: null));
-    properties.add(FlagProperty('enabled', value: onSelected != null || onSelectedIntent != null, ifFalse: 'DISABLED'));
-    properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode, defaultValue: null));
+    properties.add(DiagnosticsProperty<String>('child', child.toString(), defaultValue: null));
+    properties.add(FlagProperty('enabled', value: onPressed != null, ifFalse: 'DISABLED'));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
-    properties.add(StringProperty('semanticsLabel', semanticsLabel, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<Color?>>('foregroundColor', foregroundColor, defaultValue: null));
-    properties
-        .add(DiagnosticsProperty<MaterialStateProperty<Color?>>('overlayColor', overlayColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('textStyle', textStyle, defaultValue: null));
   }
 }
 
@@ -509,7 +543,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   FocusNode get _focusNode => widget.focusNode ?? _internalFocusNode!;
 
   bool get _enabled {
-    return widget.onSelected != null || widget.onSelectedIntent != null;
+    return widget.onPressed != null;
   }
 
   @override
@@ -543,41 +577,25 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 
   void _handleFocusChange() {
     if (!_focusNode.hasPrimaryFocus) {
+      // Close any child menus of this menu.
       _MenuNode.maybeOf(context)?.closeChildren();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final MenuThemeData menuTheme = MenuTheme.of(context);
-    final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
-    final Size densityAdjustedSize = const Size(64, 48) + Theme.of(context).visualDensity.baseSizeAdjustment;
-    final MaterialStateProperty<EdgeInsetsDirectional> resolvedPadding =
-        MaterialStatePropertyAll<EdgeInsetsDirectional>(
-            widget.padding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding);
-    return Semantics(
-      enabled: _enabled,
-      label: widget.semanticsLabel,
-      child: TextButton(
-        style: TextButtonTheme.of(context).style ?? ButtonStyle(
-          minimumSize: MaterialStatePropertyAll<Size>(densityAdjustedSize),
-          backgroundColor: widget.backgroundColor ?? menuTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
-          foregroundColor: widget.foregroundColor ?? menuTheme.itemForegroundColor ?? defaultTheme.itemForegroundColor,
-          overlayColor: widget.overlayColor ?? menuTheme.itemOverlayColor ?? defaultTheme.itemOverlayColor,
-          padding: resolvedPadding,
-          shape: widget.shape ?? menuTheme.itemShape ?? defaultTheme.itemShape,
-          textStyle: widget.textStyle ?? menuTheme.itemTextStyle ?? defaultTheme.itemTextStyle,
-        ),
-        focusNode: _focusNode,
-        onHover: _enabled ? _handleHover : null,
-        onPressed: _enabled ? _handleSelect : null,
-        child: _MenuItemLabel(
-          leadingIcon: widget.leadingIcon,
-          shortcut: widget.shortcut,
-          trailingIcon: widget.trailingIcon,
-          hasSubmenu: false,
-          child: widget.label,
-        ),
+    return TextButton(
+      style: widget.style ?? MenuButtonTheme.of(context).style,
+      focusNode: _focusNode,
+      onHover: _enabled ? _handleHover : null,
+      onPressed: _enabled ? _handleSelect : null,
+      child: _MenuItemLabel(
+        key: ValueKey<MenuSerializableShortcut?>(widget.shortcut),
+        leadingIcon: widget.leadingIcon,
+        shortcut: widget.shortcut,
+        trailingIcon: widget.trailingIcon,
+        hasSubmenu: false,
+        child: widget.child!,
       ),
     );
   }
@@ -605,12 +623,8 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   }
 
   void _handleSelect() {
-    assert(_menuDebug('Selected ${widget.label} menu'));
-    if (widget.onSelectedIntent != null) {
-      Actions.invoke<Intent>(context, widget.onSelectedIntent!);
-    } else {
-      widget.onSelected?.call();
-    }
+    assert(_menuDebug('Selected ${widget.child} menu'));
+    widget.onPressed?.call();
     MenuController.of(context).closeAll();
   }
 }
@@ -637,37 +651,33 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///   style.
 /// * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///   [PlatformMenuItem] using platform-native APIs instead of Flutter.
-class MenuButton extends StatefulWidget {
+class MenuButton extends ButtonStyleButton {
   /// Creates a const [MenuButton].
   ///
-  /// The [label] attribute is required.
+  /// The [child] attribute is required.
   const MenuButton({
     super.key,
-    required this.label,
+    super.onPressed,
+    super.onLongPress,
+    super.onHover,
+    super.onFocusChange,
+    super.style,
+    super.focusNode,
+    super.autofocus = false,
+    super.clipBehavior = Clip.hardEdge,
     this.alignment,
     this.alignmentOffset,
     this.leadingIcon,
     this.trailingIcon,
-    this.semanticsLabel,
-    this.focusNode,
-    this.backgroundColor,
-    this.shape,
-    this.elevation,
-    this.padding,
-    this.buttonPadding,
-    this.buttonBackgroundColor,
-    this.buttonForegroundColor,
-    this.buttonOverlayColor,
-    this.buttonShape,
-    this.buttonTextStyle,
     this.onOpen,
     this.onClose,
-    this.onHover,
+    this.menuBackgroundColor,
+    this.menuShape,
+    this.menuElevation,
+    this.menuPadding,
     required this.children,
+    required super.child,
   });
-
-  /// A required label widget displayed on this item in the menu.
-  final Widget label;
 
   /// Determines the desired alignment of the submenu when opened relative to
   /// the button that opens it.
@@ -693,88 +703,40 @@ class MenuButton extends StatefulWidget {
   /// horizontal
   final Offset? alignmentOffset;
 
-  /// An optional icon to display before the [label].
+  /// An optional icon to display before the [child].
   final Widget? leadingIcon;
 
-  /// An optional icon to display after the [label].
+  /// An optional icon to display after the [child].
   final Widget? trailingIcon;
-
-  /// The semantic label to use for this menu item for its [Semantics].
-  ///
-  /// By default uses the semantics of the [label] widget.
-  final String? semanticsLabel;
-
-  /// The focus node to use for this menu item's button.
-  final FocusNode? focusNode;
 
   /// The background color of the cascading menu specified by [children].
   ///
   /// Defaults to the value of [MenuThemeData.menuBackgroundColor] of the
   /// ambient [MenuTheme].
-  final MaterialStateProperty<Color?>? backgroundColor;
+  final MaterialStateProperty<Color?>? menuBackgroundColor;
 
   /// The shape of the cascading menu specified by [children].
   ///
   /// Defaults to the value of [MenuThemeData.menuShape] of the
   /// ambient [MenuTheme].
-  final MaterialStateProperty<OutlinedBorder?>? shape;
+  final MaterialStateProperty<OutlinedBorder?>? menuShape;
 
   /// The Material elevation of the submenu (if any).
   ///
-  /// Defaults to the [MenuThemeData.barElevation] of the ambient
+  /// Defaults to the [MenuThemeData.menuElevation] of the ambient
   /// [MenuTheme].
   ///
   /// See also:
   ///
   ///  * [Material.elevation] for a description of what elevation is.
-  final MaterialStateProperty<double?>? elevation;
+  final MaterialStateProperty<double?>? menuElevation;
 
   /// The padding around the outside of the contents of the menu opened by a
   /// [MenuButton].
   ///
   /// Defaults to the [MenuThemeData.menuPadding] value of the ambient
   /// [MenuTheme].
-  final EdgeInsetsDirectional? padding;
-
-  /// The padding around the outside of the button that opens a [MenuButton]'s
-  /// submenu.
-  ///
-  /// Defaults to the [MenuThemeData.itemPadding] value of the ambient
-  /// [MenuTheme].
-  final EdgeInsetsDirectional? buttonPadding;
-
-  /// The background color of the button that opens the submenu.
-  ///
-  /// Defaults to the value of [MenuThemeData.itemBackgroundColor] value of
-  /// the ambient [MenuTheme].
-  final MaterialStateProperty<Color?>? buttonBackgroundColor;
-
-  /// The foreground color of the button that opens the submenu.
-  ///
-  /// Defaults to the value of [MenuThemeData.itemForegroundColor] value of
-  /// the ambient [MenuTheme].
-  final MaterialStateProperty<Color?>? buttonForegroundColor;
-
-  /// The overlay color of the button that opens the submenu.
-  ///
-  /// Defaults to the value of [MenuThemeData.itemOverlayColor] value of
-  /// the ambient [MenuTheme].
-  final MaterialStateProperty<Color?>? buttonOverlayColor;
-
-  /// The shape of the button that opens the submenu.
-  ///
-  /// Defaults to the value of [MenuThemeData.itemShape] value of the
-  /// ambient [MenuTheme].
-  final MaterialStateProperty<OutlinedBorder?>? buttonShape;
-
-  /// The text style of the button that opens the submenu.
-  ///
-  /// The color in this text style will only be used if [buttonOverlayColor]
-  /// is unset.
-  final MaterialStateProperty<TextStyle?>? buttonTextStyle;
-
-  /// Called when the button that opens the submenu is hovered over.
-  final ValueChanged<bool>? onHover;
+  final EdgeInsetsDirectional? menuPadding;
 
   /// A callback that is invoked when the menu is opened.
   final VoidCallback? onOpen;
@@ -787,6 +749,75 @@ class MenuButton extends StatefulWidget {
   /// These can be any widget, but are typically either [MenuItemButton] or
   /// [MenuButton] widgets.
   final List<Widget> children;
+
+  /// Defines the button's default appearance.
+  ///
+  /// The button [child]'s [Text] and [Icon] widgets are rendered with
+  /// the [ButtonStyle]'s foreground color. The button's [InkWell] adds
+  /// the style's overlay color when the button is focused, hovered
+  /// or pressed. The button's background color becomes its [Material]
+  /// color and is transparent by default.
+  ///
+  /// All of the ButtonStyle's defaults appear below.
+  ///
+  /// In this list "Theme.foo" is shorthand for
+  /// `Theme.of(context).foo`. Color scheme values like
+  /// "onSurface(0.38)" are shorthand for
+  /// `onSurface.withOpacity(0.38)`. [MaterialStateProperty] valued
+  /// properties that are not followed by a sublist have the same
+  /// value for all states, otherwise the values are as specified for
+  /// each state and "others" means all other states.
+  ///
+  /// The `textScaleFactor` is the value of
+  /// `MediaQuery.of(context).textScaleFactor` and the names of the
+  /// EdgeInsets constructors and `EdgeInsetsGeometry.lerp` have been
+  /// abbreviated for readability.
+  ///
+  /// The color of the [ButtonStyle.textStyle] is not used, the
+  /// [ButtonStyle.foregroundColor] color is used instead.
+  ///
+  /// * `textStyle` - Theme.textTheme.labelLarge
+  /// * `backgroundColor` - transparent
+  /// * `foregroundColor`
+  ///   * disabled - Theme.colorScheme.onSurface(0.38)
+  ///   * others - Theme.colorScheme.primary
+  /// * `overlayColor`
+  ///   * hovered - Theme.colorScheme.primary(0.08)
+  ///   * focused or pressed - Theme.colorScheme.primary(0.12)
+  ///   * others - null
+  /// * `shadowColor` - null
+  /// * `surfaceTintColor` - null
+  /// * `elevation` - 0
+  /// * `padding`
+  ///   * `textScaleFactor <= 1` - all(8)
+  ///   * `1 < textScaleFactor <= 2` - lerp(all(8), horizontal(8))
+  ///   * `2 < textScaleFactor <= 3` - lerp(horizontal(8), horizontal(4))
+  ///   * `3 < textScaleFactor` - horizontal(4)
+  /// * `minimumSize` - Size(64, 40)
+  /// * `fixedSize` - null
+  /// * `maximumSize` - Size.infinite
+  /// * `side` - null
+  /// * `shape` - StadiumBorder()
+  /// * `mouseCursor`
+  ///   * disabled - SystemMouseCursors.basic
+  ///   * others - SystemMouseCursors.click
+  /// * `visualDensity` - theme.visualDensity
+  /// * `tapTargetSize` - theme.materialTapTargetSize
+  /// * `animationDuration` - kThemeChangeDuration
+  /// * `enableFeedback` - true
+  /// * `alignment` - Alignment.center
+  /// * `splashFactory` - Theme.splashFactory
+  @override
+  ButtonStyle defaultStyleOf(BuildContext context) {
+    return _MenuButtonDefaultsM3(context);
+  }
+
+  /// Returns the [MenuButtonThemeData.style] of the closest
+  /// [MenuButtonTheme] ancestor.
+  @override
+  ButtonStyle? themeStyleOf(BuildContext context) {
+    return MenuButtonTheme.of(context).style;
+  }
 
   @override
   State<MenuButton> createState() => _MenuButtonState();
@@ -803,26 +834,9 @@ class MenuButton extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('label', label.toString(), defaultValue: null));
+    properties.add(DiagnosticsProperty<String>('label', child.toString(), defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
-    properties.add(StringProperty('semanticLabel', semanticsLabel, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('shape', shape, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('buttonPadding', buttonPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonBackgroundColor', buttonBackgroundColor,
-        defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonForegroundColor', buttonForegroundColor,
-        defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('buttonOverlayColor', buttonOverlayColor,
-        defaultValue: null));
-    properties
-        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('buttonShape', buttonShape, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('buttonTextStyle', buttonTextStyle, defaultValue: null));
   }
 }
 
@@ -840,14 +854,14 @@ class _MenuButtonState extends State<MenuButton> {
     super.initState();
     _menuScopeNode = FocusScopeNode();
     assert(() {
-      _menuScopeNode.debugLabel = '$MenuButton(Scope for ${widget.label})';
+      _menuScopeNode.debugLabel = '$MenuButton(Scope for ${widget.child})';
       return true;
     }());
     if (widget.focusNode == null) {
       _internalFocusNode = FocusNode();
       assert(() {
         if (_internalFocusNode != null) {
-          _internalFocusNode!.debugLabel = '$MenuButton(${widget.label})';
+          _internalFocusNode!.debugLabel = '$MenuButton(${widget.child})';
         }
         return true;
       }());
@@ -911,13 +925,14 @@ class _MenuButtonState extends State<MenuButton> {
     }
 
     final MenuThemeData menuTheme = MenuTheme.of(context).copyWith(
-      menuBackgroundColor: widget.backgroundColor,
-      menuShape: widget.shape,
-      menuPadding: widget.padding,
+      menuBackgroundColor: widget.menuBackgroundColor,
+      menuShape: widget.menuShape,
+      menuPadding: widget.menuPadding,
     );
+    final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
 
     final EdgeInsetsDirectional menuPadding =
-        menuTheme.menuPadding ?? MenuTheme.of(context).menuPadding ?? _TokenDefaultsM3(context).menuPadding;
+        widget.menuPadding ?? MenuTheme.of(context).menuPadding ?? _MenuDefaultsM3(context).menuPadding;
 
     final Offset menuPaddingOffset;
     switch (parent.orientation) {
@@ -948,6 +963,7 @@ class _MenuButtonState extends State<MenuButton> {
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
         ..menuScopeNode = _menuScopeNode
+        ..buttonTheme = menuButtonTheme
         ..theme = menuTheme
         ..onOpen = widget.onOpen
         ..onClose = widget.onClose
@@ -959,42 +975,19 @@ class _MenuButtonState extends State<MenuButton> {
 
   @override
   Widget build(BuildContext context) {
-    final MenuThemeData menuTheme = MenuTheme.of(context);
-    final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
-    final Size densityAdjustedSize = const Size(64, 48) + Theme.of(context).visualDensity.baseSizeAdjustment;
-    final MaterialStateProperty<EdgeInsetsDirectional?> resolvedPadding =
-        MaterialStateProperty.all<EdgeInsetsDirectional?>(
-            widget.padding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding);
-
     return _MenuEntryMarker(
       entry: _node,
-      child: Semantics(
-        enabled: _enabled,
-        // Will default to the label in the Text widget or labelWidget below if
-        // not specified.
-        label: widget.semanticsLabel,
-        child: TextButton(
-          style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
-            minimumSize: MaterialStateProperty.all<Size?>(densityAdjustedSize),
-            backgroundColor:
-                widget.buttonBackgroundColor ?? menuTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
-            foregroundColor:
-                widget.buttonForegroundColor ?? menuTheme.itemForegroundColor ?? defaultTheme.itemForegroundColor,
-            overlayColor: widget.buttonOverlayColor ?? menuTheme.itemOverlayColor ?? defaultTheme.itemOverlayColor,
-            padding: resolvedPadding,
-            shape: widget.buttonShape ?? menuTheme.itemShape ?? defaultTheme.itemShape,
-            textStyle: widget.buttonTextStyle ?? menuTheme.itemTextStyle ?? defaultTheme.itemTextStyle,
-          ),
-          focusNode: _buttonFocusNode,
-          onHover: _enabled ? _handleHover : null,
-          onPressed: _enabled ? maybeToggleShowMenu : null,
-          child: _MenuItemLabel(
-            leadingIcon: widget.leadingIcon,
-            trailingIcon: widget.trailingIcon,
-            hasSubmenu: true,
-            showDecoration: !_node.isTopLevel,
-            child: widget.label,
-          ),
+      child: TextButton(
+        style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
+        focusNode: _buttonFocusNode,
+        onHover: _enabled ? _handleHover : null,
+        onPressed: _enabled ? maybeToggleShowMenu : null,
+        child: _MenuItemLabel(
+          leadingIcon: widget.leadingIcon,
+          trailingIcon: widget.trailingIcon,
+          hasSubmenu: true,
+          showDecoration: !_node.isTopLevel,
+          child: widget.child!,
         ),
       ),
     );
@@ -1039,7 +1032,7 @@ class _MenuButtonState extends State<MenuButton> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('label', widget.label.toString()));
+    properties.add(DiagnosticsProperty<String>('label', widget.child.toString()));
   }
 }
 
@@ -1262,7 +1255,9 @@ class _Menu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MenuThemeData menuTheme = MenuTheme.of(context);
-    final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
+    final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
+    final _MenuDefaultsM3 defaultTheme = _MenuDefaultsM3(context);
+    final _MenuButtonDefaultsM3 defaultButtonTheme = _MenuButtonDefaultsM3(context);
     final TextDirection textDirection = Directionality.of(entry.topLevel.context);
     final Set<MaterialState> state = <MaterialState>{
       if (!entry.enabled) MaterialState.disabled,
@@ -1274,8 +1269,9 @@ class _Menu extends StatelessWidget {
         (entry.theme?.menuBackgroundColor ?? menuTheme.menuBackgroundColor ?? defaultTheme.menuBackgroundColor)
             .resolve(state)!;
     final EdgeInsetsDirectional padding = entry.theme?.menuPadding ?? menuTheme.menuPadding ?? defaultTheme.menuPadding;
-    final EdgeInsetsDirectional buttonPadding =
-        entry.theme?.itemPadding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding;
+    final EdgeInsetsGeometry buttonPadding = entry.buttonTheme?.style?.padding?.resolve(state) ??
+        menuButtonTheme.style?.padding?.resolve(state) ??
+        defaultButtonTheme.padding!.resolve(state);
     final ShapeBorder shape = (entry.theme?.menuShape ?? menuTheme.menuShape ?? defaultTheme.menuShape).resolve(state)!;
 
     return AnimatedBuilder(
@@ -1675,7 +1671,7 @@ class _MenuPanelState extends State<_MenuPanel> {
 /// A label widget that is used as the default label for a [MenuItemButton] or
 /// [MenuButton].
 ///
-/// It not only shows the [MenuButton.label] or [MenuItemButton.label], but if
+/// It not only shows the [MenuButton.child] or [MenuItemButton.child], but if
 /// there is a shortcut associated with the [MenuItemButton], it will display a
 /// mnemonic for the shortcut. For [MenuButton]s, it will display a visual
 /// indicator that there is a submenu.
@@ -2129,6 +2125,15 @@ class _ChildMenuNode extends _MenuNode {
   set theme(MenuThemeData? value) {
     if (_theme != value) {
       _theme = value;
+      _notifyNextFrame();
+    }
+  }
+
+  MenuButtonThemeData? get buttonTheme => _buttonTheme;
+  MenuButtonThemeData? _buttonTheme;
+  set buttonTheme(MenuButtonThemeData? value) {
+    if (_buttonTheme != value) {
+      _buttonTheme = value;
       _notifyNextFrame();
     }
   }
@@ -2760,14 +2765,108 @@ bool _menuDebug(String message, [Iterable<String>? details]) {
 
 // This class will eventually be auto-generated, so it should remain at the end
 // of the file.
-class _TokenDefaultsM3 extends MenuThemeData {
-  _TokenDefaultsM3(this.context)
+class _MenuButtonDefaultsM3 extends ButtonStyle {
+  _MenuButtonDefaultsM3(this.context)
+      : super(
+          animationDuration: kThemeChangeDuration,
+          enableFeedback: true,
+          alignment: Alignment.center,
+        );
+
+  final BuildContext context;
+  late final ColorScheme _colors = Theme.of(context).colorScheme;
+
+  @override
+  MaterialStateProperty<TextStyle?> get textStyle =>
+      MaterialStatePropertyAll<TextStyle?>(Theme.of(context).textTheme.labelLarge);
+
+  @override
+  MaterialStateProperty<Color?>? get backgroundColor => ButtonStyleButton.allOrNull<Color>(Colors.transparent);
+
+  @override
+  MaterialStateProperty<Color?>? get foregroundColor => MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+        if (states.contains(MaterialState.disabled)) {
+          return _colors.onSurface.withOpacity(0.38);
+        }
+        return _colors.primary;
+      });
+
+  @override
+  MaterialStateProperty<Color?>? get overlayColor => MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+        if (states.contains(MaterialState.hovered)) {
+          return _colors.primary.withOpacity(0.08);
+        }
+        if (states.contains(MaterialState.focused)) {
+          return _colors.primary.withOpacity(0.12);
+        }
+        if (states.contains(MaterialState.pressed)) {
+          return _colors.primary.withOpacity(0.12);
+        }
+        return null;
+      });
+
+  // No default shadow color
+
+  // No default surface tint color
+
+  @override
+  MaterialStateProperty<double>? get elevation => ButtonStyleButton.allOrNull<double>(0.0);
+
+  @override
+  MaterialStateProperty<EdgeInsetsGeometry>? get padding =>
+      ButtonStyleButton.allOrNull<EdgeInsetsGeometry>(_scaledPadding(context));
+
+  @override
+  MaterialStateProperty<Size>? get minimumSize => ButtonStyleButton.allOrNull<Size>(const Size(64.0, 40.0));
+
+  // No default fixedSize
+
+  @override
+  MaterialStateProperty<Size>? get maximumSize => ButtonStyleButton.allOrNull<Size>(Size.infinite);
+
+  // No default side
+
+  @override
+  MaterialStateProperty<OutlinedBorder>? get shape =>
+      ButtonStyleButton.allOrNull<OutlinedBorder>(const StadiumBorder());
+
+  @override
+  MaterialStateProperty<MouseCursor?>? get mouseCursor =>
+      MaterialStateProperty.resolveWith((Set<MaterialState> states) {
+        if (states.contains(MaterialState.disabled)) {
+          return SystemMouseCursors.basic;
+        }
+        return SystemMouseCursors.click;
+      });
+
+  @override
+  VisualDensity? get visualDensity => Theme.of(context).visualDensity;
+
+  @override
+  MaterialTapTargetSize? get tapTargetSize => Theme.of(context).materialTapTargetSize;
+
+  @override
+  InteractiveInkFeatureFactory? get splashFactory => Theme.of(context).splashFactory;
+
+  EdgeInsetsGeometry _scaledPadding(BuildContext context) {
+    return ButtonStyleButton.scaledPadding(
+      const EdgeInsets.all(8),
+      const EdgeInsets.symmetric(horizontal: 8),
+      const EdgeInsets.symmetric(horizontal: 4),
+      MediaQuery.maybeOf(context)?.textScaleFactor ?? 1,
+    );
+  }
+}
+
+// This class will eventually be auto-generated, so it should remain at the end
+// of the file.
+class _MenuDefaultsM3 extends MenuThemeData {
+  _MenuDefaultsM3(this.context)
       : super(
           barElevation: MaterialStateProperty.all<double?>(2.0),
           menuElevation: MaterialStateProperty.all<double?>(4.0),
           menuPadding: const EdgeInsetsDirectional.only(top: 8.0, bottom: 8.0),
           menuShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultMenuBorder),
-          itemShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultItemBorder),
           barShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultBarBorder),
         );
 
@@ -2776,8 +2875,6 @@ class _TokenDefaultsM3 extends MenuThemeData {
 
   static const RoundedRectangleBorder _defaultBarBorder =
       RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)));
-
-  static const RoundedRectangleBorder _defaultItemBorder = RoundedRectangleBorder();
 
   final BuildContext context;
   late final ColorScheme _colors = Theme.of(context).colorScheme;
@@ -2818,44 +2915,4 @@ class _TokenDefaultsM3 extends MenuThemeData {
 
   @override
   EdgeInsetsDirectional get menuPadding => super.menuPadding!;
-
-  @override
-  MaterialStateProperty<Color?> get itemBackgroundColor {
-    return MaterialStateProperty.all<Color?>(_colors.surface);
-  }
-
-  @override
-  MaterialStateProperty<Color?> get itemForegroundColor {
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-      if (states.contains(MaterialState.disabled)) {
-        return _colors.onSurface.withOpacity(0.38);
-      }
-      return _colors.primary;
-    });
-  }
-
-  @override
-  MaterialStateProperty<Color?> get itemOverlayColor {
-    return MaterialStateProperty.resolveWith((Set<MaterialState> states) {
-      // Use the component default.
-      return null;
-    });
-  }
-
-  @override
-  MaterialStateProperty<TextStyle?> get itemTextStyle {
-    return MaterialStateProperty.all<TextStyle?>(Theme.of(context).textTheme.labelLarge);
-  }
-
-  @override
-  EdgeInsetsDirectional get itemPadding {
-    final VisualDensity density = Theme.of(context).visualDensity;
-    return EdgeInsetsDirectional.symmetric(
-      vertical: math.max(0, density.vertical * 2),
-      horizontal: math.max(0, 24 + density.horizontal * 2),
-    );
-  }
-
-  @override
-  MaterialStateProperty<OutlinedBorder?> get itemShape => super.itemShape!;
 }

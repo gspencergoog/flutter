@@ -347,6 +347,7 @@ class ThemeData with Diagnosticable {
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     IconButtonThemeData? iconButtonTheme,
     ListTileThemeData? listTileTheme,
+    MenuButtonThemeData? menuButtonTheme,
     MenuThemeData? menuTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
@@ -578,6 +579,7 @@ class ThemeData with Diagnosticable {
     floatingActionButtonTheme ??= const FloatingActionButtonThemeData();
     iconButtonTheme ??= const IconButtonThemeData();
     listTileTheme ??= const ListTileThemeData();
+    menuButtonTheme ??= const MenuButtonThemeData();
     menuTheme ??= const MenuThemeData();
     navigationBarTheme ??= const NavigationBarThemeData();
     navigationRailTheme ??= const NavigationRailThemeData();
@@ -671,6 +673,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: floatingActionButtonTheme,
       iconButtonTheme: iconButtonTheme,
       listTileTheme: listTileTheme,
+      menuButtonTheme: menuButtonTheme,
       menuTheme: menuTheme,
       navigationBarTheme: navigationBarTheme,
       navigationRailTheme: navigationRailTheme,
@@ -779,6 +782,7 @@ class ThemeData with Diagnosticable {
     required this.floatingActionButtonTheme,
     required this.iconButtonTheme,
     required this.listTileTheme,
+    required this.menuButtonTheme,
     required this.menuTheme,
     required this.navigationBarTheme,
     required this.navigationRailTheme,
@@ -939,6 +943,7 @@ class ThemeData with Diagnosticable {
        assert(floatingActionButtonTheme != null),
        assert(iconButtonTheme != null),
        assert(listTileTheme != null),
+       assert(menuButtonTheme != null),
        assert(menuTheme != null),
        assert(navigationBarTheme != null),
        assert(navigationRailTheme != null),
@@ -1516,6 +1521,10 @@ class ThemeData with Diagnosticable {
   final ListTileThemeData listTileTheme;
 
   /// A theme for customizing the color, shape, elevation, and text style of
+  /// cascading menu buttons created by [MenuButton] or [MenuItemButton].
+  final MenuButtonThemeData menuButtonTheme;
+
+  /// A theme for customizing the color, shape, elevation, and text style of
   /// cascading menus.
   final MenuThemeData menuTheme;
 
@@ -1803,6 +1812,7 @@ class ThemeData with Diagnosticable {
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     IconButtonThemeData? iconButtonTheme,
     ListTileThemeData? listTileTheme,
+    MenuButtonThemeData? menuButtonTheme,
     MenuThemeData? menuTheme,
     NavigationBarThemeData? navigationBarTheme,
     NavigationRailThemeData? navigationRailTheme,
@@ -1958,6 +1968,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: floatingActionButtonTheme ?? this.floatingActionButtonTheme,
       iconButtonTheme: iconButtonTheme ?? this.iconButtonTheme,
       listTileTheme: listTileTheme ?? this.listTileTheme,
+      menuButtonTheme: menuButtonTheme ?? this.menuButtonTheme,
       menuTheme: menuTheme ?? this.menuTheme,
       navigationBarTheme: navigationBarTheme ?? this.navigationBarTheme,
       navigationRailTheme: navigationRailTheme ?? this.navigationRailTheme,
@@ -2159,6 +2170,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme: FloatingActionButtonThemeData.lerp(a.floatingActionButtonTheme, b.floatingActionButtonTheme, t)!,
       iconButtonTheme: IconButtonThemeData.lerp(a.iconButtonTheme, b.iconButtonTheme, t)!,
       listTileTheme: ListTileThemeData.lerp(a.listTileTheme, b.listTileTheme, t)!,
+      menuButtonTheme: MenuButtonThemeData.lerp(a.menuButtonTheme, b.menuButtonTheme, t)!,
       menuTheme: MenuThemeData.lerp(a.menuTheme, b.menuTheme, t)!,
       navigationBarTheme: NavigationBarThemeData.lerp(a.navigationBarTheme, b.navigationBarTheme, t)!,
       navigationRailTheme: NavigationRailThemeData.lerp(a.navigationRailTheme, b.navigationRailTheme, t)!,
@@ -2262,6 +2274,7 @@ class ThemeData with Diagnosticable {
         other.floatingActionButtonTheme == floatingActionButtonTheme &&
         other.iconButtonTheme == iconButtonTheme &&
         other.listTileTheme == listTileTheme &&
+        other.menuButtonTheme == menuButtonTheme &&
         other.menuTheme == menuTheme &&
         other.navigationBarTheme == navigationBarTheme &&
         other.navigationRailTheme == navigationRailTheme &&
@@ -2362,6 +2375,7 @@ class ThemeData with Diagnosticable {
       floatingActionButtonTheme,
       iconButtonTheme,
       listTileTheme,
+      menuButtonTheme,
       menuTheme,
       navigationBarTheme,
       navigationRailTheme,
@@ -2464,6 +2478,7 @@ class ThemeData with Diagnosticable {
     properties.add(DiagnosticsProperty<FloatingActionButtonThemeData>('floatingActionButtonTheme', floatingActionButtonTheme, defaultValue: defaultData.floatingActionButtonTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<IconButtonThemeData>('iconButtonTheme', iconButtonTheme, defaultValue: defaultData.iconButtonTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ListTileThemeData>('listTileTheme', listTileTheme, defaultValue: defaultData.listTileTheme, level: DiagnosticLevel.debug));
+    properties.add(DiagnosticsProperty<MenuButtonThemeData>('menuButtonTheme', menuButtonTheme, defaultValue: defaultData.menuTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<MenuThemeData>('menuTheme', menuTheme, defaultValue: defaultData.menuTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<NavigationBarThemeData>('navigationBarTheme', navigationBarTheme, defaultValue: defaultData.navigationBarTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<NavigationRailThemeData>('navigationRailTheme', navigationRailTheme, defaultValue: defaultData.navigationRailTheme, level: DiagnosticLevel.debug));

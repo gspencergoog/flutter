@@ -7,6 +7,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import 'button_style.dart';
 import 'material_state.dart';
 import 'menu_bar.dart';
 import 'theme.dart';
@@ -46,12 +47,6 @@ class MenuThemeData with Diagnosticable {
     this.menuElevation,
     this.menuShape,
     this.menuPadding,
-    this.itemBackgroundColor,
-    this.itemForegroundColor,
-    this.itemOverlayColor,
-    this.itemTextStyle,
-    this.itemPadding,
-    this.itemShape,
   });
 
   /// Override the default [MenuBar.minimumHeight].
@@ -89,32 +84,6 @@ class MenuThemeData with Diagnosticable {
   /// The padding around the outside of a [MenuButton].
   final EdgeInsetsDirectional? menuPadding;
 
-  // MenuBarItem properties
-
-  /// The background color of a [MenuItemButton].
-  final MaterialStateProperty<Color?>? itemBackgroundColor;
-
-  /// The foreground color of a [MenuItemButton], used to color the text and
-  /// shortcut labels of a [MenuItemButton].
-  final MaterialStateProperty<Color?>? itemForegroundColor;
-
-  /// The overlay color of a [MenuItemButton], used to color the overlay of a
-  /// [MenuItemButton], typically seen when the [MaterialState.hovered],
-  /// [MaterialState.selected], and/or [MaterialState.focused] states apply.
-  final MaterialStateProperty<Color?>? itemOverlayColor;
-
-  /// The text style of the [MenuItemButton]s in a [MenuBar].
-  ///
-  /// The color in this text style will only be used if [itemForegroundColor]
-  /// is unset.
-  final MaterialStateProperty<TextStyle?>? itemTextStyle;
-
-  /// The padding around the outside of an individual [MenuItemButton].
-  final EdgeInsetsDirectional? itemPadding;
-
-  /// The shape of an individual [MenuItemButton].
-  final MaterialStateProperty<OutlinedBorder?>? itemShape;
-
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
   MenuThemeData copyWith({
@@ -126,12 +95,6 @@ class MenuThemeData with Diagnosticable {
     MaterialStateProperty<double?>? menuElevation,
     MaterialStateProperty<OutlinedBorder?>? menuShape,
     EdgeInsetsDirectional? menuPadding,
-    MaterialStateProperty<Color?>? itemBackgroundColor,
-    MaterialStateProperty<Color?>? itemForegroundColor,
-    MaterialStateProperty<Color?>? itemOverlayColor,
-    MaterialStateProperty<TextStyle?>? itemTextStyle,
-    EdgeInsetsDirectional? itemPadding,
-    MaterialStateProperty<OutlinedBorder?>? itemShape,
   }) {
     return MenuThemeData(
       barPadding: barPadding ?? this.barPadding,
@@ -142,12 +105,6 @@ class MenuThemeData with Diagnosticable {
       menuElevation: menuElevation ?? this.menuElevation,
       menuShape: menuShape ?? this.menuShape,
       menuPadding: menuPadding ?? this.menuPadding,
-      itemBackgroundColor: itemBackgroundColor ?? this.itemBackgroundColor,
-      itemForegroundColor: itemForegroundColor ?? this.itemForegroundColor,
-      itemOverlayColor: itemOverlayColor ?? this.itemOverlayColor,
-      itemTextStyle: itemTextStyle ?? this.itemTextStyle,
-      itemPadding: itemPadding ?? this.itemPadding,
-      itemShape: itemShape ?? this.itemShape,
     );
   }
 
@@ -170,19 +127,6 @@ class MenuThemeData with Diagnosticable {
       menuElevation: _lerpProperties<double?>(a?.menuElevation, b?.menuElevation, t, lerpDouble),
       menuShape: _lerpProperties<ShapeBorder?>(a?.menuShape, b?.menuShape, t, ShapeBorder.lerp),
       menuPadding: EdgeInsetsDirectional.lerp(a?.menuPadding, b?.menuPadding, t),
-      itemBackgroundColor: _lerpProperties<Color?>(a?.itemBackgroundColor, b?.itemBackgroundColor, t, Color.lerp),
-      itemForegroundColor: _lerpProperties<Color?>(a?.itemForegroundColor, b?.itemForegroundColor, t, Color.lerp),
-      itemOverlayColor: _lerpProperties<Color?>(a?.itemOverlayColor, b?.itemOverlayColor, t, Color.lerp),
-      itemTextStyle: _lerpProperties<TextStyle?>(a?.itemTextStyle, b?.itemTextStyle, t, TextStyle.lerp),
-      itemPadding: EdgeInsetsDirectional.lerp(a?.itemPadding, b?.itemPadding, t),
-      itemShape: _lerpProperties<OutlinedBorder?>(
-        a?.itemShape,
-        b?.itemShape,
-        t,
-        (OutlinedBorder? a, OutlinedBorder? b, double t) {
-          return OutlinedBorder.lerp(a, b, t);
-        },
-      ),
     );
   }
 
@@ -210,12 +154,6 @@ class MenuThemeData with Diagnosticable {
       menuElevation,
       menuShape,
       menuPadding,
-      itemBackgroundColor,
-      itemForegroundColor,
-      itemOverlayColor,
-      itemTextStyle,
-      itemPadding,
-      itemShape,
     );
   }
 
@@ -235,13 +173,7 @@ class MenuThemeData with Diagnosticable {
         other.menuBackgroundColor == menuBackgroundColor &&
         other.menuElevation == menuElevation &&
         other.menuShape == menuShape &&
-        other.menuPadding == menuPadding &&
-        other.itemBackgroundColor == itemBackgroundColor &&
-        other.itemForegroundColor == itemForegroundColor &&
-        other.itemOverlayColor == itemOverlayColor &&
-        other.itemTextStyle == itemTextStyle &&
-        other.itemPadding == itemPadding &&
-        other.itemShape == itemShape;
+        other.menuPadding == menuPadding;
   }
 
   @override
@@ -261,17 +193,6 @@ class MenuThemeData with Diagnosticable {
     properties
         .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('menuShape', menuShape, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional>('menuPadding', menuPadding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemBackgroundColor', itemBackgroundColor,
-        defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('itemForegroundColor', itemForegroundColor,
-        defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<Color?>>('itemOverlayColor', itemOverlayColor, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<TextStyle?>>('itemTextStyle', itemTextStyle, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsetsDirectional>('menuItemPadding', itemPadding, defaultValue: null));
-    properties
-        .add(DiagnosticsProperty<MaterialStateProperty<ShapeBorder?>>('itemShape', itemShape, defaultValue: null));
   }
 }
 
@@ -345,4 +266,122 @@ class MenuTheme extends InheritedTheme {
 
   @override
   bool updateShouldNotify(MenuTheme oldWidget) => data != oldWidget.data;
+}
+
+
+/// A [ButtonStyle] that overrides the default appearance of [MenuButton]s and
+/// [MenuItemButton]s when it's used with [MenuButtonTheme] or with the overall
+/// [Theme]'s [ThemeData.menuTheme].
+///
+/// The [style]'s properties override [TextButton]'s default style, i.e.  the
+/// [ButtonStyle] returned by [TextButton.defaultStyleOf]. Only the style's
+/// non-null property values or resolved non-null [MaterialStateProperty] values
+/// are used.
+///
+/// See also:
+///
+///  * [MenuButtonTheme], the theme which is configured with this class.
+///  * [TextButton.defaultStyleOf], which returns the default [ButtonStyle] for
+///    text buttons.
+///  * [TextButton.styleFrom], which converts simple values into a [ButtonStyle]
+///    that's consistent with [TextButton]'s defaults.
+///  * [MaterialStateProperty.resolve], "resolve" a material state property to a
+///    simple value based on a set of [MaterialState]s.
+///  * [ThemeData.textButtonTheme], which can be used to override the default
+///    [ButtonStyle] for [TextButton]s below the overall [Theme].
+@immutable
+class MenuButtonThemeData with Diagnosticable {
+  /// Creates a [MenuButtonThemeData].
+  ///
+  /// The [style] may be null.
+  const MenuButtonThemeData({ this.style });
+
+  /// Overrides for [MenuButton] and [MenuItemButton]'s default style.
+  ///
+  /// Non-null properties or non-null resolved [MaterialStateProperty] values
+  /// override the [ButtonStyle] returned by [MenuButton.defaultStyleOf] or
+  /// [MenuItemButton.defaultStyleOf].
+  ///
+  /// If [style] is null, then this theme doesn't override anything.
+  final ButtonStyle? style;
+
+  /// Linearly interpolate between two text button themes.
+  static MenuButtonThemeData? lerp(MenuButtonThemeData? a, MenuButtonThemeData? b, double t) {
+    assert (t != null);
+    if (a == null && b == null) {
+      return null;
+    }
+    return MenuButtonThemeData(
+      style: ButtonStyle.lerp(a?.style, b?.style, t),
+    );
+  }
+
+  @override
+  int get hashCode => style.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is MenuButtonThemeData && other.style == style;
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<ButtonStyle>('style', style, defaultValue: null));
+  }
+}
+
+/// Overrides the default [ButtonStyle] of its [MenuItemButton] and [MenuButton]
+/// descendants.
+///
+/// See also:
+///
+///  * [MenuButtonThemeData], which is used to configure this theme.
+///  * [TextButton.defaultStyleOf], which returns the default [ButtonStyle] for
+///    text buttons.
+///  * [TextButton.styleFrom], which converts simple values into a [ButtonStyle]
+///    that's consistent with [TextButton]'s defaults.
+///  * [ThemeData.textButtonTheme], which can be used to override the default
+///    [ButtonStyle] for [TextButton]s below the overall [Theme].
+class MenuButtonTheme extends InheritedTheme {
+  /// Create a [MenuButtonTheme].
+  ///
+  /// The [data] parameter must not be null.
+  const MenuButtonTheme({
+    super.key,
+    required this.data,
+    required super.child,
+  }) : assert(data != null);
+
+  /// The configuration of this theme.
+  final MenuButtonThemeData data;
+
+  /// The closest instance of this class that encloses the given context.
+  ///
+  /// If there is no enclosing [MenuButtonTheme] widget, then
+  /// [ThemeData.textButtonTheme] is used.
+  ///
+  /// Typical usage is as follows:
+  ///
+  /// ```dart
+  /// MenuButtonThemeData theme = MenuButtonTheme.of(context);
+  /// ```
+  static MenuButtonThemeData of(BuildContext context) {
+    final MenuButtonTheme? buttonTheme = context.dependOnInheritedWidgetOfExactType<MenuButtonTheme>();
+    return buttonTheme?.data ?? Theme.of(context).menuButtonTheme;
+  }
+
+  @override
+  Widget wrap(BuildContext context, Widget child) {
+    return MenuButtonTheme(data: data, child: child);
+  }
+
+  @override
+  bool updateShouldNotify(MenuButtonTheme oldWidget) => data != oldWidget.data;
 }

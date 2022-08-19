@@ -134,42 +134,42 @@ class _MyMenuBarState extends State<MyMenuBar> {
                     label: const Text('Menu App'),
                     children: <Widget>[
                       MenuItemButton(
-                        label: Text(MenuSelection.about.label),
-                        onSelected: () => _activate(MenuSelection.about),
+                        child: Text(MenuSelection.about.label),
+                        onPressed: () => _activate(MenuSelection.about),
                       ),
                       // Toggles the message.
                       MenuItemButton(
-                        onSelected: () => _activate(MenuSelection.showMessage),
+                        onPressed: () => _activate(MenuSelection.showMessage),
                         shortcut: MenuSelection.showMessage.shortcut,
-                        label:
+                        child:
                             Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
                       ),
                       // Hides the message, but is only enabled if the message isn't already hidden.
                       MenuItemButton(
-                        onSelected:
+                        onPressed:
                             showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
                         shortcut: MenuSelection.resetMessage.shortcut,
-                        label: Text(MenuSelection.resetMessage.label),
+                        child: Text(MenuSelection.resetMessage.label),
                       ),
                       MenuButton(
-                        label: const Text('Background Color'),
+                        child: const Text('Background Color'),
                         children: <Widget>[
                           MenuItemGroup(members: <Widget>[
                             MenuItemButton(
-                              onSelected: () => _activate(MenuSelection.colorRed),
+                              onPressed: () => _activate(MenuSelection.colorRed),
                               shortcut: MenuSelection.colorRed.shortcut,
-                              label: Text(MenuSelection.colorRed.label),
+                              child: Text(MenuSelection.colorRed.label),
                             ),
                             MenuItemButton(
-                              onSelected: () => _activate(MenuSelection.colorGreen),
+                              onPressed: () => _activate(MenuSelection.colorGreen),
                               shortcut: MenuSelection.colorGreen.shortcut,
-                              label: Text(MenuSelection.colorGreen.label),
+                              child: Text(MenuSelection.colorGreen.label),
                             ),
                           ]),
                           MenuItemButton(
-                            onSelected: () => _activate(MenuSelection.colorBlue),
+                            onPressed: () => _activate(MenuSelection.colorBlue),
                             shortcut: MenuSelection.colorBlue.shortcut,
-                            label: Text(MenuSelection.colorBlue.label),
+                            child: Text(MenuSelection.colorBlue.label),
                           ),
                         ],
                       ),

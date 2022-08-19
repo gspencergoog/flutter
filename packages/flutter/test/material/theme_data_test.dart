@@ -698,6 +698,7 @@ void main() {
       iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: Colors.pink)),
       listTileTheme: const ListTileThemeData(),
       menuTheme: MenuThemeData(barBackgroundColor: MaterialStateProperty.all(Colors.black)),
+      menuButtonTheme: MenuButtonThemeData(style: MenuItemButton.styleFrom(backgroundColor: MaterialStateProperty.all(Colors.black))),
       navigationBarTheme: const NavigationBarThemeData(backgroundColor: Colors.black),
       navigationRailTheme: const NavigationRailThemeData(backgroundColor: Colors.black),
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(foregroundColor: Colors.blue)),

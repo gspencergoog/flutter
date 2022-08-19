@@ -86,7 +86,7 @@ class AnimatedIcon extends StatelessWidget {
   ///
   /// See also:
   ///
-  ///  * [SemanticsProperties.label], which is set to [semanticLabel] in the
+  ///  * [SemanticsProperties.child], which is set to [semanticLabel] in the
   ///    underlying [Semantics] widget.
   final String? semanticLabel;
 

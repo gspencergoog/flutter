@@ -46,10 +46,12 @@ void main() {
 
   DefaultTextStyle getLabelStyle(WidgetTester tester, String labelText) {
     return tester.widget<DefaultTextStyle>(
-      find.ancestor(
-        of: find.text(labelText),
-        matching: find.byType(DefaultTextStyle),
-      ).first,
+      find
+          .ancestor(
+            of: find.text(labelText),
+            matching: find.byType(DefaultTextStyle),
+          )
+          .first,
     );
   }
 
@@ -61,7 +63,6 @@ void main() {
             return MenuTheme(
               data: MenuTheme.of(context).copyWith(
                 barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                itemTextStyle: MaterialStateProperty.all<TextStyle?>(Theme.of(context).textTheme.titleMedium),
                 barElevation: MaterialStateProperty.all<double?>(20.0),
                 menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
                 menuElevation: MaterialStateProperty.all<double?>(15.0),
@@ -104,7 +105,6 @@ void main() {
             return MenuTheme(
               data: MenuTheme.of(context).copyWith(
                 barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                itemTextStyle: MaterialStateProperty.all<TextStyle?>(Theme.of(context).textTheme.titleMedium),
                 barElevation: MaterialStateProperty.all<double?>(20.0),
                 menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
                 menuElevation: MaterialStateProperty.all<double?>(15.0),
@@ -156,15 +156,20 @@ void main() {
 
     final Finder menuItem = findSubMenuItem();
     expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(334.0, 70.0, 618.0, 118.0)));  // TODO: verify this.
-    final Material menuItemMaterial = tester.widget<Material>(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
+    final Material menuItemMaterial = tester.widget<Material>(
+        find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));
     expect(menuItemMaterial.elevation, equals(0.0));
     expect(menuItemMaterial.shape, equals(const BeveledRectangleBorder()));
     expect(getLabelStyle(tester, TestMenu.subMenu10.label).style.color, equals(Colors.grey));
-    final ButtonStyle? textButtonStyle = tester.widget<TextButton>(find.ancestor(
-      of: find.text(TestMenu.subMenu10.label),
-      matching: find.byType(TextButton),
-    ).first).style;
+    final ButtonStyle? textButtonStyle = tester
+        .widget<TextButton>(find
+            .ancestor(
+              of: find.text(TestMenu.subMenu10.label),
+              matching: find.byType(TextButton),
+            )
+            .first)
+        .style;
     expect(textButtonStyle?.overlayColor?.resolve(<MaterialState>{MaterialState.hovered}), equals(Colors.blueGrey));
   });
 }
@@ -203,82 +208,88 @@ List<Widget> createTestMenus({
   double? menuElevation,
   OutlinedBorder? itemShape,
 }) {
+  final ButtonStyle menuStyle = ButtonStyle(
+    padding: menuPadding != null ? MaterialStatePropertyAll<EdgeInsetsGeometry>(menuPadding) : null,
+    backgroundColor: menuBackground != null ? MaterialStatePropertyAll<Color>(menuBackground) : null,
+    elevation: menuElevation != null ? MaterialStatePropertyAll<double>(menuElevation) : null,
+    shape: menuShape != null ? MaterialStatePropertyAll<OutlinedBorder>(menuShape) : null,
+  );
+  final ButtonStyle itemStyle = ButtonStyle(
+    padding: itemPadding != null ? MaterialStatePropertyAll<EdgeInsetsGeometry>(itemPadding) : null,
+    shape: itemShape != null ? MaterialStatePropertyAll<OutlinedBorder>(itemShape) : null,
+    foregroundColor: itemForeground != null ? MaterialStatePropertyAll<Color>(itemForeground) : null,
+    backgroundColor: itemBackground != null ? MaterialStatePropertyAll<Color>(itemBackground) : null,
+    overlayColor: itemOverlay != null ? MaterialStatePropertyAll<Color>(itemOverlay) : null,
+  );
   final List<Widget> result = <Widget>[
     MenuButton(
-      label: Text(TestMenu.mainMenu0.label),
+      child: Text(TestMenu.mainMenu0.label),
       onOpen: onOpen != null ? () => onOpen(TestMenu.mainMenu0) : null,
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu0) : null,
       children: <Widget>[
         MenuItemButton(
-          onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
+          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
-          label: Text(TestMenu.subMenu00.label),
+          child: Text(TestMenu.subMenu00.label),
         ),
       ],
     ),
     MenuButton(
-      label: Text(TestMenu.mainMenu1.label),
+      child: Text(TestMenu.mainMenu1.label),
       onOpen: onOpen != null ? () => onOpen(TestMenu.mainMenu1) : null,
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu1) : null,
-      padding: menuPadding,
-      backgroundColor: menuBackground != null ? MaterialStatePropertyAll<Color?>(menuBackground) : null,
-      elevation: menuElevation != null ? MaterialStatePropertyAll<double?>(menuElevation) : null,
-      shape: menuShape != null ? MaterialStatePropertyAll<OutlinedBorder?>(menuShape) : null,
+      style: menuStyle,
       children: <Widget>[
         MenuItemGroup(
           members: <Widget>[
             MenuItemButton(
-              onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu10) : null,
+              onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu10) : null,
               shortcut: shortcuts[TestMenu.subMenu10],
-              padding: itemPadding,
-              shape: itemShape != null ? MaterialStatePropertyAll<OutlinedBorder?>(itemShape) : null,
-              foregroundColor: itemForeground != null ? MaterialStatePropertyAll<Color?>(itemForeground) : null,
-              backgroundColor: itemBackground != null ? MaterialStatePropertyAll<Color?>(itemBackground) : null,
-              overlayColor: itemOverlay != null ? MaterialStatePropertyAll<Color?>(itemOverlay) : null,
-              label: Text(TestMenu.subMenu10.label),
+              style: itemStyle,
+              child: Text(TestMenu.subMenu10.label),
             ),
           ],
         ),
         MenuButton(
-          label: Text(TestMenu.subMenu11.label),
+          child: Text(TestMenu.subMenu11.label),
           onOpen: onOpen != null ? () => onOpen(TestMenu.subMenu11) : null,
           onClose: onClose != null ? () => onClose(TestMenu.subMenu11) : null,
           children: <Widget>[
             MenuItemGroup(
               members: <Widget>[
                 MenuItemButton(
-                  onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
+                  onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
                   shortcut: shortcuts[TestMenu.subSubMenu100],
-                  label: Text(TestMenu.subSubMenu100.label),
+                  child: Text(TestMenu.subSubMenu100.label),
                 ),
               ],
             ),
             MenuItemButton(
-              onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
+              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
               shortcut: shortcuts[TestMenu.subSubMenu101],
-              label: Text(TestMenu.subSubMenu101.label),
+              child: Text(TestMenu.subSubMenu101.label),
             ),
             MenuItemButton(
-              onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
+              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
               shortcut: shortcuts[TestMenu.subSubMenu102],
-              label: Text(TestMenu.subSubMenu102.label),
+              child: Text(TestMenu.subSubMenu102.label),
             ),
             MenuItemButton(
-              onSelected: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
+              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
               shortcut: shortcuts[TestMenu.subSubMenu103],
-              label: Text(TestMenu.subSubMenu103.label),
+              child: Text(TestMenu.subSubMenu103.label),
             ),
           ],
         ),
         MenuItemButton(
-          onSelected: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
+          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
           shortcut: shortcuts[TestMenu.subMenu12],
-          label: Text(TestMenu.subMenu12.label),
+          child: Text(TestMenu.subMenu12.label),
         ),
       ],
     ),
     MenuButton(
-      label: Text(TestMenu.mainMenu2.label),
+      child: Text(TestMenu.mainMenu2.label),
       onOpen: onOpen != null ? () => onOpen(TestMenu.mainMenu2) : null,
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu2) : null,
       children: <Widget>[
@@ -286,7 +297,7 @@ List<Widget> createTestMenus({
           // Always disabled.
           shortcut: shortcuts[TestMenu.subMenu20],
           // Always disabled.
-          label: Text(TestMenu.subMenu20.label),
+          child: Text(TestMenu.subMenu20.label),
         ),
       ],
     ),
