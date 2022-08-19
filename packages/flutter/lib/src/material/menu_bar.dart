@@ -73,6 +73,17 @@ const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivat
 /// the menus controlled by that controller to close, as will pressing the
 /// escape key.
 ///
+/// Selecting a menu item causes the [MenuItemButton.onSelected] callback to be
+/// called, or the [MenuItemButton.onSelectedIntent] intent to be fired,
+/// depending on which is set.
+///
+/// When a menu item with a submenu is clicked on, it toggles the visibility of
+/// the submenu. When the menu item is hovered over, the submenu will open, and
+/// hovering over other items will close the previous menu and open the newly
+/// hovered one. When those open/close transitions occur, [MenuButton.onOpen],
+/// and [MenuButton.onClose] are called on the corresponding [MenuButton] child
+/// of the menu bar.
+///
 /// {@template flutter.material.menu_bar.shortcuts_note}
 /// Menu items using [MenuItemButton] can have a [SingleActivator] or
 /// [CharacterActivator] assigned to them as their [MenuItemButton.shortcut],
@@ -81,30 +92,22 @@ const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivat
 /// [MenuBar] resides in, and registered via another mechanism.
 ///
 /// If shortcuts should be generally enabled, but are not easily defined in the
-/// context surrounding the menu bar, consider using a [ShortcutRegistry] to
-/// register them. To be sure that selecting a menu item and triggering the
-/// shortcut do the same thing, it is recommended that they trigger the same
-/// [Intent] or call the same callback.
-/// {@endtemplate}
-///
-/// Selecting a menu item causes the [MenuItemButton.onSelected] callback to be
-/// called, or the [MenuItemButton.onSelectedIntent] intent to be fired,
-/// depending on which is set.
-///
-/// When a menu item with a submenu is clicked on, it toggles the visibility of
-/// the submenu. When the menu item is hovered over, the submenu will open, and
-/// hovering over other items will close the previous menu and open the newly
-/// hovered one. When those occur, [MenuButton.onOpen], and
-/// [MenuButton.onClose] are called on the corresponding [MenuButton] child of
-/// the menu bar.
+/// context surrounding the menu bar, consider registering them with a
+/// [ShortcutRegistry] (one is included in the [WidgetsApp] (and thus also
+/// [MaterialApp] and [CupertinoApp]) already), as shown in the example below.
+/// To be sure that selecting a menu item and triggering the shortcut do the
+/// same thing, it is recommended that they trigger the same [Intent] or call
+/// the same callback.
 ///
 /// {@tool dartpad}
 /// This example shows a [MenuBar] that contains a single top level menu,
 /// containing three items for "About", a checkbox menu item for showing a
-/// message, and "Quit". The items are identified with an enum value.
+/// message, and "Quit". The items are identified with an enum value, and the
+/// shortcuts are registered globally with [ShortcutRegistry].
 ///
 /// ** See code in examples/api/lib/material/menu_bar/menu_bar.0.dart **
 /// {@end-tool}
+/// {@endtemplate}
 ///
 /// See also:
 ///
@@ -113,7 +116,7 @@ const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivat
 ///   separated from other menu items by a divider.
 /// * [MenuItemButton], a leaf menu item which displays the label, an optional
 ///   shortcut label, and optional leading and trailing icons.
-/// * [createCascadingMenu], a function that creates a [MenuEntry] that allows
+/// * [createMaterialMenu], a function that creates a [MenuEntry] that allows
 ///   creation and management of a cascading menu anywhere.
 /// * [MenuController], a class that allows controlling and connecting menus.
 /// * [PlatformMenuBar], which creates a menu bar that is rendered by the host
@@ -130,18 +133,19 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
     super.key,
     this.controller,
     this.backgroundColor,
-    this.minimumHeight,
     this.padding,
     this.elevation,
     this.shape,
-    this.expand = true,
-    this.children = const <Widget>[],
+    required this.children,
   });
 
   /// An optional controller that allows outside control of the menu bar.
   ///
   /// You can use a controller to close any open menus from outside of the menu
   /// bar using [MenuController.closeAll].
+  ///
+  /// If a controller is provided here, it must be disposed by the owner of the
+  /// controller when it is done being used.
   final MenuController? controller;
 
   /// The background color of the menu bar.
@@ -150,17 +154,14 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// any states for it to respond to. Use [MaterialStatePropertyAll] to
   /// initialize it.
   ///
-  /// Defaults to [MenuThemeData.barBackgroundColor] if null.
+  /// Uses [MenuThemeData.barBackgroundColor] if null. If that is also null,
+  /// then the default is defined by the Material specification.
   final MaterialStateProperty<Color?>? backgroundColor;
-
-  /// The preferred minimum height of the menu bar.
-  ///
-  /// Defaults to the value of [MenuThemeData.barMinimumHeight] if null.
-  final double? minimumHeight;
 
   /// The padding around the contents of the menu bar itself.
   ///
-  /// Defaults to the value of [MenuThemeData.barPadding] if null.
+  /// Uses the value of [MenuThemeData.barPadding] if null. If that is also null,
+  /// then the default is defined by the Material specification.
   final EdgeInsetsDirectional? padding;
 
   /// The shape of the [MenuBar]'s border.
@@ -169,13 +170,9 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// any states for it to respond to. Use [MaterialStatePropertyAll] to
   /// initialize it.
   ///
-  /// Default to [MenuThemeData.barShape] if null.
+  /// Uses the value of [MenuThemeData.barShape] if null. If that is also null,
+  /// then the default is defined by the Material specification.
   final MaterialStateProperty<ShapeBorder?>? shape;
-
-  /// If true, the menu bar expands horizontally to fill available space.
-  ///
-  /// Defaults to true.
-  final bool expand;
 
   /// The Material elevation of the menu bar (if any).
   ///
@@ -183,8 +180,9 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// any states for it to respond to. Use [MaterialStatePropertyAll] to
   /// initialize it.
   ///
-  /// Defaults to the [MenuThemeData.barElevation] value of the ambient
-  /// [MenuTheme].
+  /// Uses the [MenuThemeData.barElevation] value of the ambient [MenuTheme]. If
+  /// that is also null, then the default is defined by the Material
+  /// specification.
   ///
   /// See also:
   ///
@@ -211,7 +209,6 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
     properties.add(DiagnosticsProperty<MenuController?>('controller', controller, defaultValue: null));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DoubleProperty('minimumHeight', minimumHeight, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>?>('elevation', elevation, defaultValue: null));
   }
@@ -219,7 +216,7 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
 
 class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   MenuController? _internalController;
-  MenuController get controller {
+  MenuController get _controller {
     return widget.controller ?? (_internalController ??= MenuController());
   }
 
@@ -227,18 +224,13 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   void initState() {
     super.initState();
     assert(() {
-      controller._root.menuScopeNode.debugLabel = 'MenuBar';
+      _controller._root.menuScopeNode.debugLabel = 'MenuBar';
       return true;
     }());
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void didUpdateWidget(covariant MenuBar oldWidget) {
+  void didUpdateWidget(MenuBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != null) {
       _internalController?.dispose();
@@ -258,41 +250,41 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
     assert(debugCheckHasOverlay(context));
     final MenuThemeData menuTheme = MenuTheme.of(context);
     return AnimatedBuilder(
-      animation: controller,
+      animation: _controller,
       builder: (BuildContext context, Widget? ignoredChild) {
+        final Set<MaterialState> state = <MaterialState>{
+          if (_controller._root.menuScopeNode.hasFocus) MaterialState.focused,
+        };
         return ExcludeFocus(
-          excluding: !controller.menuIsOpen,
+          excluding: !_controller.menuIsOpen,
           child: TapRegion(
-            groupId: controller,
+            groupId: _controller,
             onTapOutside: (PointerDownEvent event) {
-              controller.closeAll();
+              _controller.closeAll();
             },
             child: _MenuControllerMarker(
-              controller: controller,
+              controller: _controller,
               child: FocusScope(
-                node: controller._root.menuScopeNode,
+                node: _controller._root.menuScopeNode,
                 child: Actions(
                   actions: <Type, Action<Intent>>{
-                    DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: controller),
-                    DismissIntent: _MenuDismissAction(controller: controller),
+                    DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
+                    DismissIntent: _MenuDismissAction(controller: _controller),
                   },
                   child: Shortcuts(
                     shortcuts: _kMenuTraversalShortcuts,
                     child: _MenuPanel(
-                      elevation: (widget.elevation ?? menuTheme.barElevation ?? _TokenDefaultsM3(context).barElevation)
-                          .resolve(const <MaterialState>{})!,
-                      crossAxisMinSize: widget.minimumHeight ??
-                          menuTheme.barMinimumHeight ??
-                          _TokenDefaultsM3(context).barMinimumHeight,
-                      color: (widget.backgroundColor ??
-                              menuTheme.barBackgroundColor ??
-                              _TokenDefaultsM3(context).barBackgroundColor)
-                          .resolve(const <MaterialState>{})!,
+                      elevation: widget.elevation?.resolve(state) ??
+                          menuTheme.barElevation?.resolve(state) ??
+                          _TokenDefaultsM3(context).barElevation.resolve(state)!,
+                      color: widget.backgroundColor?.resolve(state) ??
+                          menuTheme.barBackgroundColor?.resolve(state) ??
+                          _TokenDefaultsM3(context).barBackgroundColor.resolve(state)!,
                       padding: widget.padding ?? menuTheme.barPadding ?? _TokenDefaultsM3(context).barPadding,
                       orientation: Axis.horizontal,
-                      shape: (widget.shape ?? menuTheme.barShape ?? _TokenDefaultsM3(context).barShape)!
-                          .resolve(const <MaterialState>{})!,
-                      expand: widget.expand,
+                      shape: widget.shape?.resolve(state) ??
+                          menuTheme.barShape?.resolve(state) ??
+                          _TokenDefaultsM3(context).barShape!.resolve(state)!,
                       children: MenuItemGroup._expandGroups(widget.children, Axis.horizontal),
                     ),
                   ),
@@ -311,11 +303,14 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   }
 }
 
-/// An button for use in a [MenuBar] that can be activated by click or keyboard
+/// A button for use in a [MenuBar] that can be activated by click or keyboard
 /// navigation that displays a shortcut hint and optional leading/trailing
 /// icons.
 ///
-/// This widget represents a leaf entry in a menu that is part of a [MenuBar].
+/// This widget represents a leaf entry in a menu that is typically part of a
+/// [MenuBar], but may be used independently, or as part of a menu created with
+/// [createMaterialMenu].
+///
 /// It shows a hint for an associated shortcut, if any. When selected via click,
 /// hitting enter while focused, or activating the associated [shortcut], it
 /// will call its [onSelected] callback or fire its [onSelectedIntent] intent,
@@ -333,7 +328,7 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 ///   separated from other menu items by a divider.
 /// * [MenuItemButton], a leaf menu item which displays the label, an optional
 ///   shortcut label, and optional leading and trailing icons.
-/// * [createCascadingMenu], a function that creates a [MenuEntry] that allows
+/// * [createMaterialMenu], a function that creates a [MenuEntry] that allows
 ///   creation and management of a cascading menu anywhere.
 /// * [MenuController], a class that allows controlling and connecting menus.
 /// * [PlatformMenuBar], which creates a menu bar that is rendered by the host
@@ -382,8 +377,7 @@ class MenuItemButton extends StatefulWidget {
   /// button.
   final ValueChanged<bool>? onHover;
 
-  /// Returns a callback, if any, to be invoked if the platform menu receives a
-  /// "Menu.selectedCallback" method call from the platform for this item.
+  /// The callback, if any, to be invoked if this item is selected.
   ///
   /// Only items that do not have submenus will have this callback invoked.
   ///
@@ -391,12 +385,9 @@ class MenuItemButton extends StatefulWidget {
   ///
   /// If neither [onSelected] nor [onSelectedIntent] are specified, then this
   /// menu item is considered to be disabled.
-  ///
-  /// The default implementation returns null.
   final VoidCallback? onSelected;
 
-  /// Returns an intent, if any, to be invoked if the platform receives a
-  /// "Menu.selectedCallback" method call from the platform for this item.
+  /// An intent, if any, to be invoked if the item is selected.
   ///
   /// Only items that do not have submenus will have this intent invoked.
   ///
@@ -426,7 +417,8 @@ class MenuItemButton extends StatefulWidget {
 
   /// The background color for this [MenuItemButton].
   ///
-  /// Defaults to the ambient [Theme]'s [ColorScheme.surface] if null.
+  /// Uses [MenuThemeData.itemBackgroundColor] if null. If that is also null,
+  /// defaults to the ambient [Theme]'s [ColorScheme.surface].
   ///
   /// See also:
   ///
@@ -514,17 +506,7 @@ class MenuItemButton extends StatefulWidget {
 
 class _MenuItemButtonState extends State<MenuItemButton> {
   FocusNode? _internalFocusNode;
-
-  FocusNode get _focusNode {
-    final FocusNode result = widget.focusNode ?? (_internalFocusNode ??= FocusNode());
-    assert(() {
-      if (_internalFocusNode != null) {
-        _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.label})';
-      }
-      return true;
-    }());
-    return result;
-  }
+  FocusNode get _focusNode => widget.focusNode ?? _internalFocusNode!;
 
   bool get _enabled {
     return widget.onSelected != null || widget.onSelectedIntent != null;
@@ -533,6 +515,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   @override
   void initState() {
     super.initState();
+    _createInternalFocusNodeIfNeeded();
     _focusNode.addListener(_handleFocusChange);
   }
 
@@ -552,6 +535,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
         _internalFocusNode?.dispose();
         _internalFocusNode = null;
       }
+      _createInternalFocusNodeIfNeeded();
       _focusNode.addListener(_handleFocusChange);
     }
     super.didUpdateWidget(oldWidget);
@@ -568,15 +552,15 @@ class _MenuItemButtonState extends State<MenuItemButton> {
     final MenuThemeData menuTheme = MenuTheme.of(context);
     final _TokenDefaultsM3 defaultTheme = _TokenDefaultsM3(context);
     final Size densityAdjustedSize = const Size(64, 48) + Theme.of(context).visualDensity.baseSizeAdjustment;
-    final MaterialStateProperty<EdgeInsetsDirectional?> resolvedPadding =
-        MaterialStateProperty.all<EdgeInsetsDirectional?>(
+    final MaterialStateProperty<EdgeInsetsDirectional> resolvedPadding =
+        MaterialStatePropertyAll<EdgeInsetsDirectional>(
             widget.padding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding);
     return Semantics(
       enabled: _enabled,
       label: widget.semanticsLabel,
       child: TextButton(
-        style: (TextButtonTheme.of(context).style ?? const ButtonStyle()).copyWith(
-          minimumSize: MaterialStateProperty.all<Size?>(densityAdjustedSize),
+        style: TextButtonTheme.of(context).style ?? ButtonStyle(
+          minimumSize: MaterialStatePropertyAll<Size>(densityAdjustedSize),
           backgroundColor: widget.backgroundColor ?? menuTheme.itemBackgroundColor ?? defaultTheme.itemBackgroundColor,
           foregroundColor: widget.foregroundColor ?? menuTheme.itemForegroundColor ?? defaultTheme.itemForegroundColor,
           overlayColor: widget.overlayColor ?? menuTheme.itemOverlayColor ?? defaultTheme.itemOverlayColor,
@@ -588,7 +572,6 @@ class _MenuItemButtonState extends State<MenuItemButton> {
         onHover: _enabled ? _handleHover : null,
         onPressed: _enabled ? _handleSelect : null,
         child: _MenuItemLabel(
-          key: ValueKey<MenuSerializableShortcut?>(widget.shortcut),
           leadingIcon: widget.leadingIcon,
           shortcut: widget.shortcut,
           trailingIcon: widget.trailingIcon,
@@ -597,6 +580,18 @@ class _MenuItemButtonState extends State<MenuItemButton> {
         ),
       ),
     );
+  }
+
+  void _createInternalFocusNodeIfNeeded() {
+    if (widget.focusNode == null) {
+      _internalFocusNode = FocusNode();
+      assert(() {
+        if (_internalFocusNode != null) {
+          _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.label})';
+        }
+        return true;
+      }());
+    }
   }
 
   void _handleHover(bool hovering) {
@@ -625,7 +620,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///
 /// This widget represents an item in a [MenuBar] that has a submenu. Like the
 /// leaf [MenuItemButton], it shows a label with an optional leading or trailing
-/// icon.
+/// icon, along with an arrow icon showing that it has a submenu.
 ///
 /// By default the submenu will appear to the side of the controlling button.
 /// The alignment and offset of the submenu can be controlled by setting
@@ -636,12 +631,12 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///
 /// See also:
 ///
-/// * [MenuItemButton], a widget that represents a leaf [MenuBar] item that does
-///   not host a submenu.
-/// * [MenuBar], a widget that renders data in a menu hierarchy using
-///   Flutter-rendered widgets in a Material Design style.
+/// * [MenuItemButton], a widget that represents a leaf menu item that does not
+///   host a submenu.
+/// * [MenuBar], a widget that renders menu items in a row in a Material Design
+///   style.
 /// * [PlatformMenuBar], a widget that renders similar menu bar items from a
-///   [PlatformMenuItem] using platform-native APIs.
+///   [PlatformMenuItem] using platform-native APIs instead of Flutter.
 class MenuButton extends StatefulWidget {
   /// Creates a const [MenuButton].
   ///
@@ -655,7 +650,6 @@ class MenuButton extends StatefulWidget {
     this.trailingIcon,
     this.semanticsLabel,
     this.focusNode,
-    this.autofocus = false,
     this.backgroundColor,
     this.shape,
     this.elevation,
@@ -675,8 +669,15 @@ class MenuButton extends StatefulWidget {
   /// A required label widget displayed on this item in the menu.
   final Widget label;
 
-  /// Determines the alignment of the submenu when opened relative to the button
-  /// that opens it.
+  /// Determines the desired alignment of the submenu when opened relative to
+  /// the button that opens it.
+  ///
+  /// If there isn't sufficient space to open the menu with the given alignment,
+  /// and there's space on the other side of the button, then the alignment is
+  /// swapped to it's opposite (1 becomes -1, etc.), and the menu will try to
+  /// appear on the other side of the menu. If there isn't enough space there
+  /// either, then the menu will be pushed as far over as necessary to display
+  /// as much of itself as possible, possibly overlapping the parent button.
   ///
   /// Defaults to [AlignmentDirectional.topEnd].
   final AlignmentGeometry? alignment;
@@ -706,10 +707,6 @@ class MenuButton extends StatefulWidget {
   /// The focus node to use for this menu item's button.
   final FocusNode? focusNode;
 
-  /// If true, the menu button will request focus when first built if nothing
-  /// else has focus.
-  final bool autofocus;
-
   /// The background color of the cascading menu specified by [children].
   ///
   /// Defaults to the value of [MenuThemeData.menuBackgroundColor] of the
@@ -720,7 +717,7 @@ class MenuButton extends StatefulWidget {
   ///
   /// Defaults to the value of [MenuThemeData.menuShape] of the
   /// ambient [MenuTheme].
-  final MaterialStateProperty<ShapeBorder?>? shape;
+  final MaterialStateProperty<OutlinedBorder?>? shape;
 
   /// The Material elevation of the submenu (if any).
   ///
@@ -830,39 +827,38 @@ class MenuButton extends StatefulWidget {
 }
 
 class _MenuButtonState extends State<MenuButton> {
-  late _ChildMenuNode entry;
-  MenuEntry? childMenu;
+  late _ChildMenuNode _node;
+  MenuEntry? _childMenu;
   bool get _enabled => widget.children.isNotEmpty;
-  late FocusScopeNode menuScopeNode;
+  late FocusScopeNode _menuScopeNode;
   FocusNode? _internalFocusNode;
   MenuController? _internalMenuController;
-
-  FocusNode get _buttonFocusNode {
-    final FocusNode result = widget.focusNode ?? (_internalFocusNode ??= FocusNode());
-    assert(() {
-      if (_internalFocusNode != null) {
-        _internalFocusNode!.debugLabel = '$MenuButton(${widget.label})';
-      }
-      return true;
-    }());
-    return result;
-  }
+  FocusNode get _buttonFocusNode => widget.focusNode ?? _internalFocusNode!;
 
   @override
   void initState() {
     super.initState();
-    menuScopeNode = FocusScopeNode();
+    _menuScopeNode = FocusScopeNode();
     assert(() {
-      menuScopeNode.debugLabel = '$MenuButton(Scope for ${widget.label})';
+      _menuScopeNode.debugLabel = '$MenuButton(Scope for ${widget.label})';
       return true;
     }());
+    if (widget.focusNode == null) {
+      _internalFocusNode = FocusNode();
+      assert(() {
+        if (_internalFocusNode != null) {
+          _internalFocusNode!.debugLabel = '$MenuButton(${widget.label})';
+        }
+        return true;
+      }());
+    }
     _buttonFocusNode.addListener(_handleFocusChange);
   }
 
   @override
   void dispose() {
-    menuScopeNode.dispose();
-    entry.dispose();
+    _menuScopeNode.dispose();
+    _node.dispose();
     _internalFocusNode?.removeListener(_handleFocusChange);
     _internalFocusNode?.dispose();
     _internalMenuController?.dispose();
@@ -885,6 +881,15 @@ class _MenuButtonState extends State<MenuButton> {
         _internalFocusNode = null;
       } else {
         oldWidget.focusNode!.removeListener(_handleFocusChange);
+      }
+      if (widget.focusNode == null) {
+        _internalFocusNode ??= FocusNode();
+        assert(() {
+          if (_internalFocusNode != null) {
+            _internalFocusNode!.debugLabel = '$MenuButton(${widget.label})';
+          }
+          return true;
+        }());
       }
       _buttonFocusNode.addListener(_handleFocusChange);
     }
@@ -924,30 +929,32 @@ class _MenuButtonState extends State<MenuButton> {
         break;
     }
 
-    if (childMenu == null) {
-      entry = _ChildMenuNode(
-        buttonFocusNode: _buttonFocusNode,
+    if (_childMenu == null) {
+      _node = _ChildMenuNode(
         parent: parent,
         controller: controller,
-        menuScopeNode: menuScopeNode,
+        buttonFocusNode: _buttonFocusNode,
+        menuScopeNode: _menuScopeNode,
         onOpen: widget.onOpen,
         onClose: widget.onClose,
         alignment: menuAlignment,
         alignmentOffset: menuPaddingOffset,
         widgetChildren: widget.children,
       );
-      childMenu = _createMenuEntryFromExistingNode(entry);
+      _childMenu = _createMenuEntryFromExistingNode(_node);
+    } else {
+      _node
+        ..parent = parent
+        ..controller = controller
+        ..buttonFocusNode = _buttonFocusNode
+        ..menuScopeNode = _menuScopeNode
+        ..theme = menuTheme
+        ..onOpen = widget.onOpen
+        ..onClose = widget.onClose
+        ..alignment = menuAlignment
+        ..alignmentOffset = menuPaddingOffset
+        ..widgetChildren = widget.children;
     }
-    entry
-      ..buttonFocusNode = _buttonFocusNode
-      ..menuScopeNode = menuScopeNode
-      ..parent = parent
-      ..theme = menuTheme
-      ..onOpen = widget.onOpen
-      ..onClose = widget.onClose
-      ..alignment = menuAlignment
-      ..alignmentOffset = menuPaddingOffset
-      ..widgetChildren = widget.children;
   }
 
   @override
@@ -960,7 +967,7 @@ class _MenuButtonState extends State<MenuButton> {
             widget.padding ?? menuTheme.itemPadding ?? defaultTheme.itemPadding);
 
     return _MenuEntryMarker(
-      entry: entry,
+      entry: _node,
       child: Semantics(
         enabled: _enabled,
         // Will default to the label in the Text widget or labelWidget below if
@@ -985,7 +992,7 @@ class _MenuButtonState extends State<MenuButton> {
             leadingIcon: widget.leadingIcon,
             trailingIcon: widget.trailingIcon,
             hasSubmenu: true,
-            showDecoration: !entry.isTopLevel,
+            showDecoration: !_node.isTopLevel,
             child: widget.label,
           ),
         ),
@@ -994,14 +1001,14 @@ class _MenuButtonState extends State<MenuButton> {
   }
 
   void maybeToggleShowMenu() {
-    if (entry.isOpen) {
-      entry.close();
+    if (_node.isOpen) {
+      _node.close();
     } else {
-      entry.open();
+      _node.open();
       SchedulerBinding.instance.addPostFrameCallback((Duration _) {
         // Has to happen in the next frame because the menu bar is not focusable
         // until the first menu is open.
-        entry.focusButton();
+        _node.focusButton();
       });
     }
   }
@@ -1013,21 +1020,19 @@ class _MenuButtonState extends State<MenuButton> {
     // Don't open the root menu bar menus on hover unless something else
     // is already open. This means that the user has to first click to open a
     // menu on the menu bar before hovering allows them to traverse it.
-    if (entry.isTopLevel && !entry.controller.menuIsOpen) {
+    if (_node.isTopLevel && !_node.controller.menuIsOpen) {
       return;
     }
 
     if (hovering) {
-      setState(() {
-        entry.open();
-        entry.focusButton();
-      });
+      _node.open();
+      _node.focusButton();
     }
   }
 
   void _handleFocusChange() {
     if (_buttonFocusNode.hasPrimaryFocus) {
-      entry.open();
+      _node.open();
     }
   }
 
@@ -1038,9 +1043,9 @@ class _MenuButtonState extends State<MenuButton> {
   }
 }
 
-/// A handle to a menu created by [createCascadingMenu].
+/// A handle to a menu created by [createMaterialMenu].
 ///
-/// A `MenuEntry` can only be created by calling [createCascadingMenu].
+/// A `MenuEntry` can only be created by calling [createMaterialMenu].
 ///
 /// `MenuEntry` is used to control and interrogate a menu after it has been
 /// created, with methods such as [open] and [close], attributes like [enabled],
@@ -1049,11 +1054,13 @@ class _MenuButtonState extends State<MenuButton> {
 /// The [dispose] method must be called when the menu is no longer needed.
 ///
 /// `MenuEntry` is a [ChangeNotifier]. To register for changes, call
-/// [addListener], and when you're done listening, call [removeListener].
+/// [addListener], and when you're done listening, call [removeListener].  It
+/// notifies its listeners when its attributes (e.g. [enabled], [alignment],
+/// etc.) change.
 ///
 /// See also:
 ///
-/// * [createCascadingMenu], the function that creates a menu given a focus node
+/// * [createMaterialMenu], the function that creates a menu given a focus node
 ///   for the controlling widget and the desired menus, and returns a
 ///   `MenuEntry`.
 /// * [MenuBar], a widget that manages its own `MenuEntry` internally.
@@ -1062,7 +1069,7 @@ class _MenuButtonState extends State<MenuButton> {
 ///   labels.
 class MenuEntry with ChangeNotifier {
   /// Private constructor because menu entries can only be created by
-  /// [createCascadingMenu].
+  /// [createMaterialMenu].
   MenuEntry._(this._entry) {
     _entry.addListener(notifyListeners);
   }
@@ -1071,15 +1078,6 @@ class MenuEntry with ChangeNotifier {
 
   /// The controller that this menu handle is associated with.
   MenuController get controller => _entry.controller;
-
-  /// Enable or disable the menu.
-  bool get enabled => _entry.enabled;
-  set enabled(bool value) {
-    assert(ChangeNotifier.debugAssertNotDisposed(this));
-    // Setting the _entry.enabled value will automatically check for changes and
-    // notify listeners.
-    _entry.enabled = value;
-  }
 
   /// Sets the menu children of the menu relative to the controlling widget that
   /// the menu is attached to.
@@ -1093,8 +1091,8 @@ class MenuEntry with ChangeNotifier {
     _entry.widgetChildren = value;
   }
 
-  /// Sets the alignment of the menu relative to the controlling widget that the
-  /// menu is attached to.
+  /// Sets the alignment of the origin of the menu relative to the rectangle
+  /// occupied by the controlling widget that the menu is attached to.
   ///
   /// The alignment depends on the value of the ambient [Directionality] of the
   /// controlling widget to know which direction is the 'start' of the widget.
@@ -1129,6 +1127,8 @@ class MenuEntry with ChangeNotifier {
   /// Setting this value will change the visual presentation of the menu to
   /// match the given theme. Setting it to null will return the menu to default
   /// values derived from the ambient [MenuTheme].
+  ///
+  /// If the menu is already open, then the theme for the menu will be updated.
   MenuThemeData? get theme => _entry.theme;
   set theme(MenuThemeData? value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
@@ -1177,18 +1177,16 @@ class MenuEntry with ChangeNotifier {
 /// The menu is created in a closed state, and [MenuEntry.open] must be called
 /// for the menu to be shown.
 ///
-/// A [MenuController] may be supplied to allow this menu to be coordinated with
-/// other related menus. If a `controller` is supplied, calling
-/// [MenuController.closeAll] on the controller will close all associated menus.
+/// An optional [MenuController] may be supplied to allow this menu to be
+/// coordinated with other related menus. The supplied controller is owned by
+/// the caller, and must be disposed by the owner when it is no longer in use.
+/// If a `controller` is supplied, calling [MenuController.closeAll] on the
+/// controller will close all associated menus.
 ///
 /// The returned [MenuEntry] allows control of menu visibility, and
 /// reconfiguration of the menu. Setting values on the returned [MenuEntry] will
 /// update the menu with those changes in the next frame. The [MenuEntry] can be
 /// listened to for state changes.
-///
-/// Supplying parameters here sets the corresponding fields on the returned
-/// [MenuEntry], so setting `alignment` sets [MenuEntry.alignment], and so
-/// forth.
 ///
 /// {@tool dartpad}
 /// This example shows a menu created with `createCascadingMenu` that contains a
@@ -1204,7 +1202,7 @@ class MenuEntry with ChangeNotifier {
 /// * [MenuEntry], the handle returned from this function.
 /// * [MenuBar], a widget that creates and manages a menu bar with cascading
 ///   menus.
-MenuEntry createCascadingMenu(
+MenuEntry createMaterialMenu(
   FocusNode buttonFocusNode, {
   MenuController? controller,
   MenuThemeData? theme,
@@ -1255,7 +1253,7 @@ MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode entry) {
   return menu;
 }
 
-// A widget that draws the menu in the overlay.
+// A widget that is defines the menu inside of the overlay entry.
 class _Menu extends StatelessWidget {
   const _Menu(this.entry);
 
@@ -1311,9 +1309,7 @@ class _Menu extends StatelessWidget {
                       elevation: elevation,
                       color: backgroundColor,
                       padding: padding,
-                      crossAxisMinSize: 0,
                       orientation: entry.orientation,
-                      expand: true,
                       shape: shape,
                       children: MenuItemGroup._expandGroups(entry.widgetChildren, Axis.vertical),
                     ),
@@ -1357,6 +1353,8 @@ class MenuItemGroup extends StatelessWidget {
 
   /// The layout orientation of this group, which determines the layout of the
   /// group items, as well as the orientation of the separating [Divider]s.
+  ///
+  /// Defaults to [Axis.vertical].
   final Axis orientation;
 
   @override
@@ -1423,10 +1421,10 @@ class MenuItemGroup extends StatelessWidget {
 /// widget hierarchy.
 ///
 /// Typically, it's not necessary to create a `MenuController` to use a
-/// [MenuBar] or to call [createCascadingMenu], but if open menus need to be
+/// [MenuBar] or to call [createMaterialMenu], but if open menus need to be
 /// closed with the [closeAll] method in response to an event, a
 /// `MenuController` can be created and passed to the [MenuBar] or
-/// [createCascadingMenu].
+/// [createMaterialMenu].
 ///
 /// The controller can be listened to for some changes in the state of the menu
 /// bar, to see if [menuIsOpen] has changed, for instance.
@@ -1435,7 +1433,7 @@ class MenuItemGroup extends StatelessWidget {
 /// needed.
 class MenuController with Diagnosticable, ChangeNotifier {
   /// Creates a [MenuController] that can be used with a [MenuBar] or
-  /// [createCascadingMenu].
+  /// [createMaterialMenu].
   MenuController() {
     _root = _RootMenuNode(this);
   }
@@ -1594,23 +1592,18 @@ class _MenuItemDivider extends StatelessWidget {
 ///
 /// It sizes itself to the widest/tallest item it contains, and then sizes all
 /// the other entries to match.
-class _MenuPanel extends StatefulWidget implements PreferredSizeWidget {
+class _MenuPanel extends StatefulWidget {
   const _MenuPanel({
     required this.elevation,
-    required this.crossAxisMinSize,
     required this.color,
     required this.padding,
     required this.orientation,
     required this.shape,
-    required this.expand,
     required this.children,
   });
 
   /// The elevation to give the material behind the menu bar.
   final double elevation;
-
-  /// The minimum size to give the menu bar in the axis perpendicular to [orientation].
-  final double crossAxisMinSize;
 
   /// The background color of the menu app bar.
   final Color color;
@@ -1618,21 +1611,8 @@ class _MenuPanel extends StatefulWidget implements PreferredSizeWidget {
   /// The padding around the outside of the menu bar contents.
   final EdgeInsetsDirectional padding;
 
-  /// Whether or not the panel will expand to fill extra space when horizontal.
-  final bool expand;
-
   /// The shape of the menu.
   final ShapeBorder shape;
-
-  @override
-  Size get preferredSize {
-    switch (orientation) {
-      case Axis.horizontal:
-        return Size.fromHeight(crossAxisMinSize);
-      case Axis.vertical:
-        return Size.fromWidth(crossAxisMinSize);
-    }
-  }
 
   /// The main axis of this panel.
   final Axis orientation;
@@ -1656,15 +1636,6 @@ class _MenuPanelState extends State<_MenuPanel> {
     }
   }
 
-  BoxConstraints _getMinSizeConstraint() {
-    switch (widget.orientation) {
-      case Axis.horizontal:
-        return BoxConstraints(minHeight: widget.crossAxisMinSize);
-      case Axis.vertical:
-        return BoxConstraints(minWidth: widget.crossAxisMinSize);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final MenuController controller = MenuController.of(context);
@@ -1673,29 +1644,24 @@ class _MenuPanelState extends State<_MenuPanel> {
       onTapOutside: (PointerDownEvent event) {
         MenuController.of(context).closeAll();
       },
-      child: ConstrainedBox(
-        constraints: _getMinSizeConstraint(),
-        // This scroll view is just here to get the proper clipping behavior,
-        // since other combinations of ClipRect, etc. didn't work.
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
-          child: _intrinsicCrossSize(
-            child: Material(
-              color: widget.color,
-              shape: widget.shape,
-              elevation: widget.elevation,
-              child: Padding(
-                padding: widget.padding,
-                child: SingleChildScrollView(
-                  scrollDirection: widget.orientation,
-                  child: Flex(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    textDirection: Directionality.of(context),
-                    direction: widget.orientation,
-                    mainAxisSize: MainAxisSize.min,
-                    children: widget.children,
-                  ),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+        child: _intrinsicCrossSize(
+          child: Material(
+            color: widget.color,
+            shape: widget.shape,
+            elevation: widget.elevation,
+            child: Padding(
+              padding: widget.padding,
+              child: SingleChildScrollView(
+                scrollDirection: widget.orientation,
+                child: Flex(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: Directionality.of(context),
+                  direction: widget.orientation,
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.children,
                 ),
               ),
             ),
@@ -1718,7 +1684,6 @@ class _MenuItemLabel extends StatelessWidget {
   ///
   /// The [child] and [hasSubmenu] arguments are required.
   const _MenuItemLabel({
-    super.key,
     required this.child,
     required this.hasSubmenu,
     this.leadingIcon,
@@ -1975,22 +1940,19 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
   bool get enabled => true;
   FocusScopeNode get menuScopeNode;
 
+  @protected
   List<_ChildMenuNode> children = <_ChildMenuNode>[];
 
   void addChild(_ChildMenuNode child) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    if (isRoot) {
-      assert(_menuDebug('Added root child: $child'));
-    }
+    assert(isRoot || _menuDebug('Added root child: $child'));
     assert(!children.contains(child));
     children.add(child);
   }
 
   void removeChild(_ChildMenuNode child) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    if (isRoot) {
-      assert(_menuDebug('Removed root child: $child'));
-    }
+    assert(isRoot || _menuDebug('Removed root child: $child'));
     assert(children.contains(child));
     children.remove(child);
   }
@@ -2003,7 +1965,7 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
     }
   }
 
-  void focusButton() {}
+  void focusButton();
 
   Axis get orientation;
 
@@ -2062,6 +2024,9 @@ class _RootMenuNode extends _MenuNode {
 
   @override
   FocusScopeNode menuScopeNode;
+
+  @override
+  void focusButton() {}
 }
 
 class _ChildMenuNode extends _MenuNode {

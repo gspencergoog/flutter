@@ -46,8 +46,8 @@ class MyMenuBar extends StatefulWidget {
 }
 
 class _MyMenuBarState extends State<MyMenuBar> {
-  MenuSelection? lastSelection;
-  ShortcutRegistryEntry? shortcutsEntry;
+  MenuSelection? _lastSelection;
+  ShortcutRegistryEntry? _shortcutsEntry;
 
   bool get showingMessage => _showMessage;
   bool _showMessage = false;
@@ -72,25 +72,25 @@ class _MyMenuBarState extends State<MyMenuBar> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    shortcutsEntry?.dispose();
+    _shortcutsEntry?.dispose();
     // Register the shortcuts with the ShortcutRegistry so that they are available
     // to the entire application.
     final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
       for (final MenuSelection item in MenuSelection.values)
         if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
     };
-    shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
+    _shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
   }
 
   @override
   void dispose() {
-    shortcutsEntry?.dispose();
+    _shortcutsEntry?.dispose();
     super.dispose();
   }
 
   void _activate(MenuSelection selection) {
     setState(() {
-      lastSelection = selection;
+      _lastSelection = selection;
     });
     switch (selection) {
       case MenuSelection.about:
@@ -131,7 +131,6 @@ class _MyMenuBarState extends State<MyMenuBar> {
               child: MenuBar(
                 children: <Widget>[
                   MenuButton(
-                    autofocus: true,
                     label: const Text('Menu App'),
                     children: <Widget>[
                       MenuItemButton(
@@ -195,7 +194,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Text(lastSelection != null ? 'Last Selected: ${lastSelection!.label}' : ''),
+                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
               ],
             ),
           ),

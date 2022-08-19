@@ -16,13 +16,6 @@ void main() {
     await tester.tap(find.byType(TextButton));
     await tester.pump();
 
-    final State<example.MyCascadingMenu> menuState = tester.state(find.byType(example.MyCascadingMenu));
-
-    // ignore: avoid_dynamic_calls
-    expect((menuState as dynamic).menuEntry.children, isNotEmpty);
-    // ignore: avoid_dynamic_calls
-    expect((menuState as dynamic).menuEntry.children.length, equals(4));
-
     expect(find.text(example.MenuSelection.about.label), findsOneWidget);
     expect(find.text(example.MenuSelection.showMessage.label), findsOneWidget);
     expect(find.text(example.MenuSelection.resetMessage.label), findsOneWidget);

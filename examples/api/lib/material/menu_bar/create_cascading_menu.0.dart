@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// Flutter code sample for [createCascadingMenu].
+/// Flutter code sample for [createMaterialMenu].
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,49 +46,50 @@ class MyCascadingMenu extends StatefulWidget {
 }
 
 class _MyCascadingMenuState extends State<MyCascadingMenu> {
-  MenuSelection? lastSelection;
-  late MenuController controller;
-  late FocusNode buttonFocusNode;
-  late MenuEntry menuEntry;
-  ShortcutRegistryEntry? shortcutsEntry;
+  MenuSelection? _lastSelection;
+  late MenuController _controller;
+  late FocusNode _buttonFocusNode;
+  late MenuEntry _menuEntry;
+  ShortcutRegistryEntry? _shortcutsEntry;
 
   @override
   void initState() {
     super.initState();
-    controller = MenuController();
-    buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-    menuEntry = createCascadingMenu(buttonFocusNode, controller: controller);
-    updateMenuEntry();
+    _controller = MenuController();
+    _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
+    _menuEntry = createMaterialMenu(_buttonFocusNode, controller: _controller);
+    _updateMenuEntry();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    shortcutsEntry?.dispose();
+    // dispose of any previously registered shortcuts, since they are about to
+    // be replaced.
+    _shortcutsEntry?.dispose();
+    // Collect the shortcuts from the different menu selections so that they can
+    // be registered to apply to the entire app. Menus don't register their
+    // shortcuts, they only display the shortcut hint text.
     final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
       for (final MenuSelection item in MenuSelection.values)
         if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
     };
-    shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
+    // Register the shortcuts with the ShortcutRegistry so that they are
+    // available to the entire application.
+    _shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
   }
 
   @override
   void dispose() {
-    shortcutsEntry?.dispose();
-    menuEntry.dispose();
-    controller.dispose();
-    buttonFocusNode.dispose();
+    _shortcutsEntry?.dispose();
+    _menuEntry.dispose();
+    _controller.dispose();
+    _buttonFocusNode.dispose();
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant MyCascadingMenu oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    updateMenuEntry();
-  }
-
-  void updateMenuEntry() {
-    menuEntry.children = <Widget>[
+  void _updateMenuEntry() {
+    _menuEntry.children = <Widget>[
       MenuItemButton(
         label: Text(MenuSelection.about.label),
         onSelected: () => _activate(MenuSelection.about),
@@ -130,12 +131,13 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     ];
   }
 
-  bool get showingMessage => _showMessage;
-  bool _showMessage = false;
+  bool get showingMessage => _showingMessage;
+  bool _showingMessage = false;
   set showingMessage(bool value) {
-    if (_showMessage != value) {
+    if (_showingMessage != value) {
       setState(() {
-        _showMessage = value;
+        _showingMessage = value;
+        _updateMenuEntry();
       });
     }
   }
@@ -152,7 +154,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
 
   void _activate(MenuSelection selection) {
     setState(() {
-      lastSelection = selection;
+      _lastSelection = selection;
     });
     switch (selection) {
       case MenuSelection.about:
@@ -193,17 +195,18 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         // prevents tapping on the button when the menu is open from closing the
         // menu by activating the "tap outside" action of the menu.
         TapRegion(
-          groupId: controller,
+          groupId: _controller,
           child: TextButton(
-              focusNode: buttonFocusNode,
-              onPressed: () {
-                if (menuEntry.isOpen) {
-                  menuEntry.close();
-                } else {
-                  menuEntry.open();
-                }
-              },
-              child: const Text('OPEN MENU')),
+            focusNode: _buttonFocusNode,
+            onPressed: () {
+              if (_menuEntry.isOpen) {
+                _menuEntry.close();
+              } else {
+                _menuEntry.open();
+              }
+            },
+            child: const Text('OPEN MENU'),
+          ),
         ),
         Expanded(
           child: Container(
@@ -219,7 +222,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Text(lastSelection != null ? 'Last Selected: ${lastSelection!.label}' : ''),
+                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
               ],
             ),
           ),

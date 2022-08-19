@@ -27,7 +27,6 @@ enum TestMenu {
 }
 
 void main() {
-  debugFocusChanges = false;
   runApp(const MaterialApp(
     title: 'Menu Tester',
     home: Material(child: Home()),
@@ -67,7 +66,7 @@ class _HomeState extends State<Home> {
     final ThemeData theme = Theme.of(context);
     MenuThemeData menuTheme = MenuTheme.of(context);
     if (_funkyTheme) {
-      menuTheme = menuTheme.copyWith(
+      menuTheme = MenuThemeData(
         barMinimumHeight: 60,
         barBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.red),
         barElevation: const MaterialStatePropertyAll<double?>(5),
@@ -76,12 +75,10 @@ class _HomeState extends State<Home> {
         menuBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.blue),
         menuElevation: const MaterialStatePropertyAll<double?>(10),
         menuPadding: const EdgeInsetsDirectional.all(20),
-        // menuShape: const MaterialStatePropertyAll<OutlinedBorder>(StarBorder.polygon(sides: 6, squash: 1.0)),
         itemForegroundColor: const MaterialStatePropertyAll<Color?>(Colors.white),
         itemBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.green),
         itemPadding: const EdgeInsetsDirectional.all(15),
         itemOverlayColor: MaterialStatePropertyAll<Color?>(Colors.black.withOpacity(0.12)),
-        // itemShape: const MaterialStatePropertyAll<OutlinedBorder>(StarBorder(points: 6, squash: 1.0)),
       );
     }
     return SafeArea(
@@ -94,12 +91,12 @@ class _HomeState extends State<Home> {
               data: theme.copyWith(
                 visualDensity: _density,
                 menuTheme: _transparent
-                    ? menuTheme.copyWith(
-                        barBackgroundColor: MaterialStatePropertyAll<Color?>(Colors.red.withOpacity(0.12)),
-                        menuBackgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue.withOpacity(0.12)),
-                        itemBackgroundColor: MaterialStatePropertyAll<Color?>(Colors.green.withOpacity(0.12)),
-                        menuElevation: const MaterialStatePropertyAll<double?>(0),
-                        barElevation: const MaterialStatePropertyAll<double?>(0),
+                    ? MenuThemeData(
+                        barBackgroundColor: MaterialStatePropertyAll<Color>(Colors.red.withOpacity(0.12)),
+                        menuBackgroundColor: MaterialStatePropertyAll<Color>(Colors.blue.withOpacity(0.12)),
+                        itemBackgroundColor: MaterialStatePropertyAll<Color>(Colors.green.withOpacity(0.12)),
+                        menuElevation: const MaterialStatePropertyAll<double>(0),
+                        barElevation: const MaterialStatePropertyAll<double>(0),
                       )
                     : menuTheme,
               ),
@@ -126,8 +123,9 @@ class _HomeState extends State<Home> {
                                     LogicalKeyboardKey.keyB,
                                     control: true,
                                   ),
-                                  leadingIcon:
-                                      _addItem ? const Icon(Icons.check_box) : const Icon(Icons.check_box_outline_blank),
+                                  leadingIcon: _addItem
+                                      ? const Icon(Icons.check_box)
+                                      : const Icon(Icons.check_box_outline_blank),
                                   trailingIcon: const Icon(Icons.assessment),
                                   onSelected: () {
                                     _itemSelected(TestMenu.subMenu1);
@@ -159,11 +157,12 @@ class _HomeState extends State<Home> {
                                   },
                                   children: <Widget>[
                                     TextButton(
-                                        child: const Text('TEST'),
-                                        onPressed: () {
-                                          debugPrint('App: Selected item TEST button');
-                                          _controller.closeAll();
-                                        }),
+                                      child: const Text('TEST'),
+                                      onPressed: () {
+                                        debugPrint('App: Selected item TEST button');
+                                        _controller.closeAll();
+                                      },
+                                    ),
                                     MenuItemButton(
                                       shortcut: const SingleActivator(
                                         LogicalKeyboardKey.enter,
@@ -179,21 +178,22 @@ class _HomeState extends State<Home> {
                               ],
                             ),
                             MenuButton(
-                                label: Text(TestMenu.mainMenu3.label),
-                                onOpen: () {
-                                  _openItem(TestMenu.mainMenu3);
-                                },
-                                onClose: () {
-                                  _closeItem(TestMenu.mainMenu3);
-                                },
-                                children: <Widget>[
-                                  MenuItemButton(
-                                    label: Text(TestMenu.subMenu8.label),
-                                    onSelected: () {
-                                      _itemSelected(TestMenu.subMenu8);
-                                    },
-                                  ),
-                                ]),
+                              label: Text(TestMenu.mainMenu3.label),
+                              onOpen: () {
+                                _openItem(TestMenu.mainMenu3);
+                              },
+                              onClose: () {
+                                _closeItem(TestMenu.mainMenu3);
+                              },
+                              children: <Widget>[
+                                MenuItemButton(
+                                  label: Text(TestMenu.subMenu8.label),
+                                  onSelected: () {
+                                    _itemSelected(TestMenu.subMenu8);
+                                  },
+                                ),
+                              ],
+                            ),
                             MenuButton(
                               label: Text(TestMenu.mainMenu4.label),
                               onOpen: () {
@@ -380,43 +380,14 @@ class _Controls extends StatefulWidget {
 }
 
 class _ControlsState extends State<_Controls> {
-  late GlobalKey buttonKey;
+  final GlobalKey buttonKey = GlobalKey();
   late FocusNode focusNode;
   MenuEntry? menuEntry;
 
   @override
   void initState() {
     super.initState();
-    buttonKey = GlobalKey();
     focusNode = FocusNode(debugLabel: 'Floating');
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    menuEntry?.dispose();
-    menuEntry = createCascadingMenu(
-      focusNode,
-      alignment: AlignmentDirectional.topEnd,
-      alignmentOffset: const Offset(0, -8),
-      controller: widget.menuController,
-      children: <Widget>[
-        MenuItemButton(
-          shortcut: const SingleActivator(
-            LogicalKeyboardKey.keyB,
-            control: true,
-          ),
-          onSelected: () {},
-          label: Text(TestMenu.subMenu1.label),
-        ),
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.send),
-          trailingIcon: const Icon(Icons.mail),
-          onSelected: () {},
-          label: Text(TestMenu.subMenu2.label),
-        ),
-      ],
-    );
   }
 
   @override
@@ -424,6 +395,36 @@ class _ControlsState extends State<_Controls> {
     focusNode.dispose();
     menuEntry?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_Controls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.menuController != oldWidget.menuController) {
+      menuEntry?.dispose();
+      menuEntry = createMaterialMenu(
+        focusNode,
+        alignment: AlignmentDirectional.topEnd,
+        alignmentOffset: const Offset(0, -8),
+        controller: widget.menuController,
+        children: <Widget>[
+          MenuItemButton(
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyB,
+              control: true,
+            ),
+            onSelected: () {},
+            label: Text(TestMenu.subMenu1.label),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.send),
+            trailingIcon: const Icon(Icons.mail),
+            onSelected: () {},
+            label: Text(TestMenu.subMenu2.label),
+          ),
+        ],
+      );
+    }
   }
 
   @override
@@ -437,16 +438,17 @@ class _ControlsState extends State<_Controls> {
           TapRegion(
             groupId: widget.menuController,
             child: TextButton(
-                key: buttonKey,
-                focusNode: focusNode,
-                onPressed: () {
-                  if (menuEntry!.isOpen) {
-                    menuEntry!.close();
-                  } else {
-                    menuEntry!.open();
-                  }
-                },
-                child: const Text('Open Menu')),
+              key: buttonKey,
+              focusNode: focusNode,
+              onPressed: () {
+                if (menuEntry!.isOpen) {
+                  menuEntry!.close();
+                } else {
+                  menuEntry!.open();
+                }
+              },
+              child: const Text('Open Menu'),
+            ),
           ),
           ConstrainedBox(
             constraints: const BoxConstraints.tightFor(width: 400),
@@ -477,7 +479,12 @@ class _ControlsState extends State<_Controls> {
                   min: -4,
                   divisions: 12,
                   onChanged: (double value) {
-                    widget.onDensityChanged(VisualDensity(horizontal: value, vertical: widget.density.vertical));
+                    widget.onDensityChanged(
+                      VisualDensity(
+                        horizontal: value,
+                        vertical: widget.density.vertical,
+                      ),
+                    );
                   },
                 ),
               ],
@@ -495,7 +502,12 @@ class _ControlsState extends State<_Controls> {
                   min: -4,
                   divisions: 12,
                   onChanged: (double value) {
-                    widget.onDensityChanged(VisualDensity(horizontal: widget.density.horizontal, vertical: value));
+                    widget.onDensityChanged(
+                      VisualDensity(
+                        horizontal: widget.density.horizontal,
+                        vertical: value,
+                      ),
+                    );
                   },
                 ),
               ],

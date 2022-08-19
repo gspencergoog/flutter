@@ -71,7 +71,7 @@ class MenuThemeData with Diagnosticable {
   final MaterialStateProperty<double?>? barElevation;
 
   /// The shape of a [MenuBar].
-  final MaterialStateProperty<ShapeBorder?>? barShape;
+  final MaterialStateProperty<OutlinedBorder?>? barShape;
 
   /// The background color of a [MenuButton].
   final MaterialStateProperty<Color?>? menuBackgroundColor;
@@ -118,14 +118,13 @@ class MenuThemeData with Diagnosticable {
   /// Creates a copy of this object with the given fields replaced with the new
   /// values.
   MenuThemeData copyWith({
-    double? barMinimumHeight,
     EdgeInsetsDirectional? barPadding,
     MaterialStateProperty<Color?>? barBackgroundColor,
     MaterialStateProperty<double?>? barElevation,
-    MaterialStateProperty<ShapeBorder?>? barShape,
+    MaterialStateProperty<OutlinedBorder?>? barShape,
     MaterialStateProperty<Color?>? menuBackgroundColor,
     MaterialStateProperty<double?>? menuElevation,
-    MaterialStateProperty<ShapeBorder?>? menuShape,
+    MaterialStateProperty<OutlinedBorder?>? menuShape,
     EdgeInsetsDirectional? menuPadding,
     MaterialStateProperty<Color?>? itemBackgroundColor,
     MaterialStateProperty<Color?>? itemForegroundColor,
@@ -135,7 +134,6 @@ class MenuThemeData with Diagnosticable {
     MaterialStateProperty<OutlinedBorder?>? itemShape,
   }) {
     return MenuThemeData(
-      barMinimumHeight: barMinimumHeight ?? this.barMinimumHeight,
       barPadding: barPadding ?? this.barPadding,
       barBackgroundColor: barBackgroundColor ?? this.barBackgroundColor,
       barElevation: barElevation ?? this.barElevation,
@@ -164,11 +162,10 @@ class MenuThemeData with Diagnosticable {
       return null;
     }
     return MenuThemeData(
-      barMinimumHeight: lerpDouble(a?.barMinimumHeight, b?.barMinimumHeight, t),
       barPadding: EdgeInsetsDirectional.lerp(a?.barPadding, b?.barPadding, t),
       barBackgroundColor: _lerpProperties<Color?>(a?.barBackgroundColor, b?.barBackgroundColor, t, Color.lerp),
       barElevation: _lerpProperties<double?>(a?.barElevation, b?.barElevation, t, lerpDouble),
-      barShape: _lerpProperties<ShapeBorder?>(a?.barShape, b?.barShape, t, ShapeBorder.lerp),
+      barShape: _lerpProperties<OutlinedBorder?>(a?.barShape, b?.barShape, t, OutlinedBorder.lerp),
       menuBackgroundColor: _lerpProperties<Color?>(a?.menuBackgroundColor, b?.menuBackgroundColor, t, Color.lerp),
       menuElevation: _lerpProperties<double?>(a?.menuElevation, b?.menuElevation, t, lerpDouble),
       menuShape: _lerpProperties<ShapeBorder?>(a?.menuShape, b?.menuShape, t, ShapeBorder.lerp),
@@ -205,7 +202,6 @@ class MenuThemeData with Diagnosticable {
   @override
   int get hashCode {
     return Object.hash(
-      barMinimumHeight,
       barPadding,
       barBackgroundColor,
       barElevation,
@@ -232,7 +228,6 @@ class MenuThemeData with Diagnosticable {
       return false;
     }
     return other is MenuThemeData &&
-        other.barMinimumHeight == barMinimumHeight &&
         other.barPadding == barPadding &&
         other.barBackgroundColor == barBackgroundColor &&
         other.barElevation == barElevation &&
@@ -252,7 +247,6 @@ class MenuThemeData with Diagnosticable {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DoubleProperty('barMinimumHeight', barMinimumHeight, defaultValue: null));
     properties.add(DiagnosticsProperty<EdgeInsetsDirectional>('barPadding', barPadding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('barBackgroundColor', barBackgroundColor,
         defaultValue: null));

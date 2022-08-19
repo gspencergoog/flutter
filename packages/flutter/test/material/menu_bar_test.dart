@@ -234,7 +234,6 @@ void main() {
             child: Column(
               children: <Widget>[
                 MenuBar(
-                  expand: false,
                   children: createTestMenus(onSelected: onSelected),
                 ),
                 const Expanded(child: Placeholder()),
@@ -250,7 +249,7 @@ void main() {
 
     testWidgets('menu alignment and offset in LTR', (WidgetTester tester) async {
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createCascadingMenu(
+      final MenuEntry menuEntry = createMaterialMenu(
         focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -332,7 +331,7 @@ void main() {
     });
     testWidgets('menu alignment and offset in RTL direction', (WidgetTester tester) async {
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createCascadingMenu(
+      final MenuEntry menuEntry = createMaterialMenu(
         focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -532,7 +531,6 @@ void main() {
                   children: <Widget>[
                     Expanded(
                       child: MenuBar(
-                        minimumHeight: 50,
                         elevation: MaterialStateProperty.all<double?>(10),
                         backgroundColor: MaterialStateProperty.all(Colors.red),
                         children: createTestMenus(onSelected: onSelected),
@@ -546,7 +544,7 @@ void main() {
           ),
         ),
       );
-      expect(tester.getRect(findMenuPanels()), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 50.0)));
+      expect(tester.getRect(findMenuPanels()), equals(const Rect.fromLTRB(0.0, 0.0, 800.0, 48.0)));
       final Material material = getMenuBarMaterial(tester);
       expect(material.elevation, equals(10));
       expect(material.color, equals(Colors.red));
@@ -633,7 +631,6 @@ void main() {
       final MenuBar menuBar = MenuBar(
         controller: MenuController(),
         backgroundColor: MaterialStateProperty.all(Colors.red),
-        minimumHeight: 40,
         elevation: MaterialStateProperty.all<double?>(10.0),
         children: const <Widget>[item],
       );
@@ -660,7 +657,6 @@ void main() {
         equalsIgnoringHashCodes(
           'controller: MenuController#00000(open: [], previousFocus: null)\n'
           'backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336)))\n'
-          'minimumHeight: 40.0\n'
           'elevation: MaterialStatePropertyAll(10.0)',
         ),
       );
@@ -1314,7 +1310,7 @@ void main() {
               controller: controller,
               children: <Widget>[
                 MenuButton(
-                  shape: MaterialStateProperty.all<ShapeBorder?>(const RoundedRectangleBorder()),
+                  shape: MaterialStateProperty.all<OutlinedBorder?>(const RoundedRectangleBorder()),
                   label: Text(TestMenu.mainMenu0.label),
                   elevation: MaterialStateProperty.all<double?>(10.0),
                   backgroundColor: MaterialStateProperty.all(Colors.red),
