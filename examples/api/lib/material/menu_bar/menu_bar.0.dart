@@ -131,7 +131,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
               child: MenuBar(
                 children: <Widget>[
                   MenuButton(
-                    label: const Text('Menu App'),
+                    child: const Text('Menu App'),
                     children: <Widget>[
                       MenuItemButton(
                         child: Text(MenuSelection.about.label),

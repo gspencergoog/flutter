@@ -14,7 +14,10 @@ import 'package:flutter/widgets.dart';
 import 'button_style.dart';
 import 'button_style_button.dart';
 import 'color_scheme.dart';
+import 'colors.dart';
+import 'constants.dart';
 import 'divider.dart';
+import 'icons.dart';
 import 'material.dart';
 import 'material_localizations.dart';
 import 'material_state.dart';
@@ -590,7 +593,6 @@ class _MenuItemButtonState extends State<MenuItemButton> {
       onHover: _enabled ? _handleHover : null,
       onPressed: _enabled ? _handleSelect : null,
       child: _MenuItemLabel(
-        key: ValueKey<MenuSerializableShortcut?>(widget.shortcut),
         leadingIcon: widget.leadingIcon,
         shortcut: widget.shortcut,
         trailingIcon: widget.trailingIcon,
@@ -605,7 +607,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
       _internalFocusNode = FocusNode();
       assert(() {
         if (_internalFocusNode != null) {
-          _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.label})';
+          _internalFocusNode!.debugLabel = '$MenuItemButton(${widget.child})';
         }
         return true;
       }());
@@ -900,7 +902,7 @@ class _MenuButtonState extends State<MenuButton> {
         _internalFocusNode ??= FocusNode();
         assert(() {
           if (_internalFocusNode != null) {
-            _internalFocusNode!.debugLabel = '$MenuButton(${widget.label})';
+            _internalFocusNode!.debugLabel = '$MenuButton(${widget.child})';
           }
           return true;
         }());
