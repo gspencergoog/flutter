@@ -60,22 +60,32 @@ void main() {
       MaterialApp(
         home: Material(
           child: Builder(builder: (BuildContext context) {
-            return MenuTheme(
-              data: MenuTheme.of(context).copyWith(
-                barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                barElevation: MaterialStateProperty.all<double?>(20.0),
-                menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-                menuElevation: MaterialStateProperty.all<double?>(15.0),
-                menuShape: MaterialStateProperty.all<OutlinedBorder?>(const StadiumBorder()),
-                menuPadding: const EdgeInsetsDirectional.all(10.0),
+            return MenuBarTheme(
+              data: const MenuBarThemeData(
+                style: MenuStyle(
+                  backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
+                  elevation: MaterialStatePropertyAll<double?>(20.0),
+                ),
               ),
-              child: Column(
-                children: <Widget>[
-                  MenuBar(
-                    children: createTestMenus(onSelected: onSelected),
+              child: MenuTheme(
+                data: const MenuThemeData(
+                  style: MenuStyle(
+                    backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
+                    elevation: MaterialStatePropertyAll<double?>(15.0),
+                    shape: MaterialStatePropertyAll<OutlinedBorder?>(StadiumBorder()),
+                    padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(
+                      EdgeInsetsDirectional.all(10.0),
+                    ),
                   ),
-                  const Expanded(child: Placeholder()),
-                ],
+                ),
+                child: Column(
+                  children: <Widget>[
+                    MenuBar(
+                      children: createTestMenus(onSelected: onSelected),
+                    ),
+                    const Expanded(child: Placeholder()),
+                  ],
+                ),
               ),
             );
           }),
@@ -101,40 +111,54 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Material(
-          child: Builder(builder: (BuildContext context) {
-            return MenuTheme(
-              data: MenuTheme.of(context).copyWith(
-                barBackgroundColor: MaterialStateProperty.all<Color?>(Colors.green),
-                barElevation: MaterialStateProperty.all<double?>(20.0),
-                menuBackgroundColor: MaterialStateProperty.all<Color?>(Colors.red),
-                menuElevation: MaterialStateProperty.all<double?>(15.0),
-                menuShape: MaterialStateProperty.all<OutlinedBorder?>(const StadiumBorder()),
-                menuPadding: const EdgeInsetsDirectional.all(10.0),
-              ),
-              child: Column(
-                children: <Widget>[
-                  MenuBar(
-                    backgroundColor: MaterialStateProperty.all<Color?>(Colors.blue),
-                    elevation: MaterialStateProperty.all<double?>(10.0),
-                    padding: const EdgeInsetsDirectional.all(12.0),
-                    children: createTestMenus(
-                      onSelected: onSelected,
-                      menuBackground: Colors.cyan,
-                      menuElevation: 18.0,
-                      menuPadding: const EdgeInsetsDirectional.all(14.0),
-                      menuShape: const BeveledRectangleBorder(),
-                      itemBackground: Colors.amber,
-                      itemForeground: Colors.grey,
-                      itemOverlay: Colors.blueGrey,
-                      itemPadding: const EdgeInsetsDirectional.all(11.0),
-                      itemShape: const BeveledRectangleBorder(),
+          child: Builder(
+            builder: (BuildContext context) {
+              return MenuBarTheme(
+                data: const MenuBarThemeData(
+                  style: MenuStyle(
+                    backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
+                    elevation: MaterialStatePropertyAll<double?>(20.0),
+                  ),
+                ),
+                child: MenuTheme(
+                  data: const MenuThemeData(
+                    style: MenuStyle(
+                      backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
+                      elevation: MaterialStatePropertyAll<double?>(15.0),
+                      shape: MaterialStatePropertyAll<OutlinedBorder?>(StadiumBorder()),
+                      padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(
+                        EdgeInsetsDirectional.all(10.0),
+                      ),
                     ),
                   ),
-                  const Expanded(child: Placeholder()),
-                ],
-              ),
-            );
-          }),
+                  child: Column(
+                    children: <Widget>[
+                      MenuBar(
+                        backgroundColor: const MaterialStatePropertyAll<Color?>(Colors.blue),
+                        elevation: const MaterialStatePropertyAll<double?>(10.0),
+                        padding: const MaterialStatePropertyAll<EdgeInsetsGeometry>(
+                          EdgeInsetsDirectional.all(12.0),
+                        ),
+                        children: createTestMenus(
+                          onSelected: onSelected,
+                          menuBackground: Colors.cyan,
+                          menuElevation: 18.0,
+                          menuPadding: const EdgeInsetsDirectional.all(14.0),
+                          menuShape: const BeveledRectangleBorder(),
+                          itemBackground: Colors.amber,
+                          itemForeground: Colors.grey,
+                          itemOverlay: Colors.blueGrey,
+                          itemPadding: const EdgeInsetsDirectional.all(11.0),
+                          itemShape: const BeveledRectangleBorder(),
+                        ),
+                      ),
+                      const Expanded(child: Placeholder()),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -155,7 +179,8 @@ void main() {
     expect(subMenuMaterial.shape, equals(const StadiumBorder())); // TODO: verify this.
 
     final Finder menuItem = findSubMenuItem();
-    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(334.0, 70.0, 618.0, 118.0)));  // TODO: verify this.
+    expect(
+        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(334.0, 70.0, 618.0, 118.0))); // TODO: verify this.
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));

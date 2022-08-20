@@ -21,6 +21,9 @@ import 'icons.dart';
 import 'material.dart';
 import 'material_localizations.dart';
 import 'material_state.dart';
+import 'menu_bar_theme.dart';
+import 'menu_button_theme.dart';
+import 'menu_style.dart';
 import 'menu_theme.dart';
 import 'text_button.dart';
 import 'theme.dart';
@@ -163,7 +166,7 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   ///
   /// Uses the value of [MenuThemeData.barPadding] if null. If that is also null,
   /// then the default is defined by the Material specification.
-  final EdgeInsetsDirectional? padding;
+  final MaterialStateProperty<EdgeInsetsGeometry?>? padding;
 
   /// The shape of the [MenuBar]'s border.
   ///
@@ -210,7 +213,8 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
     properties.add(DiagnosticsProperty<MenuController?>('controller', controller, defaultValue: null));
     properties.add(
         DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<EdgeInsetsDirectional?>('padding', padding, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStateProperty<EdgeInsetsGeometry?>?>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>?>('elevation', elevation, defaultValue: null));
   }
 }
@@ -249,7 +253,8 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasOverlay(context));
-    final MenuThemeData menuTheme = MenuTheme.of(context);
+    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (BuildContext context, Widget? ignoredChild) {
@@ -276,16 +281,18 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
                     shortcuts: _kMenuTraversalShortcuts,
                     child: _MenuPanel(
                       elevation: widget.elevation?.resolve(state) ??
-                          menuTheme.barElevation?.resolve(state) ??
-                          _MenuDefaultsM3(context).barElevation.resolve(state)!,
+                          menuBarTheme.style?.elevation?.resolve(state) ??
+                          _MenuBarDefaultsM3(context).elevation!.resolve(state)!,
                       color: widget.backgroundColor?.resolve(state) ??
-                          menuTheme.barBackgroundColor?.resolve(state) ??
-                          _MenuDefaultsM3(context).barBackgroundColor.resolve(state)!,
-                      padding: widget.padding ?? menuTheme.barPadding ?? _MenuDefaultsM3(context).barPadding,
+                          menuBarTheme.style?.backgroundColor?.resolve(state) ??
+                          _MenuBarDefaultsM3(context).backgroundColor.resolve(state)!,
+                      padding: widget.padding?.resolve(state) ??
+                          menuBarTheme.style?.padding?.resolve(state) ??
+                          _MenuBarDefaultsM3(context).padding!.resolve(state)!,
                       orientation: Axis.horizontal,
                       shape: widget.shape?.resolve(state) ??
-                          menuTheme.barShape?.resolve(state) ??
-                          _MenuDefaultsM3(context).barShape!.resolve(state)!,
+                          menuBarTheme.style?.shape?.resolve(state) ??
+                          _MenuBarDefaultsM3(context).shape!.resolve(state)!,
                       children: MenuItemGroup._expandGroups(widget.children, Axis.horizontal),
                     ),
                   ),
@@ -673,10 +680,7 @@ class MenuButton extends ButtonStyleButton {
     this.trailingIcon,
     this.onOpen,
     this.onClose,
-    this.menuBackgroundColor,
-    this.menuShape,
-    this.menuElevation,
-    this.menuPadding,
+    this.menuStyle,
     required this.children,
     required super.child,
   });
@@ -699,9 +703,9 @@ class MenuButton extends ButtonStyleButton {
   ///
   /// Use this for fine adjustments of the menu placement.
   ///
-  /// Defaults to the start portion of [MenuThemeData.menuPadding] for menus
+  /// Defaults to the start portion of [MenuThemeData.padding] for menus
   /// whose parent menu (the menu that the button for this menu resides in) is
-  /// vertical, and the top portion of [MenuThemeData.menuPadding] when it is
+  /// vertical, and the top portion of [MenuThemeData.padding] when it is
   /// horizontal
   final Offset? alignmentOffset;
 
@@ -711,34 +715,11 @@ class MenuButton extends ButtonStyleButton {
   /// An optional icon to display after the [child].
   final Widget? trailingIcon;
 
-  /// The background color of the cascading menu specified by [children].
+  /// The [MenuStyle] of the menu specified by [children].
   ///
-  /// Defaults to the value of [MenuThemeData.menuBackgroundColor] of the
+  /// Defaults to the value of [MenuThemeData.style] of the
   /// ambient [MenuTheme].
-  final MaterialStateProperty<Color?>? menuBackgroundColor;
-
-  /// The shape of the cascading menu specified by [children].
-  ///
-  /// Defaults to the value of [MenuThemeData.menuShape] of the
-  /// ambient [MenuTheme].
-  final MaterialStateProperty<OutlinedBorder?>? menuShape;
-
-  /// The Material elevation of the submenu (if any).
-  ///
-  /// Defaults to the [MenuThemeData.menuElevation] of the ambient
-  /// [MenuTheme].
-  ///
-  /// See also:
-  ///
-  ///  * [Material.elevation] for a description of what elevation is.
-  final MaterialStateProperty<double?>? menuElevation;
-
-  /// The padding around the outside of the contents of the menu opened by a
-  /// [MenuButton].
-  ///
-  /// Defaults to the [MenuThemeData.menuPadding] value of the ambient
-  /// [MenuTheme].
-  final EdgeInsetsDirectional? menuPadding;
+  final MenuStyle? menuStyle;
 
   /// A callback that is invoked when the menu is opened.
   final VoidCallback? onOpen;
@@ -837,6 +818,7 @@ class MenuButton extends ButtonStyleButton {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<String>('label', child.toString(), defaultValue: null));
+    properties.add(DiagnosticsProperty<MenuStyle>('menuStyle', menuStyle, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('leadingIcon', leadingIcon, defaultValue: null));
     properties.add(DiagnosticsProperty<Widget>('trailingIcon', trailingIcon, defaultValue: null));
   }
@@ -926,20 +908,24 @@ class _MenuButtonState extends State<MenuButton> {
         break;
     }
 
-    final MenuThemeData menuTheme = MenuTheme.of(context).copyWith(
-      menuBackgroundColor: widget.menuBackgroundColor,
-      menuShape: widget.menuShape,
-      menuPadding: widget.menuPadding,
-    );
+    final MenuThemeData menuTheme = MenuTheme.of(context);
     final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
-
-    final EdgeInsetsDirectional menuPadding =
-        widget.menuPadding ?? MenuTheme.of(context).menuPadding ?? _MenuDefaultsM3(context).menuPadding;
+    final MenuStyle menuStyle = widget.menuStyle ?? menuTheme.style ?? _MenuDefaultsM3(context);
+    final ButtonStyle menuButtonStyle = widget.style ?? menuButtonTheme.style ?? _MenuButtonDefaultsM3(context);
 
     final Offset menuPaddingOffset;
+    final TextDirection textDirection = Directionality.of(context);
+    final EdgeInsets menuPadding = menuStyle.padding!.resolve(<MaterialState>{})!.resolve(textDirection);
     switch (parent.orientation) {
       case Axis.horizontal:
-        menuPaddingOffset = widget.alignmentOffset ?? Offset(-menuPadding.start, 0);
+        switch (textDirection) {
+          case TextDirection.rtl:
+            menuPaddingOffset = widget.alignmentOffset ?? Offset(-menuPadding.right, 0);
+            break;
+          case TextDirection.ltr:
+            menuPaddingOffset = widget.alignmentOffset ?? Offset(-menuPadding.left, 0);
+            break;
+        }
         break;
       case Axis.vertical:
         menuPaddingOffset = widget.alignmentOffset ?? Offset(0, -menuPadding.top);
@@ -965,8 +951,8 @@ class _MenuButtonState extends State<MenuButton> {
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
         ..menuScopeNode = _menuScopeNode
-        ..buttonTheme = menuButtonTheme
-        ..theme = menuTheme
+        ..buttonStyle = menuButtonStyle
+        ..menuStyle = menuStyle
         ..onOpen = widget.onOpen
         ..onClose = widget.onClose
         ..alignment = menuAlignment
@@ -1044,7 +1030,7 @@ class _MenuButtonState extends State<MenuButton> {
 ///
 /// `MenuEntry` is used to control and interrogate a menu after it has been
 /// created, with methods such as [open] and [close], attributes like [enabled],
-/// [theme], [alignment], [alignmentOffset], and state like [isOpen].
+/// [menuStyle], [alignment], [alignmentOffset], and state like [isOpen].
 ///
 /// The [dispose] method must be called when the menu is no longer needed.
 ///
@@ -1117,18 +1103,18 @@ class MenuEntry with ChangeNotifier {
     _entry.alignmentOffset = value;
   }
 
-  /// Sets the theme to use for configuring the menu.
+  /// Sets the [MenuStyle] to use for configuring the menu.
   ///
   /// Setting this value will change the visual presentation of the menu to
   /// match the given theme. Setting it to null will return the menu to default
   /// values derived from the ambient [MenuTheme].
   ///
   /// If the menu is already open, then the theme for the menu will be updated.
-  MenuThemeData? get theme => _entry.theme;
-  set theme(MenuThemeData? value) {
+  MenuStyle? get menuStyle => _entry.menuStyle;
+  set menuStyle(MenuStyle? value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     // Setting the _entry value will automatically check for changes and notify listeners.
-    _entry.theme = value;
+    _entry.menuStyle = value;
   }
 
   /// Whether or not the associated menu is currently open.
@@ -1200,7 +1186,7 @@ class MenuEntry with ChangeNotifier {
 MenuEntry createMaterialMenu(
   FocusNode buttonFocusNode, {
   MenuController? controller,
-  MenuThemeData? theme,
+  MenuStyle? style,
   VoidCallback? onOpen,
   VoidCallback? onClose,
   AlignmentDirectional alignment = AlignmentDirectional.bottomStart,
@@ -1220,7 +1206,7 @@ MenuEntry createMaterialMenu(
     controller: controller,
     menuScopeNode: menuScopeNode,
     parent: controller._root,
-    theme: theme,
+    menuStyle: style,
     onOpen: onOpen,
     onClose: onClose,
     alignment: alignment,
@@ -1250,34 +1236,52 @@ MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode entry) {
 
 // A widget that is defines the menu inside of the overlay entry.
 class _Menu extends StatelessWidget {
-  const _Menu(this.entry);
+  const _Menu(this.node);
 
-  final _ChildMenuNode entry;
+  final _ChildMenuNode node;
 
   @override
   Widget build(BuildContext context) {
-    final MenuThemeData menuTheme = MenuTheme.of(context);
     final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
-    final _MenuDefaultsM3 defaultTheme = _MenuDefaultsM3(context);
-    final _MenuButtonDefaultsM3 defaultButtonTheme = _MenuButtonDefaultsM3(context);
-    final TextDirection textDirection = Directionality.of(entry.topLevel.context);
     final Set<MaterialState> state = <MaterialState>{
-      if (!entry.enabled) MaterialState.disabled,
+      if (!node.enabled) MaterialState.disabled,
     };
 
-    final double elevation =
-        (entry.theme?.menuElevation ?? menuTheme.menuElevation ?? defaultTheme.menuElevation).resolve(state)!;
-    final Color backgroundColor =
-        (entry.theme?.menuBackgroundColor ?? menuTheme.menuBackgroundColor ?? defaultTheme.menuBackgroundColor)
-            .resolve(state)!;
-    final EdgeInsetsDirectional padding = entry.theme?.menuPadding ?? menuTheme.menuPadding ?? defaultTheme.menuPadding;
-    final EdgeInsetsGeometry buttonPadding = entry.buttonTheme?.style?.padding?.resolve(state) ??
-        menuButtonTheme.style?.padding?.resolve(state) ??
-        defaultButtonTheme.padding!.resolve(state);
-    final ShapeBorder shape = (entry.theme?.menuShape ?? menuTheme.menuShape ?? defaultTheme.menuShape).resolve(state)!;
+    final MenuStyle? effectiveStyle;
+    final MenuStyle defaultStyle;
+    switch (node.orientation) {
+      case Axis.horizontal:
+        final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
+        effectiveStyle = menuBarTheme.style;
+        defaultStyle = _MenuBarDefaultsM3(context);
+        break;
+      case Axis.vertical:
+        final MenuThemeData menuTheme = MenuTheme.of(context);
+        effectiveStyle = menuTheme.style;
+        defaultStyle = _MenuDefaultsM3(context);
+        break;
+    }
 
+    final double elevation = node.menuStyle?.elevation?.resolve(state) ??
+        effectiveStyle?.elevation?.resolve(state) ??
+        defaultStyle.elevation!.resolve(state)!;
+    final Color backgroundColor = node.menuStyle?.backgroundColor?.resolve(state) ??
+        effectiveStyle?.backgroundColor?.resolve(state) ??
+        defaultStyle.backgroundColor!.resolve(state)!;
+    final EdgeInsetsGeometry padding = node.menuStyle?.padding?.resolve(state) ??
+        effectiveStyle?.padding?.resolve(state) ??
+        defaultStyle.padding!.resolve(state)!;
+    final ShapeBorder shape = node.menuStyle?.shape?.resolve(state) ??
+        effectiveStyle?.shape?.resolve(state) ??
+        defaultStyle.shape!.resolve(state)!;
+    final EdgeInsetsGeometry buttonPadding = node.buttonStyle?.padding?.resolve(state) ??
+        menuButtonTheme.style?.padding?.resolve(state) ??
+        _MenuButtonDefaultsM3(context).padding!.resolve(state);
+
+    // Use the text direction of the context where the button is.
+    final TextDirection textDirection = Directionality.of(node.topLevel.context);
     return AnimatedBuilder(
-      animation: entry,
+      animation: node,
       builder: (BuildContext context, Widget? ignoredChild) {
         return CustomSingleChildLayout(
           delegate: _MenuLayout(
@@ -1285,21 +1289,21 @@ class _Menu extends StatelessWidget {
             textDirection: textDirection,
             buttonPadding: buttonPadding,
             avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-            alignment: entry.alignment,
-            alignmentOffset: entry.alignmentOffset,
-            menuNode: entry,
+            alignment: node.alignment,
+            alignmentOffset: node.alignmentOffset,
+            menuNode: node,
           ),
           child: FocusScope(
-            node: entry.menuScopeNode,
+            node: node.menuScopeNode,
             child: Actions(
               actions: <Type, Action<Intent>>{
-                DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: entry.controller),
-                DismissIntent: _MenuDismissAction(controller: entry.controller),
+                DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: node.controller),
+                DismissIntent: _MenuDismissAction(controller: node.controller),
               },
               child: Shortcuts(
                 shortcuts: _kMenuTraversalShortcuts,
                 child: _MenuControllerMarker(
-                  controller: entry.controller,
+                  controller: node.controller,
                   child: Directionality(
                     // Copy the directionality from the button into the overlay.
                     textDirection: textDirection,
@@ -1307,9 +1311,9 @@ class _Menu extends StatelessWidget {
                       elevation: elevation,
                       color: backgroundColor,
                       padding: padding,
-                      orientation: entry.orientation,
+                      orientation: node.orientation,
                       shape: shape,
-                      children: MenuItemGroup._expandGroups(entry.widgetChildren, Axis.vertical),
+                      children: MenuItemGroup._expandGroups(node.widgetChildren, Axis.vertical),
                     ),
                   ),
                 ),
@@ -1322,8 +1326,8 @@ class _Menu extends StatelessWidget {
   }
 
   RelativeRect _getMenuButtonRect() {
-    final RenderBox button = entry.context.findRenderObject()! as RenderBox;
-    final RenderBox overlay = Overlay.of(entry.context)!.context.findRenderObject()! as RenderBox;
+    final RenderBox button = node.context.findRenderObject()! as RenderBox;
+    final RenderBox overlay = Overlay.of(node.context)!.context.findRenderObject()! as RenderBox;
     final Offset upperLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
     final Offset lowerRight = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
     return RelativeRect.fromRect(Rect.fromPoints(upperLeft, lowerRight), overlay.paintBounds);
@@ -1607,7 +1611,7 @@ class _MenuPanel extends StatefulWidget {
   final Color color;
 
   /// The padding around the outside of the menu bar contents.
-  final EdgeInsetsDirectional padding;
+  final EdgeInsetsGeometry padding;
 
   /// The shape of the menu.
   final ShapeBorder shape;
@@ -2040,7 +2044,9 @@ class _ChildMenuNode extends _MenuNode {
     AlignmentGeometry alignment = AlignmentDirectional.bottomStart,
     Offset alignmentOffset = Offset.zero,
     Axis orientation = Axis.vertical,
-    MenuThemeData? theme,
+    ButtonStyle? buttonStyle,
+    MenuStyle? menuStyle,
+    MenuStyle? menuBarStyle,
   })  : _buttonFocusNode = buttonFocusNode,
         _buttonKey = buttonKey,
         _controller = controller,
@@ -2048,7 +2054,9 @@ class _ChildMenuNode extends _MenuNode {
         _orientation = orientation,
         _alignment = alignment,
         _alignmentOffset = alignmentOffset,
-        _theme = theme {
+        _buttonStyle = buttonStyle,
+        _menuStyle = menuStyle,
+        _menuBarStyle = menuBarStyle {
     parent.addChild(this);
   }
 
@@ -2122,20 +2130,29 @@ class _ChildMenuNode extends _MenuNode {
     }
   }
 
-  MenuThemeData? get theme => _theme;
-  MenuThemeData? _theme;
-  set theme(MenuThemeData? value) {
-    if (_theme != value) {
-      _theme = value;
+  MenuStyle? get menuBarStyle => _menuBarStyle;
+  MenuStyle? _menuBarStyle;
+  set menuBarStyle(MenuStyle? value) {
+    if (_menuBarStyle != value) {
+      _menuBarStyle = value;
       _notifyNextFrame();
     }
   }
 
-  MenuButtonThemeData? get buttonTheme => _buttonTheme;
-  MenuButtonThemeData? _buttonTheme;
-  set buttonTheme(MenuButtonThemeData? value) {
-    if (_buttonTheme != value) {
-      _buttonTheme = value;
+  MenuStyle? get menuStyle => _menuStyle;
+  MenuStyle? _menuStyle;
+  set menuStyle(MenuStyle? value) {
+    if (_menuStyle != value) {
+      _menuStyle = value;
+      _notifyNextFrame();
+    }
+  }
+
+  ButtonStyle? get buttonStyle => _buttonStyle;
+  ButtonStyle? _buttonStyle;
+  set buttonStyle(ButtonStyle? value) {
+    if (_buttonStyle != value) {
+      _buttonStyle = value;
       _notifyNextFrame();
     }
   }
@@ -2862,59 +2879,66 @@ class _MenuButtonDefaultsM3 extends ButtonStyle {
 
 // This class will eventually be auto-generated, so it should remain at the end
 // of the file.
-class _MenuDefaultsM3 extends MenuThemeData {
+class _MenuDefaultsM3 extends MenuStyle {
   _MenuDefaultsM3(this.context)
       : super(
-          barElevation: MaterialStateProperty.all<double?>(2.0),
-          menuElevation: MaterialStateProperty.all<double?>(4.0),
-          menuPadding: const EdgeInsetsDirectional.only(top: 8.0, bottom: 8.0),
-          menuShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultMenuBorder),
-          barShape: MaterialStateProperty.all<OutlinedBorder?>(_defaultBarBorder),
+          elevation: MaterialStateProperty.all<double?>(4.0),
+          shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
         );
 
   static const RoundedRectangleBorder _defaultMenuBorder =
-      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)));
-
-  static const RoundedRectangleBorder _defaultBarBorder =
       RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)));
 
   final BuildContext context;
   late final ColorScheme _colors = Theme.of(context).colorScheme;
 
   @override
-  double get barMinimumHeight {
-    return 40 + Theme.of(context).visualDensity.baseSizeAdjustment.dy;
-  }
-
-  @override
-  EdgeInsetsDirectional get barPadding {
-    return EdgeInsetsDirectional.symmetric(
-      horizontal: math.max(
-        _kTopLevelMenuHorizontalMinPadding,
-        2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
+  MaterialStateProperty<EdgeInsetsGeometry?>? get padding {
+    return MaterialStatePropertyAll<EdgeInsetsGeometry>(
+      EdgeInsetsDirectional.symmetric(
+        horizontal: math.max(
+          _kTopLevelMenuHorizontalMinPadding,
+          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
+        ),
       ),
     );
   }
 
   @override
-  MaterialStateProperty<Color?> get barBackgroundColor {
+  MaterialStateProperty<Color?> get backgroundColor {
     return MaterialStateProperty.all<Color?>(_colors.surface);
+  }
+}
+
+// This class will eventually be auto-generated, so it should remain at the end
+// of the file.
+class _MenuBarDefaultsM3 extends MenuStyle {
+  _MenuBarDefaultsM3(this.context)
+      : super(
+          elevation: MaterialStateProperty.all<double?>(4.0),
+          shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
+        );
+
+  static const RoundedRectangleBorder _defaultMenuBorder =
+      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)));
+
+  final BuildContext context;
+  late final ColorScheme _colors = Theme.of(context).colorScheme;
+
+  @override
+  MaterialStateProperty<EdgeInsetsGeometry?>? get padding {
+    return MaterialStatePropertyAll<EdgeInsetsGeometry>(
+      EdgeInsetsDirectional.symmetric(
+        horizontal: math.max(
+          _kTopLevelMenuHorizontalMinPadding,
+          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
+        ),
+      ),
+    );
   }
 
   @override
-  MaterialStateProperty<double?> get barElevation => super.barElevation!;
-
-  @override
-  MaterialStateProperty<Color?> get menuBackgroundColor {
+  MaterialStateProperty<Color?> get backgroundColor {
     return MaterialStateProperty.all<Color?>(_colors.surface);
   }
-
-  @override
-  MaterialStateProperty<double?> get menuElevation => super.menuElevation!;
-
-  @override
-  MaterialStateProperty<ShapeBorder?> get menuShape => super.menuShape!;
-
-  @override
-  EdgeInsetsDirectional get menuPadding => super.menuPadding!;
 }

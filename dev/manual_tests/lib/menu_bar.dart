@@ -67,14 +67,12 @@ class _HomeState extends State<Home> {
     MenuThemeData menuTheme = MenuTheme.of(context);
     if (_funkyTheme) {
       menuTheme = const MenuThemeData(
-        barMinimumHeight: 60,
-        barBackgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
-        barElevation: MaterialStatePropertyAll<double?>(5),
-        barPadding: EdgeInsetsDirectional.all(10),
-        barShape: MaterialStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder()),
-        menuBackgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
-        menuElevation: MaterialStatePropertyAll<double?>(10),
-        menuPadding: EdgeInsetsDirectional.all(20),
+        style: MenuStyle(
+          shape: MaterialStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder()),
+          backgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
+          elevation: MaterialStatePropertyAll<double?>(10),
+          padding: MaterialStatePropertyAll<EdgeInsetsDirectional>(EdgeInsetsDirectional.all(20)),
+        ),
       );
     }
     return SafeArea(
@@ -88,10 +86,10 @@ class _HomeState extends State<Home> {
                 visualDensity: _density,
                 menuTheme: _transparent
                     ? MenuThemeData(
-                        barBackgroundColor: MaterialStatePropertyAll<Color>(Colors.red.withOpacity(0.12)),
-                        menuBackgroundColor: MaterialStatePropertyAll<Color>(Colors.blue.withOpacity(0.12)),
-                        menuElevation: const MaterialStatePropertyAll<double>(0),
-                        barElevation: const MaterialStatePropertyAll<double>(0),
+                        style: MenuStyle(
+                          backgroundColor: MaterialStatePropertyAll<Color>(Colors.blue.withOpacity(0.12)),
+                          elevation: const MaterialStatePropertyAll<double>(0),
+                        ),
                       )
                     : menuTheme,
               ),
