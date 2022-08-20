@@ -2847,7 +2847,7 @@ class _MenuButtonDefaultsM3 extends ButtonStyle {
 
   @override
   MaterialStateProperty<OutlinedBorder>? get shape =>
-      ButtonStyleButton.allOrNull<OutlinedBorder>(const StadiumBorder());
+    ButtonStyleButton.allOrNull<OutlinedBorder>(const RoundedRectangleBorder());
 
   @override
   MaterialStateProperty<MouseCursor?>? get mouseCursor =>
