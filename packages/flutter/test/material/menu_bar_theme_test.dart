@@ -60,15 +60,15 @@ void main() {
       MaterialApp(
         home: Material(
           child: Builder(builder: (BuildContext context) {
-            return MenuBarTheme(
-              data: const MenuBarThemeData(
+            return MenuTheme(
+              data: const MenuThemeData(
                 style: MenuStyle(
                   backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
                   elevation: MaterialStatePropertyAll<double?>(20.0),
                 ),
               ),
-              child: MenuTheme(
-                data: const MenuThemeData(
+              child: MenuBarTheme(
+                data: const MenuBarThemeData(
                   style: MenuStyle(
                     backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
                     elevation: MaterialStatePropertyAll<double?>(15.0),
@@ -96,15 +96,15 @@ void main() {
     // Open a test menu.
     await tester.tap(find.text(TestMenu.mainMenu1.label));
     await tester.pump();
-    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(246.0, 0.0, 554.0, 48.0)));
+    expect(tester.getRect(findMenuBarPanel().first), equals(const Rect.fromLTRB(240.0, 0.0, 560.0, 68.0)));
     final Material menuBarMaterial = getMenuBarPanelMaterial(tester);
-    expect(menuBarMaterial.elevation, equals(20));
-    expect(menuBarMaterial.color, equals(Colors.green));
+    expect(menuBarMaterial.elevation, equals(15));
+    expect(menuBarMaterial.color, equals(Colors.red));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(340.0, 44.0, 590.0, 224.0)));
-    expect(subMenuMaterial.elevation, equals(15));
-    expect(subMenuMaterial.color, equals(Colors.red));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(350.0, 54.0, 580.0, 222.0)));
+    expect(subMenuMaterial.elevation, equals(20));
+    expect(subMenuMaterial.color, equals(Colors.green));
   });
 
   testWidgets('Constructor parameters override theme parameters', (WidgetTester tester) async {
@@ -113,15 +113,15 @@ void main() {
         home: Material(
           child: Builder(
             builder: (BuildContext context) {
-              return MenuBarTheme(
-                data: const MenuBarThemeData(
+              return MenuTheme(
+                data: const MenuThemeData(
                   style: MenuStyle(
                     backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
                     elevation: MaterialStatePropertyAll<double?>(20.0),
                   ),
                 ),
-                child: MenuTheme(
-                  data: const MenuThemeData(
+                child: MenuBarTheme(
+                  data: const MenuBarThemeData(
                     style: MenuStyle(
                       backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
                       elevation: MaterialStatePropertyAll<double?>(15.0),
@@ -173,14 +173,14 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 586.0, 236.0)));
-    expect(subMenuMaterial.elevation, equals(15));
-    expect(subMenuMaterial.color, equals(Colors.red));
-    expect(subMenuMaterial.shape, equals(const StadiumBorder()));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 566.0, 224.0)));
+    expect(subMenuMaterial.elevation, equals(20));
+    expect(subMenuMaterial.color, equals(Colors.green));
+    expect(subMenuMaterial.shape, equals(const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)))));
 
     final Finder menuItem = findSubMenuItem();
     expect(
-        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(346.0, 66.0, 576.0, 114.0)));
+        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(336.0, 60.0, 566.0, 108.0)));
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));
