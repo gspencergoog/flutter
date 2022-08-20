@@ -86,7 +86,7 @@ abstract class ProgressIndicator extends StatefulWidget {
   final Animation<Color?>? valueColor;
 
   /// {@template flutter.progress_indicator.ProgressIndicator.semanticsLabel}
-  /// The [SemanticsProperties.child] for this progress indicator.
+  /// The [SemanticsProperties.label] for this progress indicator.
   ///
   /// This value indicates the purpose of the progress bar, and will be
   /// read out by screen readers to indicate the purpose of this progress

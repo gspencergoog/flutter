@@ -32,7 +32,7 @@ class MenuBarApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'createCascadingMenu Sample',
+      title: 'createMaterialMenu Sample',
       home: Scaffold(body: MyCascadingMenu()),
     );
   }

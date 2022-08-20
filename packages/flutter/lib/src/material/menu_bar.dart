@@ -713,7 +713,7 @@ class MenuButton extends ButtonStyleButton {
   /// Defaults to the start portion of [MenuThemeData.padding] for menus
   /// whose parent menu (the menu that the button for this menu resides in) is
   /// vertical, and the top portion of [MenuThemeData.padding] when it is
-  /// horizontal
+  /// horizontal.
   final Offset? alignmentOffset;
 
   /// An optional icon to display before the [child].
@@ -1164,7 +1164,7 @@ class MenuEntry with ChangeNotifier {
 /// Creates a new cascading menu given the focus node for the controlling
 /// widget.
 ///
-/// Calling `createCascadingMenu` creates a new cascading menu controlled by
+/// Calling `createMaterialMenu` creates a new cascading menu controlled by
 /// another widget, typically some type of button.
 ///
 /// The menu is created in a closed state, and [MenuEntry.open] must be called
@@ -1182,12 +1182,12 @@ class MenuEntry with ChangeNotifier {
 /// listened to for state changes.
 ///
 /// {@tool dartpad}
-/// This example shows a menu created with `createCascadingMenu` that contains a
+/// This example shows a menu created with `createMaterialMenu` that contains a
 /// single top level menu, containing three items: one for "About", a checkbox
 /// menu item for showing a message, and "Quit". The items are identified with
 /// an enum value.
 ///
-/// ** See code in examples/api/lib/material/menu_bar/create_cascading_menu.0.dart **
+/// ** See code in examples/api/lib/material/menu_bar/create_material_menu.0.dart **
 /// {@end-tool}
 ///
 /// See also:

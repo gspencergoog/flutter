@@ -33,7 +33,7 @@ const Duration kThemeAnimationDuration = Duration(milliseconds: 200);
 ///  * [AnimatedTheme], which animates the [ThemeData] when it changes rather
 ///    than changing the theme all at once.
 ///  * [MaterialApp], which includes an [AnimatedTheme] widget configured via
-///    the [MaterialApp.menuStyle] argument.
+///    the [MaterialApp.theme] argument.
 class Theme extends StatelessWidget {
   /// Applies the given theme [data] to [child].
   ///
@@ -198,7 +198,7 @@ class ThemeDataTween extends Tween<ThemeData> {
 ///    theme.
 ///  * [ThemeData], which describes the actual configuration of a theme.
 ///  * [MaterialApp], which includes an [AnimatedTheme] widget configured via
-///    the [MaterialApp.menuStyle] argument.
+///    the [MaterialApp.theme] argument.
 class AnimatedTheme extends ImplicitlyAnimatedWidget {
   /// Creates an animated theme.
   ///

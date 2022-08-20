@@ -41,7 +41,7 @@ const _CupertinoThemeDefaults _kDefaultTheme = _CupertinoThemeDefaults(
 ///
 ///  * [CupertinoThemeData], specifies the theme's visual styling.
 ///  * [CupertinoApp], which will automatically add a [CupertinoTheme] based on the
-///    value of [CupertinoApp.menuStyle].
+///    value of [CupertinoApp.theme].
 ///  * [Theme], a Material theme which will automatically add a [CupertinoTheme]
 ///    with a [CupertinoThemeData] derived from the Material [ThemeData].
 class CupertinoTheme extends StatelessWidget {

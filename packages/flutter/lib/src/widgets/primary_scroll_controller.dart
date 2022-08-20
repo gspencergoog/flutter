@@ -65,7 +65,7 @@ class PrimaryScrollController extends InheritedWidget {
   ///
   /// See also:
   ///
-  ///  * [ScrollView._controller], which discusses the purpose of specifying a
+  ///  * [ScrollView.controller], which discusses the purpose of specifying a
   ///    scroll controller.
   final ScrollController? controller;
 
@@ -104,7 +104,7 @@ class PrimaryScrollController extends InheritedWidget {
   /// [ScrollView.primary] is unset.
   ///
   /// If a ScrollController has already been provided to
-  /// [ScrollView._controller], or [ScrollView.primary] is set, this is method is
+  /// [ScrollView.controller], or [ScrollView.primary] is set, this is method is
   /// not called by ScrollView as it will have determined whether or not to
   /// inherit the PrimaryScrollController.
   static bool shouldInherit(BuildContext context, Axis scrollDirection) {
