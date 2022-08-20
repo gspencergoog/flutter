@@ -46,6 +46,13 @@ const double _kLabelItemDefaultSpacing = 18.0;
 // The minimum spacing between the the leading icon, label, trailing icon, and
 // shortcut label in a _MenuItemLabel.
 const double _kLabelItemMinSpacing = 4.0;
+
+// The minimum vertical spacing on the outside of the top level menu.
+const double _kTopLevelMenuVerticalMinPadding = 4.0;
+
+// The minimum vertical spacing on the outside of menus.
+const double _kMenuVerticalMinPadding = 4.0;
+
 // The minimum horizontal spacing on the outside of the top level menu.
 const double _kTopLevelMenuHorizontalMinPadding = 4.0;
 
@@ -910,8 +917,13 @@ class _MenuButtonState extends State<MenuButton> {
 
     final MenuThemeData menuTheme = MenuTheme.of(context);
     final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
-    final MenuStyle menuStyle = widget.menuStyle ?? menuTheme.style ?? _MenuDefaultsM3(context);
-    final ButtonStyle menuButtonStyle = widget.style ?? menuButtonTheme.style ?? _MenuButtonDefaultsM3(context);
+    final MenuStyle menuStyle = widget.menuStyle?.merge(menuTheme.style).merge(_MenuDefaultsM3(context)) ??
+        menuTheme.style?.merge(_MenuDefaultsM3(context)) ??
+        _MenuDefaultsM3(context);
+    final ButtonStyle menuButtonStyle =
+        widget.style?.merge(menuButtonTheme.style).merge(_MenuButtonDefaultsM3(context)) ??
+            menuButtonTheme.style?.merge(_MenuButtonDefaultsM3(context)) ??
+            _MenuButtonDefaultsM3(context);
 
     final Offset menuPaddingOffset;
     final TextDirection textDirection = Directionality.of(context);
@@ -2847,7 +2859,7 @@ class _MenuButtonDefaultsM3 extends ButtonStyle {
 
   @override
   MaterialStateProperty<OutlinedBorder>? get shape =>
-    ButtonStyleButton.allOrNull<OutlinedBorder>(const RoundedRectangleBorder());
+      ButtonStyleButton.allOrNull<OutlinedBorder>(const RoundedRectangleBorder());
 
   @override
   MaterialStateProperty<MouseCursor?>? get mouseCursor =>
@@ -2882,7 +2894,7 @@ class _MenuButtonDefaultsM3 extends ButtonStyle {
 class _MenuDefaultsM3 extends MenuStyle {
   _MenuDefaultsM3(this.context)
       : super(
-          elevation: MaterialStateProperty.all<double?>(4.0),
+          elevation: const MaterialStatePropertyAll<double?>(4.0),
           shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
         );
 
@@ -2896,9 +2908,9 @@ class _MenuDefaultsM3 extends MenuStyle {
   MaterialStateProperty<EdgeInsetsGeometry?>? get padding {
     return MaterialStatePropertyAll<EdgeInsetsGeometry>(
       EdgeInsetsDirectional.symmetric(
-        horizontal: math.max(
-          _kTopLevelMenuHorizontalMinPadding,
-          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
+        vertical: math.max(
+          _kMenuVerticalMinPadding,
+          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dy,
         ),
       ),
     );
@@ -2906,7 +2918,7 @@ class _MenuDefaultsM3 extends MenuStyle {
 
   @override
   MaterialStateProperty<Color?> get backgroundColor {
-    return MaterialStateProperty.all<Color?>(_colors.surface);
+    return MaterialStatePropertyAll<Color?>(_colors.surface);
   }
 }
 
@@ -2915,7 +2927,7 @@ class _MenuDefaultsM3 extends MenuStyle {
 class _MenuBarDefaultsM3 extends MenuStyle {
   _MenuBarDefaultsM3(this.context)
       : super(
-          elevation: MaterialStateProperty.all<double?>(4.0),
+          elevation: const MaterialStatePropertyAll<double?>(4.0),
           shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
         );
 
@@ -2933,12 +2945,16 @@ class _MenuBarDefaultsM3 extends MenuStyle {
           _kTopLevelMenuHorizontalMinPadding,
           2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
         ),
+        vertical: math.max(
+          _kTopLevelMenuVerticalMinPadding,
+          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dy,
+        ),
       ),
     );
   }
 
   @override
   MaterialStateProperty<Color?> get backgroundColor {
-    return MaterialStateProperty.all<Color?>(_colors.surface);
+    return MaterialStatePropertyAll<Color?>(_colors.surface);
   }
 }

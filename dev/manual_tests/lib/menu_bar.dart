@@ -70,18 +70,21 @@ class _HomeState extends State<Home> {
     if (_funkyTheme) {
       menuTheme = const MenuThemeData(
         style: MenuStyle(
-          shape: MaterialStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
+          shape: MaterialStatePropertyAll<OutlinedBorder>(
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
           backgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
           elevation: MaterialStatePropertyAll<double?>(10),
           padding: MaterialStatePropertyAll<EdgeInsetsDirectional>(EdgeInsetsDirectional.all(20)),
         ),
       );
-      menuButtonTheme = const MenuButtonThemeData(style: ButtonStyle(
-          shape: MaterialStatePropertyAll<OutlinedBorder>(StadiumBorder()),
-          backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
-          foregroundColor: MaterialStatePropertyAll<Color?>(Colors.white),
+      menuButtonTheme = const MenuButtonThemeData(
+          style: ButtonStyle(
+        shape: MaterialStatePropertyAll<OutlinedBorder>(StadiumBorder()),
+        backgroundColor: MaterialStatePropertyAll<Color?>(Colors.green),
+        foregroundColor: MaterialStatePropertyAll<Color?>(Colors.white),
       ));
-      menuBarTheme = const MenuBarThemeData(style: MenuStyle(
+      menuBarTheme = const MenuBarThemeData(
+          style: MenuStyle(
         shape: MaterialStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder()),
         backgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
         elevation: MaterialStatePropertyAll<double?>(10),
@@ -406,32 +409,18 @@ class _ControlsState extends State<_Controls> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (menuEntry == null) {
+      _createMenuEntry();
+    }
+  }
+
+  @override
   void didUpdateWidget(_Controls oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.menuController != oldWidget.menuController) {
-      menuEntry?.dispose();
-      menuEntry = createMaterialMenu(
-        focusNode,
-        alignment: AlignmentDirectional.topEnd,
-        alignmentOffset: const Offset(0, -8),
-        controller: widget.menuController,
-        children: <Widget>[
-          MenuItemButton(
-            shortcut: const SingleActivator(
-              LogicalKeyboardKey.keyB,
-              control: true,
-            ),
-            onPressed: () {},
-            child: Text(TestMenu.subMenu1.label),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.send),
-            trailingIcon: const Icon(Icons.mail),
-            onPressed: () {},
-            child: Text(TestMenu.subMenu2.label),
-          ),
-        ],
-      );
+      _createMenuEntry();
     }
   }
 
@@ -592,6 +581,32 @@ class _ControlsState extends State<_Controls> {
           ),
         ],
       ),
+    );
+  }
+
+  void _createMenuEntry() {
+    menuEntry?.dispose();
+    menuEntry = createMaterialMenu(
+      focusNode,
+      alignment: AlignmentDirectional.topEnd,
+      alignmentOffset: const Offset(0, -8),
+      controller: widget.menuController,
+      children: <Widget>[
+        MenuItemButton(
+          shortcut: const SingleActivator(
+            LogicalKeyboardKey.keyB,
+            control: true,
+          ),
+          onPressed: () {},
+          child: Text(TestMenu.subMenu1.label),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.send),
+          trailingIcon: const Icon(Icons.mail),
+          onPressed: () {},
+          child: Text(TestMenu.subMenu2.label),
+        ),
+      ],
     );
   }
 }
