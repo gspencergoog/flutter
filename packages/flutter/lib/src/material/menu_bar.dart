@@ -47,9 +47,6 @@ const double _kLabelItemDefaultSpacing = 18.0;
 // shortcut label in a _MenuItemLabel.
 const double _kLabelItemMinSpacing = 4.0;
 
-// The minimum vertical spacing on the outside of the top level menu.
-const double _kTopLevelMenuVerticalMinPadding = 4.0;
-
 // The minimum vertical spacing on the outside of menus.
 const double _kMenuVerticalMinPadding = 4.0;
 
@@ -2944,10 +2941,6 @@ class _MenuBarDefaultsM3 extends MenuStyle {
         horizontal: math.max(
           _kTopLevelMenuHorizontalMinPadding,
           2 + Theme.of(context).visualDensity.baseSizeAdjustment.dx,
-        ),
-        vertical: math.max(
-          _kTopLevelMenuVerticalMinPadding,
-          2 + Theme.of(context).visualDensity.baseSizeAdjustment.dy,
         ),
       ),
     );

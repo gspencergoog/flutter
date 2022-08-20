@@ -5,6 +5,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'menu_bar.dart';
+import 'menu_style.dart';
 import 'menu_theme.dart';
 import 'theme.dart';
 
@@ -33,7 +34,13 @@ class MenuBarThemeData extends MenuThemeData {
 
   /// Linearly interpolate between two text button themes.
   static MenuBarThemeData? lerp(MenuBarThemeData? a, MenuBarThemeData? b, double t) {
-    return MenuThemeData.lerp(a, b, t) as MenuBarThemeData?;
+    assert(t != null);
+    if (a == null && b == null) {
+      return null;
+    }
+    return MenuBarThemeData(
+      style: MenuStyle.lerp(a?.style, b?.style, t),
+    );
   }
 }
 
@@ -72,8 +79,8 @@ class MenuBarTheme extends InheritedTheme {
   ///
   /// ```dart
   /// Widget build(BuildContext context) {
-  ///   final MenuThemeData theme = MenuTheme.of(context);
-  ///   return MenuTheme(
+  ///   final MenuBarThemeData theme = MenuTheme.of(context);
+  ///   return MenuBarTheme(
   ///     data: theme.copyWith(
   ///       barBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.red),
   ///     ),
@@ -88,9 +95,9 @@ class MenuBarTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    return MenuTheme(data: data, child: child);
+    return MenuBarTheme(data: data, child: child);
   }
 
   @override
-  bool updateShouldNotify(MenuTheme oldWidget) => data != oldWidget.data;
+  bool updateShouldNotify(MenuBarTheme oldWidget) => data != oldWidget.data;
 }
