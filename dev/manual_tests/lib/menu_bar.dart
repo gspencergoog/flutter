@@ -270,6 +270,7 @@ class _HomeState extends State<Home> {
                                   child: Text(TestMenu.subMenu5.label),
                                 ),
                                 MenuItemButton(
+                                  // Disabled button
                                   shortcut: const SingleActivator(
                                     LogicalKeyboardKey.tab,
                                     control: true,

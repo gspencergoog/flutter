@@ -30,7 +30,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = false;
+const bool _kDebugMenus = true;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -80,10 +80,6 @@ const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivat
 /// part of the menu system controlled by the same controller will cause all of
 /// the menus controlled by that controller to close, as will pressing the
 /// escape key.
-///
-/// Selecting a menu item causes the [MenuItemButton.onSelected] callback to be
-/// called, or the [MenuItemButton.onSelectedIntent] intent to be fired,
-/// depending on which is set.
 ///
 /// When a menu item with a submenu is clicked on, it toggles the visibility of
 /// the submenu. When the menu item is hovered over, the submenu will open, and
@@ -334,24 +330,82 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 ///   don't involve using [Actions].
 /// * [PlatformMenuBar], a class that renders similar menu bar items from a
 ///   [PlatformMenuItem] using platform-native APIs.
-class MenuItemButton extends ButtonStyleButton {
+class MenuItemButton extends StatefulWidget {
   /// Creates a const [MenuItemButton].
   ///
   /// The [child] attribute is required.
   const MenuItemButton({
     super.key,
     this.shortcut,
-    super.onPressed,
-    super.onLongPress,
-    super.onHover,
-    super.onFocusChange,
-    super.focusNode,
-    super.style,
-    super.clipBehavior = Clip.hardEdge,
+    this.onPressed,
+    this.onHover,
+    this.onLongPress,
+    this.onFocusChange,
+    this.focusNode,
+    this.style,
+    this.statesController,
+    this.clipBehavior = Clip.none,
     this.leadingIcon,
     this.trailingIcon,
-    required super.child,
-  }) : super(autofocus: false);
+    required this.child,
+  });
+
+  /// Called when the button is tapped or otherwise activated.
+  ///
+  /// If this callback and [onLongPress] are null, then the button will be disabled.
+  ///
+  /// See also:
+  ///
+  ///  * [enabled], which is true if the button is enabled.
+  final VoidCallback? onPressed;
+
+  /// Called when the button is long-pressed.
+  ///
+  /// If this callback and [onPressed] are null, then the button will be disabled.
+  ///
+  /// See also:
+  ///
+  ///  * [enabled], which is true if the button is enabled.
+  final VoidCallback? onLongPress;
+
+  /// Called when a pointer enters or exits the button response area.
+  ///
+  /// The value passed to the callback is true if a pointer has entered this
+  /// part of the material and false if a pointer has exited this part of the
+  /// material.
+  final ValueChanged<bool>? onHover;
+
+  /// Handler called when the focus changes.
+  ///
+  /// Called with true if this widget's node gains focus, and false if it loses
+  /// focus.
+  final ValueChanged<bool>? onFocusChange;
+
+  /// {@macro flutter.material.Material.clipBehavior}
+  ///
+  /// Defaults to [Clip.none], and must not be null.
+  final Clip clipBehavior;
+
+  /// {@macro flutter.widgets.Focus.focusNode}
+  final FocusNode? focusNode;
+
+  /// Customizes this button's appearance.
+  ///
+  /// Non-null properties of this style override the corresponding
+  /// properties in [themeStyleOf] and [defaultStyleOf]. [MaterialStateProperty]s
+  /// that resolve to non-null values will similarly override the corresponding
+  /// [MaterialStateProperty]s in [themeStyleOf] and [defaultStyleOf].
+  ///
+  /// Null by default.
+  final ButtonStyle? style;
+
+  /// {@macro flutter.material.inkwell.statesController}
+  final MaterialStatesController? statesController;
+
+  /// Typically the button's label.
+  ///
+  /// {@macro flutter.widgets.ProxyWidget.child}
+  final Widget? child;
 
   /// The optional shortcut that selects this [MenuItemButton].
   ///
@@ -363,6 +417,12 @@ class MenuItemButton extends ButtonStyleButton {
 
   /// An optional icon to display after the [child] label.
   final Widget? trailingIcon;
+
+  /// Whether the button is enabled or disabled.
+  ///
+  /// Buttons are disabled by default. To enable a button, set its [onPressed]
+  /// or [onLongPress] properties to a non-null value.
+  bool get enabled => onPressed != null || onLongPress != null;
 
   @override
   State<MenuItemButton> createState() => _MenuItemButtonState();
@@ -424,14 +484,12 @@ class MenuItemButton extends ButtonStyleButton {
   /// * `enableFeedback` - true
   /// * `alignment` - Alignment.center
   /// * `splashFactory` - Theme.splashFactory
-  @override
   ButtonStyle defaultStyleOf(BuildContext context) {
     return _MenuButtonDefaultsM3(context);
   }
 
   /// Returns the [MenuButtonThemeData.style] of the closest
   /// [MenuButtonTheme] ancestor.
-  @override
   ButtonStyle? themeStyleOf(BuildContext context) {
     return MenuButtonTheme.of(context).style;
   }
@@ -446,9 +504,6 @@ class MenuItemButton extends ButtonStyleButton {
   /// and pressed states. Use [backgroundColor] for the button's background
   /// fill color. Use [disabledForegroundColor] and [disabledBackgroundColor]
   /// to specify the button's disabled icon and fill color.
-  ///
-  /// Similarly, the [enabledMouseCursor] and [disabledMouseCursor]
-  /// parameters are used to construct [ButtonStyle].mouseCursor.
   ///
   /// All of the other parameters are either used directly or used to
   /// create a [MaterialStateProperty] with a single value for all
@@ -465,7 +520,7 @@ class MenuItemButton extends ButtonStyleButton {
   /// ```dart
   /// MenuItemButton(
   ///   leadingIcon: const Icon(Icons.pets),
-  ///   style: IconButton.styleFrom(foregroundColor: Colors.green),
+  ///   style: MenuItemButton.styleFrom(foregroundColor: Colors.green),
   ///   onPressed: () {
   ///     // ...
   ///   },
@@ -475,7 +530,6 @@ class MenuItemButton extends ButtonStyleButton {
   static ButtonStyle styleFrom({
     Color? foregroundColor,
     Color? backgroundColor,
-    Color? overlayColor,
     Color? disabledForegroundColor,
     Color? disabledBackgroundColor,
     Color? focusColor,
@@ -487,11 +541,9 @@ class MenuItemButton extends ButtonStyleButton {
     Size? minimumSize,
     Size? fixedSize,
     Size? maximumSize,
-    double? iconSize,
     BorderSide? side,
     OutlinedBorder? shape,
     EdgeInsetsGeometry? padding,
-    MouseCursor? mouseCursor,
     VisualDensity? visualDensity,
     MaterialTapTargetSize? tapTargetSize,
     Duration? animationDuration,
@@ -499,21 +551,18 @@ class MenuItemButton extends ButtonStyleButton {
     AlignmentGeometry? alignment,
     InteractiveInkFeatureFactory? splashFactory,
   }) {
-    return ButtonStyle(
-      backgroundColor: ButtonStyleButton.allOrNull<Color>(backgroundColor),
-      foregroundColor: ButtonStyleButton.allOrNull<Color>(foregroundColor),
-      overlayColor: ButtonStyleButton.allOrNull<Color>(overlayColor),
-      shadowColor: ButtonStyleButton.allOrNull<Color>(shadowColor),
-      surfaceTintColor: ButtonStyleButton.allOrNull<Color>(surfaceTintColor),
-      elevation: ButtonStyleButton.allOrNull<double>(elevation),
-      padding: ButtonStyleButton.allOrNull<EdgeInsetsGeometry>(padding),
-      minimumSize: ButtonStyleButton.allOrNull<Size>(minimumSize),
-      fixedSize: ButtonStyleButton.allOrNull<Size>(fixedSize),
-      maximumSize: ButtonStyleButton.allOrNull<Size>(maximumSize),
-      iconSize: ButtonStyleButton.allOrNull<double>(iconSize),
-      side: ButtonStyleButton.allOrNull<BorderSide>(side),
-      shape: ButtonStyleButton.allOrNull<OutlinedBorder>(shape),
-      mouseCursor: ButtonStyleButton.allOrNull<MouseCursor>(mouseCursor),
+    return TextButton.styleFrom(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      shadowColor: shadowColor,
+      surfaceTintColor: surfaceTintColor,
+      elevation: elevation,
+      padding: padding,
+      minimumSize: minimumSize,
+      fixedSize: fixedSize,
+      maximumSize: maximumSize,
+      side: side,
+      shape: shape,
       visualDensity: visualDensity,
       tapTargetSize: tapTargetSize,
       animationDuration: animationDuration,
@@ -536,10 +585,7 @@ class MenuItemButton extends ButtonStyleButton {
 class _MenuItemButtonState extends State<MenuItemButton> {
   FocusNode? _internalFocusNode;
   FocusNode get _focusNode => widget.focusNode ?? _internalFocusNode!;
-
-  bool get _enabled {
-    return widget.onPressed != null;
-  }
+  bool get _enabled => widget.onPressed != null;
 
   @override
   void initState() {
@@ -579,11 +625,20 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 
   @override
   Widget build(BuildContext context) {
+    final ButtonStyle mergedStyle =
+      widget.style?.merge(widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context))) ??
+      widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context)) ??
+      widget.defaultStyleOf(context);
+
     return TextButton(
-      style: widget.style ?? MenuButtonTheme.of(context).style,
-      focusNode: _focusNode,
-      onHover: _enabled ? _handleHover : null,
       onPressed: _enabled ? _handleSelect : null,
+      onHover: _enabled ? _handleHover : null,
+      onLongPress: _enabled ? widget.onLongPress : null,
+      onFocusChange: _enabled ? widget.onFocusChange : null,
+      focusNode: _focusNode,
+      style: mergedStyle,
+      statesController: widget.statesController,
+      clipBehavior: widget.clipBehavior,
       child: _MenuItemLabel(
         leadingIcon: widget.leadingIcon,
         shortcut: widget.shortcut,
@@ -1286,16 +1341,17 @@ class _MenuState extends State<_Menu> {
         }
         final MenuStyle? widgetStyle = widget.node.menuStyle;
 
-        T effectiveValue<T>(T? Function(MenuStyle? style) getProperty) {
-          return getProperty(widgetStyle) ?? getProperty(themeStyle) ?? getProperty(defaultStyle)!;
+        T? effectiveValue<T>(T? Function(MenuStyle? style) getProperty) {
+          return getProperty(widgetStyle) ?? getProperty(themeStyle) ?? getProperty(defaultStyle);
         }
 
         final MaterialStateMouseCursor mouseCursor = _MouseCursor(
           (Set<MaterialState> states) => effectiveValue((MenuStyle? style) => style?.mouseCursor?.resolve(states)),
         );
 
-        final VisualDensity visualDensity = effectiveValue((MenuStyle? style) => style?.visualDensity);
-        final AlignmentGeometry alignment = effectiveValue((MenuStyle? style) => style?.alignment);
+        final VisualDensity visualDensity =
+            effectiveValue((MenuStyle? style) => style?.visualDensity) ?? VisualDensity.standard;
+        final AlignmentGeometry alignment = effectiveValue((MenuStyle? style) => style?.alignment)!;
 
         final EdgeInsetsGeometry buttonPadding = widget.node.buttonStyle?.padding?.resolve(state) ??
             menuButtonTheme.style?.padding?.resolve(state) ??
@@ -1700,7 +1756,8 @@ class _MenuPanelState extends State<_MenuPanel> {
     final Size? maximumSize = resolve<Size?>((MenuStyle? style) => style?.maximumSize);
     final BorderSide? side = resolve<BorderSide?>((MenuStyle? style) => style?.side);
     final OutlinedBorder shape = resolve<OutlinedBorder?>((MenuStyle? style) => style?.shape)!.copyWith(side: side);
-    final VisualDensity visualDensity = effectiveValue((MenuStyle? style) => style?.visualDensity)!;
+    final VisualDensity visualDensity =
+        effectiveValue((MenuStyle? style) => style?.visualDensity) ?? VisualDensity.standard;
     final Offset densityAdjustment = visualDensity.baseSizeAdjustment;
 
     BoxConstraints effectiveConstraints = visualDensity.effectiveConstraints(
@@ -2892,10 +2949,10 @@ class _MouseCursor extends MaterialStateMouseCursor {
   final MaterialPropertyResolver<MouseCursor?> resolveCallback;
 
   @override
-  MouseCursor resolve(Set<MaterialState> states) => resolveCallback(states)!;
+  MouseCursor resolve(Set<MaterialState> states) => resolveCallback(states) ?? MouseCursor.uncontrolled;
 
   @override
-  String get debugDescription => 'ButtonStyleButton_MouseCursor';
+  String get debugDescription => 'Menu_MouseCursor';
 }
 
 bool _menuDebug(String message, [Iterable<String>? details]) {
