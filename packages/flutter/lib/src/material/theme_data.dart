@@ -1322,7 +1322,7 @@ class ThemeData with Diagnosticable {
 
   /// The default color of the [BottomAppBar].
   ///
-  /// This can be overridden by specifying [BottomAppBar.color].
+  /// This can be overridden by specifying [BottomAppBar.backgroundColor].
   final Color bottomAppBarColor;
 
   /// The default color of [MaterialType.canvas] [Material].

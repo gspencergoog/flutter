@@ -531,8 +531,10 @@ void main() {
                   children: <Widget>[
                     Expanded(
                       child: MenuBar(
-                        elevation: MaterialStateProperty.all<double?>(10),
-                        backgroundColor: MaterialStateProperty.all(Colors.red),
+                        style: MenuStyle(
+                          elevation: MaterialStateProperty.all<double?>(10),
+                          backgroundColor: MaterialStateProperty.all(Colors.red),
+                        ),
                         children: createTestMenus(onSelected: onSelected),
                       ),
                     ),
@@ -630,8 +632,10 @@ void main() {
       );
       final MenuBar menuBar = MenuBar(
         controller: MenuController(),
-        backgroundColor: MaterialStateProperty.all(Colors.red),
-        elevation: MaterialStateProperty.all<double?>(10.0),
+        style: MenuStyle(
+          backgroundColor: MaterialStateProperty.all(Colors.red),
+          elevation: MaterialStateProperty.all<double?>(10.0),
+        ),
         children: const <Widget>[item],
       );
 
@@ -1352,12 +1356,14 @@ void main() {
           .map((DiagnosticsNode node) => node.toString())
           .toList();
 
-      expect(description, equalsIgnoringHashCodes(<String>[
-        'disabled',
-        'style: ButtonStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0), shape: MaterialStatePropertyAll(StadiumBorder(BorderSide(width: 0.0, style: none))))',
-        'label: Text("Menu 0")',
-        'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.zero)))'
-      ]));
+      expect(
+          description,
+          equalsIgnoringHashCodes(<String>[
+            'disabled',
+            'style: ButtonStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0), shape: MaterialStatePropertyAll(StadiumBorder(BorderSide(width: 0.0, style: none))))',
+            'label: Text("Menu 0")',
+            'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.zero)))'
+          ]));
     });
   });
   group('Layout', () {

@@ -134,10 +134,12 @@ void main() {
                   child: Column(
                     children: <Widget>[
                       MenuBar(
-                        backgroundColor: const MaterialStatePropertyAll<Color?>(Colors.blue),
-                        elevation: const MaterialStatePropertyAll<double?>(10.0),
-                        padding: const MaterialStatePropertyAll<EdgeInsetsGeometry>(
-                          EdgeInsetsDirectional.all(12.0),
+                        style: const MenuStyle(
+                          backgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
+                          elevation: MaterialStatePropertyAll<double?>(10.0),
+                          padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(
+                            EdgeInsetsDirectional.all(12.0),
+                          ),
                         ),
                         children: createTestMenus(
                           onSelected: onSelected,

@@ -134,10 +134,12 @@ void main() {
                   child: Column(
                     children: <Widget>[
                       MenuBar(
-                        backgroundColor: const MaterialStatePropertyAll<Color?>(Colors.blue),
-                        elevation: const MaterialStatePropertyAll<double?>(10.0),
-                        padding: const MaterialStatePropertyAll<EdgeInsetsGeometry>(
-                          EdgeInsetsDirectional.all(12.0),
+                        style: const MenuStyle(
+                          backgroundColor: MaterialStatePropertyAll<Color?>(Colors.blue),
+                          elevation: MaterialStatePropertyAll<double?>(10.0),
+                          padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(
+                            EdgeInsetsDirectional.all(12.0),
+                          ),
                         ),
                         children: createTestMenus(
                           onSelected: onSelected,
@@ -179,8 +181,7 @@ void main() {
     expect(subMenuMaterial.shape, equals(const StadiumBorder()));
 
     final Finder menuItem = findSubMenuItem();
-    expect(
-        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(346.0, 66.0, 576.0, 114.0)));
+    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(346.0, 66.0, 576.0, 114.0)));
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));

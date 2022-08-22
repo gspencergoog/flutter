@@ -48,7 +48,7 @@ import 'theme_data.dart';
 ///   menuStyle: MenuStyle(
 ///     backgroundColor: MaterialStateProperty.resolveWith<Color?>(
 ///       (Set<MaterialState> states) {
-///         if (states.contains(MaterialState.pressed)) {
+///         if (states.contains(MaterialState.focused)) {
 ///           return Theme.of(context).colorScheme.primary.withOpacity(0.5);
 ///         }
 ///         return null; // Use the component's default.
@@ -103,12 +103,12 @@ class MenuStyle with Diagnosticable {
   /// Create a [MenuStyle].
   const MenuStyle({
     this.backgroundColor,
-    this.overlayColor,
     this.shadowColor,
     this.surfaceTintColor,
     this.elevation,
     this.padding,
     this.minimumSize,
+    this.fixedSize,
     this.maximumSize,
     this.side,
     this.shape,
@@ -119,10 +119,6 @@ class MenuStyle with Diagnosticable {
 
   /// The menu's background fill color.
   final MaterialStateProperty<Color?>? backgroundColor;
-
-  /// The highlight color that's typically used to indicate that
-  /// the menu is focused, hovered, or pressed.
-  final MaterialStateProperty<Color?>? overlayColor;
 
   /// The shadow color of the menu's [Material].
   ///
@@ -150,6 +146,17 @@ class MenuStyle with Diagnosticable {
   ///
   /// This value must be less than or equal to [maximumSize].
   final MaterialStateProperty<Size?>? minimumSize;
+
+  /// The menu's size.
+  ///
+  /// This size is still constrained by the style's [minimumSize]
+  /// and [maximumSize]. Fixed size dimensions whose value is
+  /// [double.infinity] are ignored.
+  ///
+  /// To specify menus with a fixed width and the default height use
+  /// `fixedSize: Size.fromWidth(320)`. Similarly, to specify a fixed
+  /// height and the default width use `fixedSize: Size.fromHeight(100)`.
+  final MaterialStateProperty<Size?>? fixedSize;
 
   /// The maximum size of the menu itself.
   ///
@@ -185,18 +192,28 @@ class MenuStyle with Diagnosticable {
   ///    within a [Theme].
   final VisualDensity? visualDensity;
 
-  /// The default alignment of the menu's child menu.
+  /// Determines the desired alignment of the submenu when opened relative to
+  /// the button that opens it.
+  ///
+  /// If there isn't sufficient space to open the menu with the given alignment,
+  /// and there's space on the other side of the button, then the alignment is
+  /// swapped to it's opposite (1 becomes -1, etc.), and the menu will try to
+  /// appear on the other side of the menu. If there isn't enough space there
+  /// either, then the menu will be pushed as far over as necessary to display
+  /// as much of itself as possible, possibly overlapping the parent button.
   ///
   /// Defaults to [AlignmentDirectional.topEnd], which means that in a
   /// left-to-right context, the menu will appear with its origin at the upper
-  /// right corner of the [MenuButton] that owns it.
+  /// right corner of the [MenuButton] that owns it. This applies for vertical
+  /// menus (e.g. created by a [MenuButton] or [createMaterialMenu]).
+  ///
+  /// For a [MenuBar], the default is [AlignmentDirectional.bottomStart].
   final AlignmentGeometry? alignment;
 
   /// Returns a copy of this MenuStyle with the given fields replaced with
   /// the new values.
   MenuStyle copyWith({
     MaterialStateProperty<Color?>? backgroundColor,
-    MaterialStateProperty<Color?>? overlayColor,
     MaterialStateProperty<Color?>? shadowColor,
     MaterialStateProperty<Color?>? surfaceTintColor,
     MaterialStateProperty<double?>? elevation,
@@ -212,12 +229,12 @@ class MenuStyle with Diagnosticable {
   }) {
     return MenuStyle(
       backgroundColor: backgroundColor ?? this.backgroundColor,
-      overlayColor: overlayColor ?? this.overlayColor,
       shadowColor: shadowColor ?? this.shadowColor,
       surfaceTintColor: surfaceTintColor ?? this.surfaceTintColor,
       elevation: elevation ?? this.elevation,
       padding: padding ?? this.padding,
       minimumSize: minimumSize ?? this.minimumSize,
+      fixedSize: fixedSize ?? this.fixedSize,
       maximumSize: maximumSize ?? this.maximumSize,
       side: side ?? this.side,
       shape: shape ?? this.shape,
@@ -238,7 +255,6 @@ class MenuStyle with Diagnosticable {
     }
     return copyWith(
       backgroundColor: backgroundColor ?? style.backgroundColor,
-      overlayColor: overlayColor ?? style.overlayColor,
       shadowColor: shadowColor ?? style.shadowColor,
       surfaceTintColor: surfaceTintColor ?? style.surfaceTintColor,
       elevation: elevation ?? style.elevation,
@@ -257,7 +273,6 @@ class MenuStyle with Diagnosticable {
   int get hashCode {
     final List<Object?> values = <Object?>[
       backgroundColor,
-      overlayColor,
       shadowColor,
       surfaceTintColor,
       elevation,
@@ -283,7 +298,6 @@ class MenuStyle with Diagnosticable {
     }
     return other is MenuStyle
         && other.backgroundColor == backgroundColor
-        && other.overlayColor == overlayColor
         && other.shadowColor == shadowColor
         && other.surfaceTintColor == surfaceTintColor
         && other.elevation == elevation
@@ -301,7 +315,6 @@ class MenuStyle with Diagnosticable {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('overlayColor', overlayColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('shadowColor', shadowColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Color?>>('surfaceTintColor', surfaceTintColor, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
@@ -323,7 +336,6 @@ class MenuStyle with Diagnosticable {
     }
     return MenuStyle(
       backgroundColor: _lerpProperties<Color?>(a?.backgroundColor, b?.backgroundColor, t, Color.lerp),
-      overlayColor: _lerpProperties<Color?>(a?.overlayColor, b?.overlayColor, t, Color.lerp),
       shadowColor: _lerpProperties<Color?>(a?.shadowColor, b?.shadowColor, t, Color.lerp),
       surfaceTintColor: _lerpProperties<Color?>(a?.surfaceTintColor, b?.surfaceTintColor, t, Color.lerp),
       elevation: _lerpProperties<double?>(a?.elevation, b?.elevation, t, lerpDouble),

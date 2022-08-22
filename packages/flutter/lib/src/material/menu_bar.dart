@@ -140,10 +140,9 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   const MenuBar({
     super.key,
     this.controller,
-    this.backgroundColor,
-    this.padding,
-    this.elevation,
-    this.shape,
+    this.style,
+    this.clipBehavior = Clip.none,
+    this.statesController,
     required this.children,
   });
 
@@ -156,46 +155,19 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   /// controller when it is done being used.
   final MenuController? controller;
 
-  /// The background color of the menu bar.
-  ///
-  /// This is a [MaterialStateProperty], but [MenuBar] doesn't currently have
-  /// any states for it to respond to. Use [MaterialStatePropertyAll] to
-  /// initialize it.
-  ///
-  /// Uses [MenuThemeData.barBackgroundColor] if null. If that is also null,
-  /// then the default is defined by the Material specification.
-  final MaterialStateProperty<Color?>? backgroundColor;
+  /// The [MenuStyle] that defines the visual attributes of the menu bar.
+  final MenuStyle? style;
 
-  /// The padding around the contents of the menu bar itself.
+  /// {@macro flutter.material.Material.clipBehavior}
   ///
-  /// Uses the value of [MenuThemeData.barPadding] if null. If that is also null,
-  /// then the default is defined by the Material specification.
-  final MaterialStateProperty<EdgeInsetsGeometry?>? padding;
+  /// Defaults to [Clip.none], and must not be null.
+  final Clip clipBehavior;
 
-  /// The shape of the [MenuBar]'s border.
+  /// The [MaterialStatesController] that manages the states for the menu bar.
   ///
-  /// This is a [MaterialStateProperty], but [MenuBar] doesn't currently have
-  /// any states for it to respond to. Use [MaterialStatePropertyAll] to
-  /// initialize it.
-  ///
-  /// Uses the value of [MenuThemeData.barShape] if null. If that is also null,
-  /// then the default is defined by the Material specification.
-  final MaterialStateProperty<ShapeBorder?>? shape;
-
-  /// The Material elevation of the menu bar (if any).
-  ///
-  /// This is a [MaterialStateProperty], but [MenuBar] doesn't currently have
-  /// any states for it to respond to. Use [MaterialStatePropertyAll] to
-  /// initialize it.
-  ///
-  /// Uses the [MenuThemeData.barElevation] value of the ambient [MenuTheme]. If
-  /// that is also null, then the default is defined by the Material
-  /// specification.
-  ///
-  /// See also:
-  ///
-  ///  * [Material.elevation] for a description of what elevation implies.
-  final MaterialStateProperty<double?>? elevation;
+  /// This only manages the states for the menu bar itself, not for its
+  /// submenus.
+  final MaterialStatesController? statesController;
 
   /// The list of menu items that are the top level children of the
   /// [MenuBar].
@@ -215,18 +187,23 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<MenuController?>('controller', controller, defaultValue: null));
-    properties.add(
-        DiagnosticsProperty<MaterialStateProperty<Color?>>('backgroundColor', backgroundColor, defaultValue: null));
-    properties
-        .add(DiagnosticsProperty<MaterialStateProperty<EdgeInsetsGeometry?>?>('padding', padding, defaultValue: null));
-    properties.add(DiagnosticsProperty<MaterialStateProperty<double?>?>('elevation', elevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<MenuStyle?>('style', style, defaultValue: null));
+    properties.add(DiagnosticsProperty<Clip>('clipBehavior', clipBehavior, defaultValue: null));
   }
 }
 
 class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   MenuController? _internalController;
+  MaterialStatesController? _internalStatesController;
   MenuController get _controller {
     return widget.controller ?? (_internalController ??= MenuController());
+  }
+
+  MaterialStatesController get _statesController => widget.statesController ?? _internalStatesController!;
+
+  void handleStatesControllerChange() {
+    // Force a rebuild to resolve MaterialStateProperty properties
+    setState(() {});
   }
 
   @override
@@ -236,6 +213,14 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
       _controller._root.menuScopeNode.debugLabel = 'MenuBar';
       return true;
     }());
+    initStatesController();
+  }
+
+  void initStatesController() {
+    if (widget.statesController == null) {
+      _internalStatesController = MaterialStatesController();
+    }
+    _statesController.addListener(handleStatesControllerChange);
   }
 
   @override
@@ -245,10 +230,20 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
       _internalController?.dispose();
       _internalController = null;
     }
+    if (widget.statesController != oldWidget.statesController) {
+      oldWidget.statesController?.removeListener(handleStatesControllerChange);
+      if (widget.statesController != null) {
+        _internalStatesController?.dispose();
+        _internalStatesController = null;
+      }
+      initStatesController();
+    }
   }
 
   @override
   void dispose() {
+    _statesController.removeListener(handleStatesControllerChange);
+    _internalStatesController?.dispose();
     _internalController?.dispose();
     _internalController = null;
     super.dispose();
@@ -257,14 +252,9 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasOverlay(context));
-    final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (BuildContext context, Widget? ignoredChild) {
-        final Set<MaterialState> state = <MaterialState>{
-          if (_controller._root.menuScopeNode.hasFocus) MaterialState.focused,
-        };
         return ExcludeFocus(
           excluding: !_controller.menuIsOpen,
           child: TapRegion(
@@ -284,19 +274,10 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
                   child: Shortcuts(
                     shortcuts: _kMenuTraversalShortcuts,
                     child: _MenuPanel(
-                      elevation: widget.elevation?.resolve(state) ??
-                          menuBarTheme.style?.elevation?.resolve(state) ??
-                          _MenuBarDefaultsM3(context).elevation!.resolve(state)!,
-                      color: widget.backgroundColor?.resolve(state) ??
-                          menuBarTheme.style?.backgroundColor?.resolve(state) ??
-                          _MenuBarDefaultsM3(context).backgroundColor.resolve(state)!,
-                      padding: widget.padding?.resolve(state) ??
-                          menuBarTheme.style?.padding?.resolve(state) ??
-                          _MenuBarDefaultsM3(context).padding!.resolve(state)!,
+                      menuStyle: widget.style,
+                      clipBehavior: widget.clipBehavior,
+                      statesController: _statesController,
                       orientation: Axis.horizontal,
-                      shape: widget.shape?.resolve(state) ??
-                          menuBarTheme.style?.shape?.resolve(state) ??
-                          _MenuBarDefaultsM3(context).shape!.resolve(state)!,
                       children: MenuItemGroup._expandGroups(widget.children, Axis.horizontal),
                     ),
                   ),
@@ -677,30 +658,16 @@ class MenuButton extends ButtonStyleButton {
     super.style,
     super.focusNode,
     super.autofocus = false,
-    super.clipBehavior = Clip.hardEdge,
-    this.alignment,
-    this.alignmentOffset,
+    super.clipBehavior = Clip.none,
     this.leadingIcon,
     this.trailingIcon,
     this.onOpen,
     this.onClose,
     this.menuStyle,
+    this.alignmentOffset,
     required this.menuChildren,
     required super.child,
   });
-
-  /// Determines the desired alignment of the submenu when opened relative to
-  /// the button that opens it.
-  ///
-  /// If there isn't sufficient space to open the menu with the given alignment,
-  /// and there's space on the other side of the button, then the alignment is
-  /// swapped to it's opposite (1 becomes -1, etc.), and the menu will try to
-  /// appear on the other side of the menu. If there isn't enough space there
-  /// either, then the menu will be pushed as far over as necessary to display
-  /// as much of itself as possible, possibly overlapping the parent button.
-  ///
-  /// Defaults to [AlignmentDirectional.topEnd].
-  final AlignmentGeometry? alignment;
 
   /// The offset in pixels of the menu relative to the alignment origin
   /// determined by [alignment].
@@ -902,15 +869,6 @@ class _MenuButtonState extends State<MenuButton> {
   void _updateChildMenu() {
     final MenuController controller = MenuController.maybeOf(context) ?? (_internalMenuController ??= MenuController());
     final _MenuNode parent = _MenuNode.maybeOf(context) ?? controller._root;
-    final AlignmentGeometry menuAlignment;
-    switch (parent.orientation) {
-      case Axis.horizontal:
-        menuAlignment = widget.alignment ?? AlignmentDirectional.bottomStart;
-        break;
-      case Axis.vertical:
-        menuAlignment = widget.alignment ?? AlignmentDirectional.topEnd;
-        break;
-    }
 
     final MenuThemeData menuTheme = MenuTheme.of(context);
     final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
@@ -947,9 +905,11 @@ class _MenuButtonState extends State<MenuButton> {
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
         menuScopeNode: _menuScopeNode,
+        buttonStyle: menuButtonStyle,
+        menuStyle: menuStyle,
+        menuClipBehavior: widget.clipBehavior,
         onOpen: widget.onOpen,
         onClose: widget.onClose,
-        alignment: menuAlignment,
         alignmentOffset: menuPaddingOffset,
         widgetChildren: widget.menuChildren,
       );
@@ -962,9 +922,9 @@ class _MenuButtonState extends State<MenuButton> {
         ..menuScopeNode = _menuScopeNode
         ..buttonStyle = menuButtonStyle
         ..menuStyle = menuStyle
+        ..menuClipBehavior = widget.clipBehavior
         ..onOpen = widget.onOpen
         ..onClose = widget.onClose
-        ..alignment = menuAlignment
         ..alignmentOffset = menuPaddingOffset
         ..widgetChildren = widget.menuChildren;
     }
@@ -972,8 +932,8 @@ class _MenuButtonState extends State<MenuButton> {
 
   @override
   Widget build(BuildContext context) {
-    return _MenuEntryMarker(
-      entry: _node,
+    return _MenuNodeMarker(
+      node: _node,
       child: TextButton(
         style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
         focusNode: _buttonFocusNode,
@@ -1086,12 +1046,13 @@ class MenuEntry with ChangeNotifier {
   ///
   /// The alignment depends on the value of the ambient [Directionality] of the
   /// controlling widget to know which direction is the 'start' of the widget.
-  AlignmentGeometry get alignment => _entry.alignment;
-  set alignment(AlignmentGeometry value) {
+  AlignmentGeometry? get alignment => _entry.menuStyle!.alignment;
+  set alignment(AlignmentGeometry? value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    // Setting the _entry.alignment value will automatically check for changes
-    // and notify listeners.
-    _entry.alignment = value;
+    // Setting the menuStyle value will automatically check for changes and
+    // notify listeners.
+    if (alignment == null) {}
+    _entry.menuStyle = (_entry.menuStyle ?? const MenuStyle()).copyWith(alignment: value);
   }
 
   /// Sets the alignment offset of the menu relative to the alignment position
@@ -1195,7 +1156,9 @@ class MenuEntry with ChangeNotifier {
 MenuEntry createMaterialMenu(
   FocusNode buttonFocusNode, {
   MenuController? controller,
+  MaterialStatesController? statesController,
   MenuStyle? style,
+  Clip clipBehavior = Clip.none,
   VoidCallback? onOpen,
   VoidCallback? onClose,
   AlignmentDirectional alignment = AlignmentDirectional.bottomStart,
@@ -1213,116 +1176,169 @@ MenuEntry createMaterialMenu(
     buttonFocusNode: buttonFocusNode,
     buttonKey: buttonKey,
     controller: controller,
+    statesController: statesController,
     menuScopeNode: menuScopeNode,
     parent: controller._root,
     menuStyle: style,
+    menuClipBehavior: clipBehavior,
     onOpen: onOpen,
     onClose: onClose,
-    alignment: alignment,
     alignmentOffset: alignmentOffset,
     widgetChildren: children,
   );
   return _createMenuEntryFromExistingNode(entry);
 }
 
-MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode entry) {
-  assert(_menuDebug('Creating menu entry from $entry'));
-  final MenuEntry menu = MenuEntry._(entry);
-  entry.overlayEntry = OverlayEntry(builder: (BuildContext context) {
+MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode node) {
+  assert(_menuDebug('Creating menu entry from $node'));
+  final MenuEntry menuEntry = MenuEntry._(node);
+  node.overlayEntry = OverlayEntry(builder: (BuildContext context) {
     final OverlayState overlay = Overlay.of(context)!;
-    return _MenuEntryMarker(
-      entry: entry,
+    return _MenuNodeMarker(
+      node: node,
       child: InheritedTheme.captureAll(
         // Copy all the themes from the menu bar to the overlay.
-        entry.topLevel.context,
-        _Menu(entry),
+        node.topLevel.context,
+        _Menu(node: node),
         to: overlay.context,
       ),
     );
   });
-  return menu;
+  return menuEntry;
 }
 
 // A widget that is defines the menu inside of the overlay entry.
-class _Menu extends StatelessWidget {
-  const _Menu(this.node);
+class _Menu extends StatefulWidget {
+  const _Menu({required this.node});
 
   final _ChildMenuNode node;
 
   @override
-  Widget build(BuildContext context) {
-    final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
-    final Set<MaterialState> state = <MaterialState>{
-      if (!node.enabled) MaterialState.disabled,
-    };
+  State<_Menu> createState() => _MenuState();
+}
 
-    final MenuStyle? effectiveStyle;
-    final MenuStyle defaultStyle;
-    switch (node.orientation) {
-      case Axis.horizontal:
-        final MenuBarThemeData menuBarTheme = MenuBarTheme.of(context);
-        effectiveStyle = menuBarTheme.style;
-        defaultStyle = _MenuBarDefaultsM3(context);
-        break;
-      case Axis.vertical:
-        final MenuThemeData menuTheme = MenuTheme.of(context);
-        effectiveStyle = menuTheme.style;
-        defaultStyle = _MenuDefaultsM3(context);
-        break;
+class _MenuState extends State<_Menu> {
+  MaterialStatesController? internalStatesController;
+
+  void handleStatesControllerChange() {
+    // Force a rebuild to resolve MaterialStateProperty properties
+    setState(() {});
+  }
+
+  MaterialStatesController get statesController => widget.node.statesController ?? internalStatesController!;
+
+  void initStatesController() {
+    if (widget.node.statesController == null) {
+      internalStatesController = MaterialStatesController();
     }
+    statesController.addListener(handleStatesControllerChange);
+  }
 
-    final double elevation = node.menuStyle?.elevation?.resolve(state) ??
-        effectiveStyle?.elevation?.resolve(state) ??
-        defaultStyle.elevation!.resolve(state)!;
-    final Color backgroundColor = node.menuStyle?.backgroundColor?.resolve(state) ??
-        effectiveStyle?.backgroundColor?.resolve(state) ??
-        defaultStyle.backgroundColor!.resolve(state)!;
-    final EdgeInsetsGeometry padding = node.menuStyle?.padding?.resolve(state) ??
-        effectiveStyle?.padding?.resolve(state) ??
-        defaultStyle.padding!.resolve(state)!;
-    final ShapeBorder shape = node.menuStyle?.shape?.resolve(state) ??
-        effectiveStyle?.shape?.resolve(state) ??
-        defaultStyle.shape!.resolve(state)!;
-    final EdgeInsetsGeometry buttonPadding = node.buttonStyle?.padding?.resolve(state) ??
-        menuButtonTheme.style?.padding?.resolve(state) ??
-        _MenuButtonDefaultsM3(context).padding!.resolve(state);
+  @override
+  void initState() {
+    super.initState();
+    initStatesController();
+  }
 
-    // Use the text direction of the context where the button is.
-    final TextDirection textDirection = Directionality.of(node.topLevel.context);
+  @override
+  void didUpdateWidget(_Menu oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.node.statesController != oldWidget.node.statesController) {
+      oldWidget.node.statesController?.removeListener(handleStatesControllerChange);
+      if (widget.node.statesController != null) {
+        internalStatesController?.dispose();
+        internalStatesController = null;
+      }
+      initStatesController();
+    }
+  }
+
+  @override
+  void dispose() {
+    statesController.removeListener(handleStatesControllerChange);
+    internalStatesController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: node,
+      animation: widget.node,
       builder: (BuildContext context, Widget? ignoredChild) {
-        return CustomSingleChildLayout(
-          delegate: _MenuLayout(
-            buttonRect: _getMenuButtonRect(),
-            textDirection: textDirection,
-            buttonPadding: buttonPadding,
-            avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-            alignment: node.alignment,
-            alignmentOffset: node.alignmentOffset,
-            menuNode: node,
-          ),
-          child: FocusScope(
-            node: node.menuScopeNode,
-            child: Actions(
-              actions: <Type, Action<Intent>>{
-                DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: node.controller),
-                DismissIntent: _MenuDismissAction(controller: node.controller),
-              },
-              child: Shortcuts(
-                shortcuts: _kMenuTraversalShortcuts,
-                child: _MenuControllerMarker(
-                  controller: node.controller,
-                  child: Directionality(
-                    // Copy the directionality from the button into the overlay.
-                    textDirection: textDirection,
-                    child: _MenuPanel(
-                      elevation: elevation,
-                      color: backgroundColor,
-                      padding: padding,
-                      orientation: node.orientation,
-                      shape: shape,
-                      children: MenuItemGroup._expandGroups(node.widgetChildren, Axis.vertical),
+        // Use the text direction of the context where the button is.
+        final TextDirection textDirection = Directionality.of(widget.node.topLevel.context);
+        final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
+        final Set<MaterialState> state = <MaterialState>{
+          if (!widget.node.enabled) MaterialState.disabled,
+        };
+
+        final MenuStyle? themeStyle;
+        final MenuStyle defaultStyle;
+        switch (widget.node.orientation) {
+          case Axis.horizontal:
+            themeStyle = MenuBarTheme.of(context).style;
+            defaultStyle = _MenuBarDefaultsM3(context);
+            break;
+          case Axis.vertical:
+            themeStyle = MenuTheme.of(context).style;
+            defaultStyle = _MenuDefaultsM3(context);
+            break;
+        }
+        final MenuStyle? widgetStyle = widget.node.menuStyle;
+
+        T effectiveValue<T>(T? Function(MenuStyle? style) getProperty) {
+          return getProperty(widgetStyle) ?? getProperty(themeStyle) ?? getProperty(defaultStyle)!;
+        }
+
+        final MaterialStateMouseCursor mouseCursor = _MouseCursor(
+          (Set<MaterialState> states) => effectiveValue((MenuStyle? style) => style?.mouseCursor?.resolve(states)),
+        );
+
+        final VisualDensity visualDensity = effectiveValue((MenuStyle? style) => style?.visualDensity);
+        final AlignmentGeometry alignment = effectiveValue((MenuStyle? style) => style?.alignment);
+
+        final EdgeInsetsGeometry buttonPadding = widget.node.buttonStyle?.padding?.resolve(state) ??
+            menuButtonTheme.style?.padding?.resolve(state) ??
+            _MenuButtonDefaultsM3(context).padding!.resolve(state);
+
+        return MouseRegion(
+          cursor: mouseCursor,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              visualDensity: visualDensity,
+            ),
+            child: CustomSingleChildLayout(
+              delegate: _MenuLayout(
+                buttonRect: _getMenuButtonRect(),
+                textDirection: textDirection,
+                buttonPadding: buttonPadding,
+                avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
+                alignment: alignment,
+                alignmentOffset: widget.node.alignmentOffset,
+                menuNode: widget.node,
+              ),
+              child: FocusScope(
+                node: widget.node.menuScopeNode,
+                child: Actions(
+                  actions: <Type, Action<Intent>>{
+                    DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: widget.node.controller),
+                    DismissIntent: _MenuDismissAction(controller: widget.node.controller),
+                  },
+                  child: Shortcuts(
+                    shortcuts: _kMenuTraversalShortcuts,
+                    child: _MenuControllerMarker(
+                      controller: widget.node.controller,
+                      child: Directionality(
+                        // Copy the directionality from the button into the overlay.
+                        textDirection: textDirection,
+                        child: _MenuPanel(
+                          menuStyle: widgetStyle,
+                          clipBehavior: widget.node.menuClipBehavior,
+                          statesController: statesController,
+                          orientation: widget.node.orientation,
+                          children: MenuItemGroup._expandGroups(widget.node.widgetChildren, Axis.vertical),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1335,8 +1351,8 @@ class _Menu extends StatelessWidget {
   }
 
   RelativeRect _getMenuButtonRect() {
-    final RenderBox button = node.context.findRenderObject()! as RenderBox;
-    final RenderBox overlay = Overlay.of(node.context)!.context.findRenderObject()! as RenderBox;
+    final RenderBox button = widget.node.context.findRenderObject()! as RenderBox;
+    final RenderBox overlay = Overlay.of(widget.node.context)!.context.findRenderObject()! as RenderBox;
     final Offset upperLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
     final Offset lowerRight = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
     return RelativeRect.fromRect(Rect.fromPoints(upperLeft, lowerRight), overlay.paintBounds);
@@ -1569,17 +1585,17 @@ class _MenuControllerMarker extends InheritedWidget {
 
 // The InheritedWidget marker for _MenuEntry, used to find the nearest
 // ancestor _MenuEntry for a menu.
-class _MenuEntryMarker extends InheritedWidget {
-  const _MenuEntryMarker({
-    required this.entry,
+class _MenuNodeMarker extends InheritedWidget {
+  const _MenuNodeMarker({
+    required this.node,
     required super.child,
   });
 
-  final _MenuNode entry;
+  final _MenuNode node;
 
   @override
-  bool updateShouldNotify(_MenuEntryMarker oldWidget) {
-    return entry != oldWidget.entry;
+  bool updateShouldNotify(_MenuNodeMarker oldWidget) {
+    return node != oldWidget.node;
   }
 }
 
@@ -1605,27 +1621,25 @@ class _MenuItemDivider extends StatelessWidget {
 /// the other entries to match.
 class _MenuPanel extends StatefulWidget {
   const _MenuPanel({
-    required this.elevation,
-    required this.color,
-    required this.padding,
+    required this.menuStyle,
+    required this.statesController,
+    this.clipBehavior = Clip.none,
     required this.orientation,
-    required this.shape,
     required this.children,
   });
 
-  /// The elevation to give the material behind the menu bar.
-  final double elevation;
+  /// The menu style that has all the attributes for this menu panel.
+  final MenuStyle? menuStyle;
 
-  /// The background color of the menu app bar.
-  final Color color;
+  /// The [MaterialStatesController] that manages the states for this panel.
+  final MaterialStatesController statesController;
 
-  /// The padding around the outside of the menu bar contents.
-  final EdgeInsetsGeometry padding;
+  /// {@macro flutter.material.Material.clipBehavior}
+  ///
+  /// Defaults to [Clip.none].
+  final Clip clipBehavior;
 
-  /// The shape of the menu.
-  final ShapeBorder shape;
-
-  /// The main axis of this panel.
+  /// The layout orientation of this panel.
   final Axis orientation;
 
   /// The list of widgets to use as children of this menu bar.
@@ -1649,30 +1663,111 @@ class _MenuPanelState extends State<_MenuPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final MenuStyle? themeStyle;
+    final MenuStyle defaultStyle;
+    switch (widget.orientation) {
+      case Axis.horizontal:
+        themeStyle = MenuBarTheme.of(context).style;
+        defaultStyle = _MenuBarDefaultsM3(context);
+        break;
+      case Axis.vertical:
+        themeStyle = MenuTheme.of(context).style;
+        defaultStyle = _MenuDefaultsM3(context);
+        break;
+    }
+    final MenuStyle? widgetStyle = widget.menuStyle;
+
+    T? effectiveValue<T>(T? Function(MenuStyle? style) getProperty) {
+      return getProperty(widgetStyle) ?? getProperty(themeStyle) ?? getProperty(defaultStyle);
+    }
+
+    T? resolve<T>(MaterialStateProperty<T>? Function(MenuStyle? style) getProperty) {
+      return effectiveValue(
+        (MenuStyle? style) {
+          return getProperty(style)?.resolve(widget.statesController.value);
+        },
+      );
+    }
+
+    final Color? backgroundColor = resolve<Color?>((MenuStyle? style) => style?.backgroundColor);
+    final Color? shadowColor = resolve<Color?>((MenuStyle? style) => style?.shadowColor);
+    final Color? surfaceTintColor = resolve<Color?>((MenuStyle? style) => style?.surfaceTintColor);
+    final double elevation = resolve<double?>((MenuStyle? style) => style?.elevation) ?? 0;
+    final EdgeInsetsGeometry padding =
+        resolve<EdgeInsetsGeometry?>((MenuStyle? style) => style?.padding) ?? EdgeInsets.zero;
+    final Size? minimumSize = resolve<Size?>((MenuStyle? style) => style?.minimumSize);
+    final Size? fixedSize = resolve<Size?>((MenuStyle? style) => style?.fixedSize);
+    final Size? maximumSize = resolve<Size?>((MenuStyle? style) => style?.maximumSize);
+    final BorderSide? side = resolve<BorderSide?>((MenuStyle? style) => style?.side);
+    final OutlinedBorder shape = resolve<OutlinedBorder?>((MenuStyle? style) => style?.shape)!.copyWith(side: side);
+    final VisualDensity visualDensity = effectiveValue((MenuStyle? style) => style?.visualDensity)!;
+    final Offset densityAdjustment = visualDensity.baseSizeAdjustment;
+
+    BoxConstraints effectiveConstraints = visualDensity.effectiveConstraints(
+      BoxConstraints(
+        minWidth: minimumSize?.width ?? 0,
+        minHeight: minimumSize?.height ?? 0,
+        maxWidth: maximumSize?.width ?? double.infinity,
+        maxHeight: maximumSize?.height ?? double.infinity,
+      ),
+    );
+    if (fixedSize != null) {
+      final Size size = effectiveConstraints.constrain(fixedSize);
+      if (size.width.isFinite) {
+        effectiveConstraints = effectiveConstraints.copyWith(
+          minWidth: size.width,
+          maxWidth: size.width,
+        );
+      }
+      if (size.height.isFinite) {
+        effectiveConstraints = effectiveConstraints.copyWith(
+          minHeight: size.height,
+          maxHeight: size.height,
+        );
+      }
+    }
+
+    // Per the Material Design team: don't allow the VisualDensity
+    // adjustment to reduce the width of the left/right padding. If we
+    // did, VisualDensity.compact, the default for desktop/web, would
+    // reduce the horizontal padding to zero.
+    final double dy = densityAdjustment.dy;
+    final double dx = math.max(0, densityAdjustment.dx);
+    final EdgeInsetsGeometry resolvedPadding = padding
+        .add(EdgeInsets.fromLTRB(dx, dy, dx, dy))
+        .clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity); // ignore_clamp_double_lint
+
     final MenuController controller = MenuController.of(context);
-    return TapRegion(
-      groupId: controller,
-      onTapOutside: (PointerDownEvent event) {
-        MenuController.of(context).closeAll();
-      },
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
-        child: _intrinsicCrossSize(
-          child: Material(
-            color: widget.color,
-            shape: widget.shape,
-            elevation: widget.elevation,
-            child: Padding(
-              padding: widget.padding,
-              child: SingleChildScrollView(
-                scrollDirection: widget.orientation,
-                child: Flex(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  textDirection: Directionality.of(context),
-                  direction: widget.orientation,
-                  mainAxisSize: MainAxisSize.min,
-                  children: widget.children,
+    return ConstrainedBox(
+      constraints: effectiveConstraints,
+      child: TapRegion(
+        groupId: controller,
+        onTapOutside: (PointerDownEvent event) {
+          MenuController.of(context).closeAll();
+        },
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+          child: _intrinsicCrossSize(
+            child: Material(
+              elevation: elevation,
+              shape: shape,
+              color: backgroundColor,
+              shadowColor: shadowColor,
+              surfaceTintColor: surfaceTintColor,
+              type: backgroundColor == null ? MaterialType.transparency : MaterialType.canvas,
+              clipBehavior: widget.clipBehavior,
+              child: Padding(
+                padding: resolvedPadding,
+                child: SingleChildScrollView(
+                  scrollDirection: widget.orientation,
+                  child: Flex(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    textDirection: Directionality.of(context),
+                    direction: widget.orientation,
+                    mainAxisSize: MainAxisSize.min,
+                    children: widget.children,
+                  ),
                 ),
               ),
             ),
@@ -1993,7 +2088,7 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
   // dependency relationship that will rebuild the context when the entry
   // changes.
   static _MenuNode? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<_MenuEntryMarker>()?.entry;
+    return context.dependOnInheritedWidgetOfExactType<_MenuNodeMarker>()?.node;
   }
 
   @override
@@ -2050,21 +2145,23 @@ class _ChildMenuNode extends _MenuNode {
     GlobalKey? buttonKey,
     this.onOpen,
     this.onClose,
-    AlignmentGeometry alignment = AlignmentDirectional.bottomStart,
     Offset alignmentOffset = Offset.zero,
     Axis orientation = Axis.vertical,
     ButtonStyle? buttonStyle,
     MenuStyle? menuStyle,
     MenuStyle? menuBarStyle,
+    Clip menuClipBehavior = Clip.none,
+    MaterialStatesController? statesController,
   })  : _buttonFocusNode = buttonFocusNode,
         _buttonKey = buttonKey,
         _controller = controller,
+        _statesController = statesController,
         _widgetChildren = widgetChildren,
         _orientation = orientation,
-        _alignment = alignment,
         _alignmentOffset = alignmentOffset,
         _buttonStyle = buttonStyle,
         _menuStyle = menuStyle,
+        _menuClipBehavior = menuClipBehavior,
         _menuBarStyle = menuBarStyle {
     parent.addChild(this);
   }
@@ -2072,9 +2169,20 @@ class _ChildMenuNode extends _MenuNode {
   @override
   MenuController get controller => _controller;
   MenuController _controller;
-  set controller(MenuController controller) {
-    _controller = controller;
-    _notifyNextFrame();
+  set controller(MenuController value) {
+    if (_controller != value) {
+      _controller = value;
+      _notifyNextFrame();
+    }
+  }
+
+  MaterialStatesController? get statesController => _statesController;
+  MaterialStatesController? _statesController;
+  set statesController(MaterialStatesController? value) {
+    if (_statesController != value) {
+      _statesController = value;
+      _notifyNextFrame();
+    }
   }
 
   @override
@@ -2087,15 +2195,6 @@ class _ChildMenuNode extends _MenuNode {
   bool isOpen = false;
   VoidCallback? onOpen;
   VoidCallback? onClose;
-
-  AlignmentGeometry get alignment => _alignment;
-  AlignmentGeometry _alignment;
-  set alignment(AlignmentGeometry value) {
-    if (_alignment != value) {
-      _alignment = value;
-      _notifyNextFrame();
-    }
-  }
 
   Offset get alignmentOffset => _alignmentOffset;
   Offset _alignmentOffset;
@@ -2153,6 +2252,15 @@ class _ChildMenuNode extends _MenuNode {
   set menuStyle(MenuStyle? value) {
     if (_menuStyle != value) {
       _menuStyle = value;
+      _notifyNextFrame();
+    }
+  }
+
+  Clip get menuClipBehavior => _menuClipBehavior;
+  Clip _menuClipBehavior;
+  set menuClipBehavior(Clip value) {
+    if (_menuClipBehavior != value) {
+      _menuClipBehavior = value;
       _notifyNextFrame();
     }
   }
@@ -2778,6 +2886,18 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 }
 
+class _MouseCursor extends MaterialStateMouseCursor {
+  const _MouseCursor(this.resolveCallback);
+
+  final MaterialPropertyResolver<MouseCursor?> resolveCallback;
+
+  @override
+  MouseCursor resolve(Set<MaterialState> states) => resolveCallback(states)!;
+
+  @override
+  String get debugDescription => 'ButtonStyleButton_MouseCursor';
+}
+
 bool _menuDebug(String message, [Iterable<String>? details]) {
   if (_kDebugMenus) {
     debugPrint('MENU: $message');
@@ -2798,7 +2918,7 @@ class _MenuButtonDefaultsM3 extends ButtonStyle {
       : super(
           animationDuration: kThemeChangeDuration,
           enableFeedback: true,
-          alignment: Alignment.center,
+          alignment: AlignmentDirectional.centerStart,
         );
 
   final BuildContext context;
@@ -2893,6 +3013,7 @@ class _MenuDefaultsM3 extends MenuStyle {
       : super(
           elevation: const MaterialStatePropertyAll<double?>(4.0),
           shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
+          alignment: AlignmentDirectional.topEnd,
         );
 
   static const RoundedRectangleBorder _defaultMenuBorder =
@@ -2926,6 +3047,7 @@ class _MenuBarDefaultsM3 extends MenuStyle {
       : super(
           elevation: const MaterialStatePropertyAll<double?>(4.0),
           shape: const MaterialStatePropertyAll<OutlinedBorder>(_defaultMenuBorder),
+          alignment: AlignmentDirectional.bottomStart,
         );
 
   static const RoundedRectangleBorder _defaultMenuBorder =
