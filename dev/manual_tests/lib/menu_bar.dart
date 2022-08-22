@@ -121,14 +121,13 @@ class _HomeState extends State<Home> {
                           controller: _controller,
                           children: <Widget>[
                             MenuButton(
-                              child: Text(TestMenu.mainMenu1.label),
                               onOpen: () {
                                 _openItem(TestMenu.mainMenu1);
                               },
                               onClose: () {
                                 _closeItem(TestMenu.mainMenu1);
                               },
-                              children: <Widget>[
+                              menuChildren: <Widget>[
                                 MenuItemButton(
                                   shortcut: const SingleActivator(
                                     LogicalKeyboardKey.keyB,
@@ -155,18 +154,18 @@ class _HomeState extends State<Home> {
                                   child: Text(TestMenu.subMenu2.label),
                                 ),
                               ],
+                              child: Text(TestMenu.mainMenu1.label),
                             ),
                             MenuItemGroup(
                               members: <Widget>[
                                 MenuButton(
-                                  child: Text(TestMenu.mainMenu2.label),
                                   onOpen: () {
                                     _openItem(TestMenu.mainMenu2);
                                   },
                                   onClose: () {
                                     _closeItem(TestMenu.mainMenu2);
                                   },
-                                  children: <Widget>[
+                                  menuChildren: <Widget>[
                                     TextButton(
                                       child: const Text('TEST'),
                                       onPressed: () {
@@ -185,18 +184,18 @@ class _HomeState extends State<Home> {
                                       child: Text(TestMenu.subMenu3.label),
                                     ),
                                   ],
+                                  child: Text(TestMenu.mainMenu2.label),
                                 ),
                               ],
                             ),
                             MenuButton(
-                              child: Text(TestMenu.mainMenu3.label),
                               onOpen: () {
                                 _openItem(TestMenu.mainMenu3);
                               },
                               onClose: () {
                                 _closeItem(TestMenu.mainMenu3);
                               },
-                              children: <Widget>[
+                              menuChildren: <Widget>[
                                 MenuItemButton(
                                   child: Text(TestMenu.subMenu8.label),
                                   onPressed: () {
@@ -204,16 +203,16 @@ class _HomeState extends State<Home> {
                                   },
                                 ),
                               ],
+                              child: Text(TestMenu.mainMenu3.label),
                             ),
                             MenuButton(
-                              child: Text(TestMenu.mainMenu4.label),
                               onOpen: () {
                                 _openItem(TestMenu.mainMenu4);
                               },
                               onClose: () {
                                 _closeItem(TestMenu.mainMenu4);
                               },
-                              children: <Widget>[
+                              menuChildren: <Widget>[
                                 MenuItemGroup(members: <Widget>[
                                   Actions(
                                     actions: <Type, Action<Intent>>{
@@ -232,14 +231,13 @@ class _HomeState extends State<Home> {
                                   ),
                                 ]),
                                 MenuButton(
-                                  child: Text(TestMenu.subMenu5.label),
                                   onOpen: () {
                                     _openItem(TestMenu.subMenu5);
                                   },
                                   onClose: () {
                                     _closeItem(TestMenu.subMenu5);
                                   },
-                                  children: <Widget>[
+                                  menuChildren: <Widget>[
                                     MenuItemButton(
                                       shortcut: _addItem
                                           ? const SingleActivator(
@@ -269,6 +267,7 @@ class _HomeState extends State<Home> {
                                         },
                                       ),
                                   ],
+                                  child: Text(TestMenu.subMenu5.label),
                                 ),
                                 MenuItemButton(
                                   shortcut: const SingleActivator(
@@ -296,6 +295,7 @@ class _HomeState extends State<Home> {
                                   },
                                 ),
                               ],
+                              child: Text(TestMenu.mainMenu4.label),
                             ),
                           ],
                         ),

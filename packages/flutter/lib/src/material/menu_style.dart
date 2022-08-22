@@ -14,7 +14,14 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Examples can assume:
-// const Widget child = SizedBox();
+// late Widget child;
+// late BuildContext context;
+// @immutable
+// class MyAppHome extends StatelessWidget {
+//   const MyAppHome({super.key});
+//   @override
+//   Widget build(BuildContext context) => const SizedBox();
+// }
 
 /// The visual properties that most menus have in common.
 ///
@@ -38,7 +45,7 @@ import 'theme_data.dart';
 ///
 /// ```dart
 /// MenuButton(
-///   style: MenuStyle(
+///   menuStyle: MenuStyle(
 ///     backgroundColor: MaterialStateProperty.resolveWith<Color?>(
 ///       (Set<MaterialState> states) {
 ///         if (states.contains(MaterialState.pressed)) {
@@ -48,10 +55,11 @@ import 'theme_data.dart';
 ///       },
 ///     ),
 ///   ),
-///   child: const Text('Fly me to the moon'),
 ///   onPressed: () {
 ///     // ...
 ///   },
+///   menuChildren: const <Widget>[ /* ... */ ],
+///   child: const Text('Fly me to the moon'),
 /// ),
 /// ```
 ///
@@ -61,13 +69,14 @@ import 'theme_data.dart';
 ///
 /// ```dart
 /// MenuButton(
-///   style: const MenuStyle(
+///   menuStyle: const MenuStyle(
 ///     backgroundColor: MaterialStatePropertyAll<Color>(Colors.green),
 ///   ),
-///   child: const Text('Let me play among the stars'),
 ///   onPressed: () {
 ///     // ...
 ///   },
+///   menuChildren: const <Widget>[ /* ... */ ],
+///   child: const Text('Let me play among the stars'),
 /// ),
 /// ```
 ///
@@ -77,8 +86,8 @@ import 'theme_data.dart';
 /// ```dart
 /// MaterialApp(
 ///   theme: ThemeData(
-///     menuTheme: MenuThemeData(
-///       style: MenuStyle().copyWith(backgroundColor: Colors.red),
+///     menuTheme: const MenuThemeData(
+///       style: MenuStyle(backgroundColor: MaterialStatePropertyAll<Color>(Colors.red)),
 ///     ),
 ///   ),
 ///   home: const MyAppHome(),

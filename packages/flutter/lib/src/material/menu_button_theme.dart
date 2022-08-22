@@ -10,6 +10,9 @@ import 'material_state.dart';
 import 'menu_bar.dart';
 import 'theme.dart';
 
+// Examples can assume:
+// late BuildContext context;
+
 /// A [ButtonStyle] theme that overrides the default appearance of [MenuButton]s
 /// and [MenuItemButton]s when it's used with [MenuButtonTheme] or with the
 /// overall [Theme]'s [ThemeData.menuTheme].
@@ -121,7 +124,6 @@ class MenuButtonTheme extends InheritedTheme {
   static MenuButtonThemeData of(BuildContext context) {
     final MenuButtonTheme? buttonTheme = context.dependOnInheritedWidgetOfExactType<MenuButtonTheme>();
     return buttonTheme?.data ?? Theme.of(context).menuButtonTheme;
-    // return buttonTheme?.data ?? Theme.of(context).menuButtonTheme;
   }
 
   @override

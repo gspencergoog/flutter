@@ -10,7 +10,7 @@ import 'menu_style.dart';
 import 'theme.dart';
 
 // Examples can assume:
-// const Widget child = SizedBox();
+// late Widget child;
 
 /// Defines the visual properties of the submenus created by [MenuButton] and
 /// [MenuBar] widgets.
@@ -110,10 +110,11 @@ class MenuTheme extends InheritedTheme {
   ///
   /// ```dart
   /// Widget build(BuildContext context) {
-  ///   final MenuThemeData theme = MenuTheme.of(context);
   ///   return MenuTheme(
-  ///     data: theme.copyWith(
-  ///       barBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.red),
+  ///     data: const MenuThemeData(
+  ///       style: MenuStyle(
+  ///         backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
+  ///       ),
   ///     ),
   ///     child: child,
   ///   );

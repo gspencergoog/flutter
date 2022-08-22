@@ -9,6 +9,9 @@ import 'menu_style.dart';
 import 'menu_theme.dart';
 import 'theme.dart';
 
+// Examples can assume:
+// late Widget child;
+
 /// Defines the visual properties of [MenuBar] widgets.
 ///
 /// Descendant widgets obtain the current [MenuBarThemeData] object using
@@ -79,10 +82,11 @@ class MenuBarTheme extends InheritedTheme {
   ///
   /// ```dart
   /// Widget build(BuildContext context) {
-  ///   final MenuBarThemeData theme = MenuTheme.of(context);
-  ///   return MenuBarTheme(
-  ///     data: theme.copyWith(
-  ///       barBackgroundColor: const MaterialStatePropertyAll<Color?>(Colors.red),
+  ///   return MenuTheme(
+  ///     data: const MenuThemeData(
+  ///       style: MenuStyle(
+  ///         backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
+  ///       ),
   ///     ),
   ///     child: child,
   ///   );

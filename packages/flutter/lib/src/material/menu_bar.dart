@@ -654,7 +654,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 /// [alignment] and [alignmentOffset], respectively.
 ///
 /// When activated (clicked, through keyboard navigation, or via hovering with a
-/// mouse), it will open a submenu containing the [children].
+/// mouse), it will open a submenu containing the [menuChildren].
 ///
 /// See also:
 ///
@@ -685,7 +685,7 @@ class MenuButton extends ButtonStyleButton {
     this.onOpen,
     this.onClose,
     this.menuStyle,
-    required this.children,
+    required this.menuChildren,
     required super.child,
   });
 
@@ -719,7 +719,7 @@ class MenuButton extends ButtonStyleButton {
   /// An optional icon to display after the [child].
   final Widget? trailingIcon;
 
-  /// The [MenuStyle] of the menu specified by [children].
+  /// The [MenuStyle] of the menu specified by [menuChildren].
   ///
   /// Defaults to the value of [MenuThemeData.style] of the
   /// ambient [MenuTheme].
@@ -735,7 +735,7 @@ class MenuButton extends ButtonStyleButton {
   ///
   /// These can be any widget, but are typically either [MenuItemButton] or
   /// [MenuButton] widgets.
-  final List<Widget> children;
+  final List<Widget> menuChildren;
 
   /// Defines the button's default appearance.
   ///
@@ -812,7 +812,7 @@ class MenuButton extends ButtonStyleButton {
   @override
   List<DiagnosticsNode> debugDescribeChildren() {
     return <DiagnosticsNode>[
-      ...children.map<DiagnosticsNode>((Widget child) {
+      ...menuChildren.map<DiagnosticsNode>((Widget child) {
         return child.toDiagnosticsNode();
       })
     ];
@@ -831,7 +831,7 @@ class MenuButton extends ButtonStyleButton {
 class _MenuButtonState extends State<MenuButton> {
   late _ChildMenuNode _node;
   MenuEntry? _childMenu;
-  bool get _enabled => widget.children.isNotEmpty;
+  bool get _enabled => widget.menuChildren.isNotEmpty;
   late FocusScopeNode _menuScopeNode;
   FocusNode? _internalFocusNode;
   MenuController? _internalMenuController;
@@ -951,7 +951,7 @@ class _MenuButtonState extends State<MenuButton> {
         onClose: widget.onClose,
         alignment: menuAlignment,
         alignmentOffset: menuPaddingOffset,
-        widgetChildren: widget.children,
+        widgetChildren: widget.menuChildren,
       );
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
@@ -966,7 +966,7 @@ class _MenuButtonState extends State<MenuButton> {
         ..onClose = widget.onClose
         ..alignment = menuAlignment
         ..alignmentOffset = menuPaddingOffset
-        ..widgetChildren = widget.children;
+        ..widgetChildren = widget.menuChildren;
     }
   }
 

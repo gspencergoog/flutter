@@ -131,8 +131,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
               child: MenuBar(
                 children: <Widget>[
                   MenuButton(
-                    child: const Text('Menu App'),
-                    children: <Widget>[
+                    menuChildren: <Widget>[
                       MenuItemButton(
                         child: Text(MenuSelection.about.label),
                         onPressed: () => _activate(MenuSelection.about),
@@ -152,8 +151,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
                         child: Text(MenuSelection.resetMessage.label),
                       ),
                       MenuButton(
-                        child: const Text('Background Color'),
-                        children: <Widget>[
+                        menuChildren: <Widget>[
                           MenuItemGroup(members: <Widget>[
                             MenuItemButton(
                               onPressed: () => _activate(MenuSelection.colorRed),
@@ -172,8 +170,10 @@ class _MyMenuBarState extends State<MyMenuBar> {
                             child: Text(MenuSelection.colorBlue.label),
                           ),
                         ],
+                        child: const Text('Background Color'),
                       ),
                     ],
+                    child: const Text('Menu App'),
                   ),
                 ],
               ),

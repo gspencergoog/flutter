@@ -107,8 +107,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         child: Text(MenuSelection.resetMessage.label),
       ),
       MenuButton(
-        child: const Text('Background Color'),
-        children: <Widget>[
+        menuChildren: <Widget>[
           MenuItemGroup(members: <Widget>[
             MenuItemButton(
               onPressed: () => _activate(MenuSelection.colorRed),
@@ -127,6 +126,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
             child: Text(MenuSelection.colorBlue.label),
           ),
         ],
+        child: const Text('Background Color'),
       ),
     ];
   }
