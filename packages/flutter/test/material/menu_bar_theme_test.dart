@@ -102,7 +102,7 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.red));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(350.0, 54.0, 580.0, 222.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(350.0, 58.0, 580.0, 226.0)));
     expect(subMenuMaterial.elevation, equals(20));
     expect(subMenuMaterial.color, equals(Colors.green));
   });
@@ -175,14 +175,14 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 594.0, 244.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 60.0, 594.0, 248.0)));
     expect(subMenuMaterial.elevation, equals(18));
     expect(subMenuMaterial.color, equals(Colors.cyan));
     expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));
 
     final Finder menuItem = findSubMenuItem();
     expect(
-        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(350.0, 70.0, 580.0, 118.0)));
+        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(350.0, 74.0, 580.0, 122.0)));
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));

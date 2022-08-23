@@ -51,13 +51,14 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   late FocusNode _buttonFocusNode;
   late MenuEntry _menuEntry;
   ShortcutRegistryEntry? _shortcutsEntry;
+  final GlobalKey _buttonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _controller = MenuController();
     _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-    _menuEntry = createMaterialMenu(_buttonFocusNode, controller: _controller);
+    _menuEntry = createMaterialMenu(_buttonKey, buttonFocusNode: _buttonFocusNode, controller: _controller);
     _updateMenuEntry();
   }
 

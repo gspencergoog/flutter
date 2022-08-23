@@ -979,7 +979,7 @@ class _MenuButtonState extends State<MenuButton> {
   late _ChildMenuNode _node;
   MenuEntry? _childMenu;
   bool get _enabled => widget.menuChildren.isNotEmpty;
-  late FocusScopeNode _menuScopeNode;
+  GlobalKey buttonKey = GlobalKey();
   FocusNode? _internalFocusNode;
   MenuController? _internalMenuController;
   FocusNode get _buttonFocusNode => widget.focusNode ?? _internalFocusNode!;
@@ -987,11 +987,6 @@ class _MenuButtonState extends State<MenuButton> {
   @override
   void initState() {
     super.initState();
-    _menuScopeNode = FocusScopeNode();
-    assert(() {
-      _menuScopeNode.debugLabel = '$MenuButton(Scope for ${widget.child})';
-      return true;
-    }());
     if (widget.focusNode == null) {
       _internalFocusNode = FocusNode();
       assert(() {
@@ -1006,7 +1001,6 @@ class _MenuButtonState extends State<MenuButton> {
 
   @override
   void dispose() {
-    _menuScopeNode.dispose();
     _node.dispose();
     _internalFocusNode?.removeListener(_handleFocusChange);
     _internalFocusNode?.dispose();
@@ -1085,10 +1079,10 @@ class _MenuButtonState extends State<MenuButton> {
 
     if (_childMenu == null) {
       _node = _ChildMenuNode(
+        buttonKey: buttonKey,
         parent: parent,
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
-        menuScopeNode: _menuScopeNode,
         buttonStyle: widget.style,
         menuStyle: widget.menuStyle,
         menuClipBehavior: widget.clipBehavior,
@@ -1101,10 +1095,10 @@ class _MenuButtonState extends State<MenuButton> {
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
       _node
+        ..buttonKey = buttonKey
         ..parent = parent
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
-        ..menuScopeNode = _menuScopeNode
         ..buttonStyle = widget.style
         ..menuStyle = widget.menuStyle
         ..menuClipBehavior = widget.clipBehavior
@@ -1121,6 +1115,7 @@ class _MenuButtonState extends State<MenuButton> {
     return _MenuNodeMarker(
       node: _node,
       child: TextButton(
+        key: buttonKey,
         style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
         focusNode: _buttonFocusNode,
         onHover: _enabled ? _handleHover : null,
@@ -1343,7 +1338,8 @@ class MenuEntry with ChangeNotifier {
 /// * [MenuBar], a widget that creates and manages a menu bar with cascading
 ///   menus.
 MenuEntry createMaterialMenu(
-  FocusNode buttonFocusNode, {
+  GlobalKey buttonKey, {
+  FocusNode? buttonFocusNode,
   MenuController? controller,
   MaterialStatesController? statesController,
   MenuStyle? style,
@@ -1351,21 +1347,14 @@ MenuEntry createMaterialMenu(
   VoidCallback? onOpen,
   VoidCallback? onClose,
   Offset alignmentOffset = Offset.zero,
-  GlobalKey? buttonKey,
   List<Widget> children = const <Widget>[],
 }) {
   controller ??= MenuController();
-  final FocusScopeNode menuScopeNode = FocusScopeNode();
-  assert(() {
-    menuScopeNode.debugLabel = '$MenuButton(Scope for createMenuEntry)';
-    return true;
-  }());
   final _ChildMenuNode entry = _ChildMenuNode(
-    buttonFocusNode: buttonFocusNode,
     buttonKey: buttonKey,
+    buttonFocusNode: buttonFocusNode,
     controller: controller,
     statesController: statesController,
-    menuScopeNode: menuScopeNode,
     parent: controller._root,
     menuStyle: style,
     menuClipBehavior: clipBehavior,
@@ -1490,23 +1479,23 @@ class _SubmenuState extends State<_Submenu> {
             menuButtonTheme.style?.padding?.resolve(state) ??
             _MenuButtonDefaultsM3(context).padding!.resolve(state);
 
-        return MouseRegion(
-          cursor: mouseCursor,
-          hitTestBehavior: HitTestBehavior.deferToChild,
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              visualDensity: visualDensity,
+        return Theme(
+          data: Theme.of(context).copyWith(
+            visualDensity: visualDensity,
+          ),
+          child: CustomSingleChildLayout(
+            delegate: _MenuLayout(
+              buttonRect: _getMenuButtonRect(),
+              textDirection: textDirection,
+              buttonPadding: buttonPadding,
+              avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
+              alignment: alignment,
+              alignmentOffset: widget.node.alignmentOffset,
+              menuNode: widget.node,
             ),
-            child: CustomSingleChildLayout(
-              delegate: _MenuLayout(
-                buttonRect: _getMenuButtonRect(),
-                textDirection: textDirection,
-                buttonPadding: buttonPadding,
-                avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-                alignment: alignment,
-                alignmentOffset: widget.node.alignmentOffset,
-                menuNode: widget.node,
-              ),
+            child: MouseRegion(
+              cursor: mouseCursor,
+              hitTestBehavior: HitTestBehavior.deferToChild,
               child: FocusScope(
                 node: widget.node.menuScopeNode,
                 child: Actions(
@@ -2302,6 +2291,12 @@ class _RootMenuNode extends _MenuNode {
   _RootMenuNode(this.controller) : menuScopeNode = FocusScopeNode();
 
   @override
+  void dispose() {
+    menuScopeNode.dispose();
+    super.dispose();
+  }
+
+  @override
   MenuController controller;
 
   // A list of descendant menus that are currently open.
@@ -2331,9 +2326,8 @@ class _ChildMenuNode extends _MenuNode {
     required this.parent,
     required MenuController controller,
     required List<Widget> widgetChildren,
-    required this.menuScopeNode,
-    required FocusNode buttonFocusNode,
-    GlobalKey? buttonKey,
+    required GlobalKey buttonKey,
+    FocusNode? buttonFocusNode,
     this.onOpen,
     this.onClose,
     Offset alignmentOffset = Offset.zero,
@@ -2353,7 +2347,12 @@ class _ChildMenuNode extends _MenuNode {
         _buttonStyle = buttonStyle,
         _menuStyle = menuStyle,
         _menuClipBehavior = menuClipBehavior,
-        _menuBarStyle = menuBarStyle {
+        _menuBarStyle = menuBarStyle,
+        menuScopeNode = FocusScopeNode() {
+    assert((){
+      menuScopeNode.debugLabel = 'Menu Scope';
+      return true;
+    }());
     parent.addChild(this);
   }
 
@@ -2396,20 +2395,24 @@ class _ChildMenuNode extends _MenuNode {
     }
   }
 
-  BuildContext get context => buttonKey?.currentContext ?? buttonFocusNode.context!;
+  BuildContext get context {
+    assert(buttonKey.currentContext != null,
+      'The global key $buttonKey must be attached to a mounted widget so that it has a valid currentContext');
+    return buttonKey.currentContext!;
+  }
 
-  FocusNode get buttonFocusNode => _buttonFocusNode;
-  FocusNode _buttonFocusNode;
-  set buttonFocusNode(FocusNode value) {
+  FocusNode? get buttonFocusNode => _buttonFocusNode;
+  FocusNode? _buttonFocusNode;
+  set buttonFocusNode(FocusNode? value) {
     if (_buttonFocusNode != value) {
       _buttonFocusNode = value;
       _notifyNextFrame();
     }
   }
 
-  GlobalKey? get buttonKey => _buttonKey;
-  GlobalKey? _buttonKey;
-  set buttonKey(GlobalKey? value) {
+  GlobalKey get buttonKey => _buttonKey;
+  GlobalKey _buttonKey;
+  set buttonKey(GlobalKey value) {
     if (_buttonKey != value) {
       _buttonKey = value;
       _notifyNextFrame();
@@ -2506,7 +2509,7 @@ class _ChildMenuNode extends _MenuNode {
 
   _ChildMenuNode? get previousSibling {
     final int index = parent.children.indexOf(this);
-    assert(index != -1, 'Unable to find this widget in parent');
+    assert(index != -1, 'Unable to find this widget $this in parent $parent');
     if (index > 0) {
       return parent.children[index - 1];
     }
@@ -2515,7 +2518,7 @@ class _ChildMenuNode extends _MenuNode {
 
   _ChildMenuNode? get nextSibling {
     final int index = parent.children.indexOf(this);
-    assert(index != -1, 'Unable to find this widget in parent');
+    assert(index != -1, 'Unable to find this widget $this in parent $parent');
     if (index < parent.children.length - 1) {
       return parent.children[index + 1];
     }
@@ -2528,12 +2531,14 @@ class _ChildMenuNode extends _MenuNode {
       assert(_menuDebug("Not opening $this because it's already open"));
       return;
     }
-    assert(!root.openMenus.contains(this), 'Attempted to add menu $this to root twice');
+    assert(!root.openMenus.contains(this), 'Attempted to open menu $this that is already open');
     parent.closeChildren();
     final bool wasOpen = controller.menuIsOpen;
     root.openMenus.add(this);
-    Overlay.of(context)!.insert(overlayEntry!);
-    isOpen = true;
+    if (context != null) {
+      Overlay.of(context)!.insert(overlayEntry!);
+      isOpen = true;
+    }
     controller._menuOpened(this, wasOpen: wasOpen);
     onOpen?.call();
     _notifyNextFrame();
@@ -2561,7 +2566,6 @@ class _ChildMenuNode extends _MenuNode {
     if (!isOpen) {
       return;
     }
-    assert(root.openMenus.contains(this), 'Menu $this was never recorded as being opened.');
     closeChildren(inDispose: true);
     root.openMenus.remove(this);
     overlayEntry?.remove();
@@ -2576,7 +2580,7 @@ class _ChildMenuNode extends _MenuNode {
   void focusButton() {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_menuDebug('Requesting focus for $buttonFocusNode'));
-    buttonFocusNode.requestFocus();
+    buttonFocusNode?.requestFocus();
   }
 
   void _notifyNextFrame() {
@@ -2861,7 +2865,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
 
   bool _moveToParent(_ChildMenuNode currentMenu) {
     assert(_menuDebug('Moving focus to parent menu button'));
-    if (!currentMenu.buttonFocusNode.hasPrimaryFocus) {
+    if (!(currentMenu.buttonFocusNode?.hasPrimaryFocus ?? true)) {
       currentMenu.focusButton();
     }
     return true;
@@ -2872,8 +2876,10 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     // Need to invalidate the scope data because we're switching scopes, and
     // otherwise the anti-hysteresis code will interfere with moving to the
     // correct node.
-    final FocusTraversalPolicy? policy = FocusTraversalGroup.maybeOf(currentMenu.context);
-    policy?.invalidateScopeData(currentMenu.buttonFocusNode.nearestScope!);
+    if (currentMenu.buttonFocusNode != null) {
+      final FocusTraversalPolicy? policy = FocusTraversalGroup.maybeOf(currentMenu.context);
+      policy?.invalidateScopeData(currentMenu.buttonFocusNode!.nearestScope!);
+    }
     return false;
   }
 
@@ -2882,8 +2888,10 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     // Need to invalidate the scope data because we're switching scopes, and
     // otherwise the anti-hysteresis code will interfere with moving to the
     // correct node.
-    final FocusTraversalPolicy? policy = FocusTraversalGroup.maybeOf(currentMenu.context);
-    policy?.invalidateScopeData(currentMenu.buttonFocusNode.nearestScope!);
+    if (currentMenu.buttonFocusNode != null) {
+      final FocusTraversalPolicy? policy = FocusTraversalGroup.maybeOf(currentMenu.context);
+      policy?.invalidateScopeData(currentMenu.buttonFocusNode!.nearestScope!);
+    }
     return false;
   }
 
@@ -2927,7 +2935,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
       return;
     }
     final _ChildMenuNode currentMenu = menu as _ChildMenuNode;
-    final bool buttonIsFocused = currentMenu.buttonFocusNode.hasPrimaryFocus;
+    final bool buttonIsFocused = currentMenu.buttonFocusNode?.hasPrimaryFocus ?? false;
     Axis orientation;
     if (buttonIsFocused) {
       orientation = currentMenu.parent.orientation;
@@ -2935,7 +2943,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
       orientation = currentMenu.orientation;
     }
     final bool firstItemIsFocused = currentMenu.firstItemFocusNode?.hasPrimaryFocus ?? false;
-    assert(_menuDebug('In _MenuDirectionalFocusAction, current node is ${currentMenu.buttonFocusNode.debugLabel}, '
+    assert(_menuDebug('In _MenuDirectionalFocusAction, current node is ${currentMenu.buttonFocusNode?.debugLabel}, '
         'button is${buttonIsFocused ? '' : ' not'} focused. Assuming ${orientation.name} orientation.'));
 
     switch (intent.direction) {

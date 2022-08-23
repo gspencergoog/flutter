@@ -168,12 +168,12 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(0, 0, 800, 48)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(112.0, 65.0, 266.0, 79.0)),
+        equals(const Rect.fromLTRB(112.0, 69.0, 266.0, 83.0)),
       );
       expect(
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-          equals(const Rect.fromLTRB(104.0, 44.0, 334.0, 212.0)));
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(104.0, 96.0, 334.0, 112.0)));
+          equals(const Rect.fromLTRB(104.0, 48.0, 334.0, 216.0)));
+      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(104.0, 100.0, 334.0, 116.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -214,12 +214,12 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(0, 0, 800, 48)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(534.0, 65.0, 688.0, 79.0)),
+        equals(const Rect.fromLTRB(534.0, 69.0, 688.0, 83.0)),
       );
       expect(
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-          equals(const Rect.fromLTRB(466.0, 44.0, 696.0, 212.0)));
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(466.0, 96.0, 696.0, 112.0)));
+          equals(const Rect.fromLTRB(466.0, 48.0, 696.0, 216.0)));
+      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(466.0, 100.0, 696.0, 116.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -248,9 +248,11 @@ void main() {
     });
 
     testWidgets('menu alignment and offset in LTR', (WidgetTester tester) async {
+      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        focusNode,
+        buttonKey,
+        buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
             shortcut: const SingleActivator(
@@ -274,6 +276,7 @@ void main() {
           home: Material(
             child: Center(
               child: ElevatedButton(
+                key: buttonKey,
                 focusNode: focusNode,
                 onPressed: () {
                   if (menuEntry.isOpen) {
@@ -302,12 +305,13 @@ void main() {
       // to the notification.
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 318.0, 618.0, 422.0)));
+      debugDumpApp();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 282.0, 618.0, 386.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 276.0, 618.0, 380.0)));
 
       menuEntry.alignment = AlignmentDirectional.center;
       await tester.pump();
@@ -317,7 +321,7 @@ void main() {
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(472.0, 318.0, 762.0, 422.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(472.0, 324.0, 762.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
@@ -327,12 +331,17 @@ void main() {
       menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(10.0, 20.0)));
+      expect(
+        tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
+        equals(const Offset(10.0, 20.0)),
+      );
     });
     testWidgets('menu alignment and offset in RTL direction', (WidgetTester tester) async {
+      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        focusNode,
+        buttonKey,
+        buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
             shortcut: const SingleActivator(
@@ -358,6 +367,7 @@ void main() {
             child: Material(
               child: Center(
                 child: ElevatedButton(
+                  key: buttonKey,
                   focusNode: focusNode,
                   onPressed: () {
                     if (menuEntry.isOpen) {
@@ -387,12 +397,12 @@ void main() {
       // to the notification.
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 318.0, 472.0, 422.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 282.0, 472.0, 386.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 276.0, 472.0, 380.0)));
 
       menuEntry.alignment = AlignmentDirectional.center;
       await tester.pump();
@@ -402,7 +412,7 @@ void main() {
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
       await tester.pump();
       await tester.pump();
-      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(38.0, 318.0, 328.0, 422.0)));
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(38.0, 324.0, 328.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
@@ -452,13 +462,13 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(134.0, 87.0, 288.0, 101.0)),
+        equals(const Rect.fromLTRB(134.0, 91.0, 288.0, 105.0)),
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(126.0, 66.0, 356.0, 234.0)),
+        equals(const Rect.fromLTRB(126.0, 70.0, 356.0, 238.0)),
       );
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(126.0, 118.0, 356.0, 134.0)));
+      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(126.0, 122.0, 356.0, 138.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -507,13 +517,13 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(512.0, 87.0, 666.0, 101.0)),
+        equals(const Rect.fromLTRB(512.0, 91.0, 666.0, 105.0)),
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(444.0, 66.0, 674.0, 234.0)),
+        equals(const Rect.fromLTRB(444.0, 70.0, 674.0, 238.0)),
       );
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(444.0, 118.0, 674.0, 134.0)));
+      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(444.0, 122.0, 674.0, 138.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -1415,7 +1425,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 104.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(104.0, 0.0, 204.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(104.0, 112.0, 334.0, 160.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(104.0, 116.0, 334.0, 164.0)));
     });
     testWidgets('unconstrained menus show up in the right place in RTL', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 600));
@@ -1455,7 +1465,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(696.0, 0.0, 796.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(596.0, 0.0, 696.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(496.0, 0.0, 596.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(466.0, 112.0, 696.0, 160.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(466.0, 116.0, 696.0, 164.0)));
     });
     testWidgets('constrained menus show up in the right place in LTR', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(300, 300));
@@ -1493,7 +1503,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 104.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(104.0, 0.0, 204.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(62.0, 112.0, 292.0, 160.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(62.0, 116.0, 292.0, 164.0)));
     });
     testWidgets('constrained menus show up in the right place in RTL', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(300, 300));
@@ -1531,7 +1541,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(196.0, 0.0, 296.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(96.0, 0.0, 196.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(-4.0, 0.0, 96.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(8.0, 112.0, 238.0, 160.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(8.0, 116.0, 238.0, 164.0)));
     });
   });
   group('LocalizedShortcutLabeler', () {
