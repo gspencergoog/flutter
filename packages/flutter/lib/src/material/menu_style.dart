@@ -56,9 +56,6 @@ import 'theme_data.dart';
 ///       },
 ///     ),
 ///   ),
-///   onPressed: () {
-///     // ...
-///   },
 ///   menuChildren: const <Widget>[ /* ... */ ],
 ///   child: const Text('Fly me to the moon'),
 /// ),
@@ -69,15 +66,12 @@ import 'theme_data.dart';
 /// [backgroundColor] for all states one could write:
 ///
 /// ```dart
-/// MenuButton(
-///   menuStyle: const MenuStyle(
+/// const MenuButton(
+///   menuStyle: MenuStyle(
 ///     backgroundColor: MaterialStatePropertyAll<Color>(Colors.green),
 ///   ),
-///   onPressed: () {
-///     // ...
-///   },
-///   menuChildren: const <Widget>[ /* ... */ ],
-///   child: const Text('Let me play among the stars'),
+///   menuChildren: <Widget>[ /* ... */ ],
+///   child: Text('Let me play among the stars'),
 /// ),
 /// ```
 ///
@@ -300,6 +294,7 @@ class MenuStyle with Diagnosticable {
       elevation: elevation ?? style.elevation,
       padding: padding ?? style.padding,
       minimumSize: minimumSize ?? style.minimumSize,
+      fixedSize: fixedSize ?? style.fixedSize,
       maximumSize: maximumSize ?? style.maximumSize,
       side: side ?? style.side,
       shape: shape ?? style.shape,
@@ -318,6 +313,7 @@ class MenuStyle with Diagnosticable {
       elevation,
       padding,
       minimumSize,
+      fixedSize,
       maximumSize,
       side,
       shape,
@@ -343,6 +339,7 @@ class MenuStyle with Diagnosticable {
         && other.elevation == elevation
         && other.padding == padding
         && other.minimumSize == minimumSize
+        && other.fixedSize == fixedSize
         && other.maximumSize == maximumSize
         && other.side == side
         && other.shape == shape
@@ -360,6 +357,7 @@ class MenuStyle with Diagnosticable {
     properties.add(DiagnosticsProperty<MaterialStateProperty<double?>>('elevation', elevation, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<EdgeInsetsGeometry?>>('padding', padding, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Size?>>('minimumSize', minimumSize, defaultValue: null));
+    properties.add(DiagnosticsProperty<MaterialStateProperty<Size?>>('fixedSize', fixedSize, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<Size?>>('maximumSize', maximumSize, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<BorderSide?>>('side', side, defaultValue: null));
     properties.add(DiagnosticsProperty<MaterialStateProperty<OutlinedBorder?>>('shape', shape, defaultValue: null));
@@ -381,6 +379,7 @@ class MenuStyle with Diagnosticable {
       elevation: _lerpProperties<double?>(a?.elevation, b?.elevation, t, lerpDouble),
       padding:  _lerpProperties<EdgeInsetsGeometry?>(a?.padding, b?.padding, t, EdgeInsetsGeometry.lerp),
       minimumSize: _lerpProperties<Size?>(a?.minimumSize, b?.minimumSize, t, Size.lerp),
+      fixedSize: _lerpProperties<Size?>(a?.fixedSize, b?.fixedSize, t, Size.lerp),
       maximumSize: _lerpProperties<Size?>(a?.maximumSize, b?.maximumSize, t, Size.lerp),
       side: _lerpSides(a?.side, b?.side, t),
       shape: MaterialStateProperty.lerp<OutlinedBorder?>(a?.shape, b?.shape, t, OutlinedBorder.lerp),

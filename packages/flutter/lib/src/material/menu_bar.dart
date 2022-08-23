@@ -498,11 +498,10 @@ class MenuItemButton extends StatefulWidget {
   ///
   /// The [foregroundColor] color is used to create a [MaterialStateProperty]
   /// [ButtonStyle.foregroundColor] value. Specify a value for [foregroundColor]
-  /// to specify the color of the button's icons. The [hoverColor], [focusColor]
-  /// and [highlightColor] colors are used to indicate the hover, focus, and
-  /// pressed states. Use [backgroundColor] for the button's background fill
-  /// color. Use [disabledForegroundColor] and [disabledBackgroundColor] to
-  /// specify the button's disabled icon and fill color.
+  /// to specify the color of the button's icons. Use [backgroundColor] for the
+  /// button's background fill color. Use [disabledForegroundColor] and
+  /// [disabledBackgroundColor] to specify the button's disabled icon and fill
+  /// color.
   ///
   /// All of the other parameters are either used directly or used to create a
   /// [MaterialStateProperty] with a single value for all states.
@@ -881,11 +880,10 @@ class MenuButton extends StatefulWidget {
   ///
   /// The [foregroundColor] color is used to create a [MaterialStateProperty]
   /// [ButtonStyle.foregroundColor] value. Specify a value for [foregroundColor]
-  /// to specify the color of the button's icons. The [hoverColor], [focusColor]
-  /// and [highlightColor] colors are used to indicate the hover, focus, and
-  /// pressed states. Use [backgroundColor] for the button's background fill
-  /// color. Use [disabledForegroundColor] and [disabledBackgroundColor] to
-  /// specify the button's disabled icon and fill color.
+  /// to specify the color of the button's icons. Use [backgroundColor] for the
+  /// button's background fill color. Use [disabledForegroundColor] and
+  /// [disabledBackgroundColor] to specify the button's disabled icon and fill
+  /// color.
   ///
   /// All of the other parameters are either used directly or used to create a
   /// [MaterialStateProperty] with a single value for all states.
@@ -901,9 +899,7 @@ class MenuButton extends StatefulWidget {
   /// MenuButton(
   ///   leadingIcon: const Icon(Icons.pets),
   ///   style: MenuButton.styleFrom(foregroundColor: Colors.green),
-  ///   onPressed: () {
-  ///     // ...
-  ///   },
+  ///   menuChildren: const <Widget>[ /* ... */ ],
   ///   child: const Text('Button Label'),
   /// ),
   /// ```

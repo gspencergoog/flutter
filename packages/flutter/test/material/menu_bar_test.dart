@@ -1360,8 +1360,6 @@ void main() {
         description,
         equalsIgnoringHashCodes(
           <String>[
-            'disabled',
-            'style: ButtonStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0), shape: MaterialStatePropertyAll(StadiumBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none))))',
             'label: Text("Menu 0")',
             'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero)))'
           ],
