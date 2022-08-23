@@ -142,9 +142,6 @@ class MenuStyle with Diagnosticable {
 
   /// The minimum size of the menu itself.
   ///
-  /// The size of the rectangle the menu lies within may be larger
-  /// per [tapTargetSize].
-  ///
   /// This value must be less than or equal to [maximumSize].
   final MaterialStateProperty<Size?>? minimumSize;
 

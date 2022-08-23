@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/src/material/ink_well.dart';
 import 'package:flutter/widgets.dart';
 
 import 'button_style.dart';
@@ -18,6 +17,7 @@ import 'colors.dart';
 import 'constants.dart';
 import 'divider.dart';
 import 'icons.dart';
+import 'ink_well.dart';
 import 'material.dart';
 import 'material_localizations.dart';
 import 'material_state.dart';
@@ -302,9 +302,8 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 ///
 /// It shows a hint for an associated shortcut, if any. When selected via click,
 /// hitting enter while focused, or activating the associated [shortcut], it
-/// will call its [onPressed] callback or fire its [onPressedIntent] intent,
-/// depending on which is defined. If neither is defined, then this item will be
-/// disabled.
+/// will call its [onPressed] callback. If neither is defined, then this item
+/// will be disabled.
 ///
 /// {@macro flutter.material.menu_bar.shortcuts_note}
 ///
@@ -494,28 +493,27 @@ class MenuItemButton extends StatefulWidget {
     return MenuButtonTheme.of(context).style;
   }
 
-  /// A static convenience method that constructs a menu item button
+  /// A static convenience method that constructs a [MenuItemButton]'s
   /// [ButtonStyle] given simple values.
   ///
   /// The [foregroundColor] color is used to create a [MaterialStateProperty]
   /// [ButtonStyle.foregroundColor] value. Specify a value for [foregroundColor]
   /// to specify the color of the button's icons. The [hoverColor], [focusColor]
-  /// and [highlightColor] colors are used to indicate the hover, focus,
-  /// and pressed states. Use [backgroundColor] for the button's background
-  /// fill color. Use [disabledForegroundColor] and [disabledBackgroundColor]
-  /// to specify the button's disabled icon and fill color.
+  /// and [highlightColor] colors are used to indicate the hover, focus, and
+  /// pressed states. Use [backgroundColor] for the button's background fill
+  /// color. Use [disabledForegroundColor] and [disabledBackgroundColor] to
+  /// specify the button's disabled icon and fill color.
   ///
-  /// All of the other parameters are either used directly or used to
-  /// create a [MaterialStateProperty] with a single value for all
-  /// states.
+  /// All of the other parameters are either used directly or used to create a
+  /// [MaterialStateProperty] with a single value for all states.
   ///
-  /// All parameters default to null, by default this method returns
-  /// a [ButtonStyle] that doesn't override anything.
+  /// All parameters default to null, by default this method returns a
+  /// [ButtonStyle] that doesn't override anything.
   ///
   /// For example, to override the default foreground color for a
-  /// [MenuItemButton], as well as its overlay color, with all of the
-  /// standard opacity adjustments for the pressed, focused, and
-  /// hovered states, one could write:
+  /// [MenuItemButton], as well as its overlay color, with all of the standard
+  /// opacity adjustments for the pressed, focused, and hovered states, one
+  /// could write:
   ///
   /// ```dart
   /// MenuItemButton(
@@ -532,18 +530,18 @@ class MenuItemButton extends StatefulWidget {
     Color? backgroundColor,
     Color? disabledForegroundColor,
     Color? disabledBackgroundColor,
-    Color? focusColor,
-    Color? hoverColor,
-    Color? highlightColor,
     Color? shadowColor,
     Color? surfaceTintColor,
+    TextStyle? textStyle,
     double? elevation,
+    EdgeInsetsGeometry? padding,
     Size? minimumSize,
     Size? fixedSize,
     Size? maximumSize,
+    MouseCursor? enabledMouseCursor,
+    MouseCursor? disabledMouseCursor,
     BorderSide? side,
     OutlinedBorder? shape,
-    EdgeInsetsGeometry? padding,
     VisualDensity? visualDensity,
     MaterialTapTargetSize? tapTargetSize,
     Duration? animationDuration,
@@ -552,15 +550,20 @@ class MenuItemButton extends StatefulWidget {
     InteractiveInkFeatureFactory? splashFactory,
   }) {
     return TextButton.styleFrom(
-      backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+      backgroundColor: backgroundColor,
+      disabledBackgroundColor: disabledBackgroundColor,
+      disabledForegroundColor: disabledForegroundColor,
       shadowColor: shadowColor,
       surfaceTintColor: surfaceTintColor,
+      textStyle: textStyle,
       elevation: elevation,
       padding: padding,
       minimumSize: minimumSize,
       fixedSize: fixedSize,
       maximumSize: maximumSize,
+      enabledMouseCursor: enabledMouseCursor,
+      disabledMouseCursor: disabledMouseCursor,
       side: side,
       shape: shape,
       visualDensity: visualDensity,
@@ -690,10 +693,13 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///
 /// By default the submenu will appear to the side of the controlling button.
 /// The alignment and offset of the submenu can be controlled by setting
-/// [alignment] and [alignmentOffset], respectively.
+/// [MenuStyle.alignment] on the [style] and [alignmentOffset] argument,
+/// respectively.
 ///
 /// When activated (clicked, through keyboard navigation, or via hovering with a
 /// mouse), it will open a submenu containing the [menuChildren].
+///
+/// If [menuChildren] is empty, then this menu item will be disabled.
 ///
 /// See also:
 ///
@@ -703,20 +709,18 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///   style.
 /// * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///   [PlatformMenuItem] using platform-native APIs instead of Flutter.
-class MenuButton extends ButtonStyleButton {
+class MenuButton extends StatefulWidget {
   /// Creates a const [MenuButton].
   ///
   /// The [child] attribute is required.
   const MenuButton({
     super.key,
-    super.onPressed,
-    super.onLongPress,
-    super.onHover,
-    super.onFocusChange,
-    super.style,
-    super.focusNode,
-    super.autofocus = false,
-    super.clipBehavior = Clip.none,
+    this.onHover,
+    this.onFocusChange,
+    this.style,
+    this.focusNode,
+    this.clipBehavior = Clip.none,
+    this.statesController,
     this.leadingIcon,
     this.trailingIcon,
     this.onOpen,
@@ -724,18 +728,58 @@ class MenuButton extends ButtonStyleButton {
     this.menuStyle,
     this.alignmentOffset,
     required this.menuChildren,
-    required super.child,
+    required this.child,
   });
 
+  /// Called when a pointer enters or exits the button response area.
+  ///
+  /// The value passed to the callback is true if a pointer has entered this
+  /// part of the material and false if a pointer has exited this part of the
+  /// material.
+  final ValueChanged<bool>? onHover;
+
+  /// Handler called when the focus changes.
+  ///
+  /// Called with true if this widget's node gains focus, and false if it loses
+  /// focus.
+  final ValueChanged<bool>? onFocusChange;
+
+  /// {@macro flutter.material.Material.clipBehavior}
+  ///
+  /// Defaults to [Clip.none], and must not be null.
+  final Clip clipBehavior;
+
+  /// {@macro flutter.widgets.Focus.focusNode}
+  final FocusNode? focusNode;
+
+  /// Customizes this button's appearance.
+  ///
+  /// Non-null properties of this style override the corresponding
+  /// properties in [themeStyleOf] and [defaultStyleOf]. [MaterialStateProperty]s
+  /// that resolve to non-null values will similarly override the corresponding
+  /// [MaterialStateProperty]s in [themeStyleOf] and [defaultStyleOf].
+  ///
+  /// Null by default.
+  final ButtonStyle? style;
+
+  /// {@macro flutter.material.inkwell.statesController}
+  final MaterialStatesController? statesController;
+
+  /// Typically the button's label.
+  ///
+  /// {@macro flutter.widgets.ProxyWidget.child}
+  final Widget? child;
+
   /// The offset in pixels of the menu relative to the alignment origin
-  /// determined by [alignment].
+  /// determined by [MenuStyle.alignment] on the [style] attribute.
   ///
   /// Use this for fine adjustments of the menu placement.
   ///
-  /// Defaults to the start portion of [MenuThemeData.padding] for menus
-  /// whose parent menu (the menu that the button for this menu resides in) is
-  /// vertical, and the top portion of [MenuThemeData.padding] when it is
-  /// horizontal.
+  /// Defaults to the [EdgeInsetsDirectional.start] portion of
+  /// [MenuStyle.padding] on the [style] attribute for menus whose parent menu
+  /// (the menu that the button for this menu resides in) is vertical, and the
+  /// [EdgeInsetsDirectional.top] portion of [MenuStyle.padding] on the [style]
+  /// attribute when it is horizontal.
   final Offset? alignmentOffset;
 
   /// An optional icon to display before the [child].
@@ -760,6 +804,9 @@ class MenuButton extends ButtonStyleButton {
   ///
   /// These can be any widget, but are typically either [MenuItemButton] or
   /// [MenuButton] widgets.
+  ///
+  /// If `menuChildren` is empty, then the button for this menu item will be
+  /// disabled.
   final List<Widget> menuChildren;
 
   /// Defines the button's default appearance.
@@ -819,16 +866,95 @@ class MenuButton extends ButtonStyleButton {
   /// * `enableFeedback` - true
   /// * `alignment` - Alignment.center
   /// * `splashFactory` - Theme.splashFactory
-  @override
   ButtonStyle defaultStyleOf(BuildContext context) {
     return _MenuButtonDefaultsM3(context);
   }
 
   /// Returns the [MenuButtonThemeData.style] of the closest
   /// [MenuButtonTheme] ancestor.
-  @override
   ButtonStyle? themeStyleOf(BuildContext context) {
     return MenuButtonTheme.of(context).style;
+  }
+
+  /// A static convenience method that constructs a [MenuButton]'s [ButtonStyle]
+  /// given simple values.
+  ///
+  /// The [foregroundColor] color is used to create a [MaterialStateProperty]
+  /// [ButtonStyle.foregroundColor] value. Specify a value for [foregroundColor]
+  /// to specify the color of the button's icons. The [hoverColor], [focusColor]
+  /// and [highlightColor] colors are used to indicate the hover, focus, and
+  /// pressed states. Use [backgroundColor] for the button's background fill
+  /// color. Use [disabledForegroundColor] and [disabledBackgroundColor] to
+  /// specify the button's disabled icon and fill color.
+  ///
+  /// All of the other parameters are either used directly or used to create a
+  /// [MaterialStateProperty] with a single value for all states.
+  ///
+  /// All parameters default to null, by default this method returns a
+  /// [ButtonStyle] that doesn't override anything.
+  ///
+  /// For example, to override the default foreground color for a [MenuButton],
+  /// as well as its overlay color, with all of the standard opacity adjustments
+  /// for the pressed, focused, and hovered states, one could write:
+  ///
+  /// ```dart
+  /// MenuButton(
+  ///   leadingIcon: const Icon(Icons.pets),
+  ///   style: MenuButton.styleFrom(foregroundColor: Colors.green),
+  ///   onPressed: () {
+  ///     // ...
+  ///   },
+  ///   child: const Text('Button Label'),
+  /// ),
+  /// ```
+  static ButtonStyle styleFrom({
+    Color? foregroundColor,
+    Color? backgroundColor,
+    Color? disabledForegroundColor,
+    Color? disabledBackgroundColor,
+    Color? shadowColor,
+    Color? surfaceTintColor,
+    TextStyle? textStyle,
+    double? elevation,
+    EdgeInsetsGeometry? padding,
+    Size? minimumSize,
+    Size? fixedSize,
+    Size? maximumSize,
+    MouseCursor? enabledMouseCursor,
+    MouseCursor? disabledMouseCursor,
+    BorderSide? side,
+    OutlinedBorder? shape,
+    VisualDensity? visualDensity,
+    MaterialTapTargetSize? tapTargetSize,
+    Duration? animationDuration,
+    bool? enableFeedback,
+    AlignmentGeometry? alignment,
+    InteractiveInkFeatureFactory? splashFactory,
+  }) {
+    return TextButton.styleFrom(
+      foregroundColor: foregroundColor,
+      backgroundColor: backgroundColor,
+      disabledBackgroundColor: disabledBackgroundColor,
+      disabledForegroundColor: disabledForegroundColor,
+      shadowColor: shadowColor,
+      surfaceTintColor: surfaceTintColor,
+      textStyle: textStyle,
+      elevation: elevation,
+      padding: padding,
+      minimumSize: minimumSize,
+      fixedSize: fixedSize,
+      maximumSize: maximumSize,
+      enabledMouseCursor: enabledMouseCursor,
+      disabledMouseCursor: disabledMouseCursor,
+      side: side,
+      shape: shape,
+      visualDensity: visualDensity,
+      tapTargetSize: tapTargetSize,
+      animationDuration: animationDuration,
+      enableFeedback: enableFeedback,
+      alignment: alignment,
+      splashFactory: splashFactory,
+    );
   }
 
   @override
@@ -1062,15 +1188,15 @@ class _MenuButtonState extends State<MenuButton> {
 /// A `MenuEntry` can only be created by calling [createMaterialMenu].
 ///
 /// `MenuEntry` is used to control and interrogate a menu after it has been
-/// created, with methods such as [open] and [close], attributes like [enabled],
-/// [menuStyle], [alignment], [alignmentOffset], and state like [isOpen].
+/// created, with methods such as [open] and [close], attributes like
+/// [children], [menuStyle], [alignment], [alignmentOffset], and state like
+/// [isOpen].
 ///
 /// The [dispose] method must be called when the menu is no longer needed.
 ///
 /// `MenuEntry` is a [ChangeNotifier]. To register for changes, call
-/// [addListener], and when you're done listening, call [removeListener].  It
-/// notifies its listeners when its attributes (e.g. [enabled], [alignment],
-/// etc.) change.
+/// [addListener], and when you're done listening, call [removeListener]. It
+/// notifies its listeners when its attributes change.
 ///
 /// See also:
 ///
