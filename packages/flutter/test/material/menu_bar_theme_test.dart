@@ -151,7 +151,7 @@ void main() {
                           itemForeground: Colors.grey,
                           itemOverlay: Colors.blueGrey,
                           itemPadding: const EdgeInsetsDirectional.all(11.0),
-                          itemShape: const BeveledRectangleBorder(),
+                          itemShape: const StadiumBorder(),
                         ),
                       ),
                       const Expanded(child: Placeholder()),
@@ -175,19 +175,19 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 566.0, 224.0)));
-    expect(subMenuMaterial.elevation, equals(20));
-    expect(subMenuMaterial.color, equals(Colors.green));
-    expect(subMenuMaterial.shape, equals(const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.elliptical(2.0, 3.0)))));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 594.0, 244.0)));
+    expect(subMenuMaterial.elevation, equals(18));
+    expect(subMenuMaterial.color, equals(Colors.cyan));
+    expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));
 
     final Finder menuItem = findSubMenuItem();
     expect(
-        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(336.0, 60.0, 566.0, 108.0)));
+        tester.getRect(menuItem.first), equals(const Rect.fromLTRB(350.0, 70.0, 580.0, 118.0)));
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));
     expect(menuItemMaterial.elevation, equals(0.0));
-    expect(menuItemMaterial.shape, equals(const BeveledRectangleBorder()));
+    expect(menuItemMaterial.shape, equals(const StadiumBorder()));
     expect(getLabelStyle(tester, TestMenu.subMenu10.label).style.color, equals(Colors.grey));
     final ButtonStyle? textButtonStyle = tester
         .widget<TextButton>(find

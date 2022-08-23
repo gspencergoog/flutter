@@ -30,7 +30,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = true;
+const bool _kDebugMenus = false;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -625,6 +625,9 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 
   @override
   Widget build(BuildContext context) {
+    // Since we don't want to use the theme style or default style from the
+    // TextButton, we merge the styles, merging them in the right order when
+    // each type of style exists.
     final ButtonStyle mergedStyle =
       widget.style?.merge(widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context))) ??
       widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context)) ??
@@ -1107,12 +1110,12 @@ class MenuEntry with ChangeNotifier {
   ///
   /// The alignment depends on the value of the ambient [Directionality] of the
   /// controlling widget to know which direction is the 'start' of the widget.
-  AlignmentGeometry? get alignment => _entry.menuStyle!.alignment;
+  AlignmentGeometry? get alignment => _entry.menuStyle?.alignment;
   set alignment(AlignmentGeometry? value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     // Setting the menuStyle value will automatically check for changes and
     // notify listeners.
-    if (alignment == null) {
+    if (value == null) {
       _entry.menuStyle = _entry.menuStyle?.copyWithout(alignment: true);
       return;
     }
@@ -1270,7 +1273,7 @@ MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode node) {
   return menuEntry;
 }
 
-// A widget that is defines the menu inside of the overlay entry.
+// A widget that is defines the menu drawn inside of the overlay entry.
 class _Submenu extends StatefulWidget {
   const _Submenu({required this.node});
 

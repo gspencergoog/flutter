@@ -660,8 +660,8 @@ void main() {
         description.join('\n'),
         equalsIgnoringHashCodes(
           'controller: MenuController#00000(open: [], previousFocus: null)\n'
-          'backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336)))\n'
-          'elevation: MaterialStatePropertyAll(10.0)',
+          'style: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0))\n'
+          'clipBehavior: Clip.none',
         ),
       );
     });
@@ -974,7 +974,7 @@ void main() {
       // the dividers between the right items).
       final Finder topLevelMenuPanel = findMenuPanels().first;
       // ignore: avoid_dynamic_calls
-      final List<Widget> children = (tester.widget(topLevelMenuPanel) as dynamic).menuChildren as List<Widget>;
+      final List<Widget> children = (tester.widget(topLevelMenuPanel) as dynamic).children as List<Widget>;
       expect(
         children.map<String>((Widget child) => child.runtimeType.toString()),
         equals(
@@ -1022,7 +1022,7 @@ void main() {
           )
           .at(1);
       // ignore: avoid_dynamic_calls
-      final List<Widget> children = (tester.widget(firstMenuList) as dynamic).menuChildren as List<Widget>;
+      final List<Widget> children = (tester.widget(firstMenuList) as dynamic).children as List<Widget>;
       expect(
         children.map<String>((Widget child) => child.runtimeType.toString()),
         equals(
@@ -1357,13 +1357,16 @@ void main() {
           .toList();
 
       expect(
-          description,
-          equalsIgnoringHashCodes(<String>[
+        description,
+        equalsIgnoringHashCodes(
+          <String>[
             'disabled',
-            'style: ButtonStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0), shape: MaterialStatePropertyAll(StadiumBorder(BorderSide(width: 0.0, style: none))))',
+            'style: ButtonStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0), shape: MaterialStatePropertyAll(StadiumBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none))))',
             'label: Text("Menu 0")',
-            'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.zero)))'
-          ]));
+            'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero)))'
+          ],
+        ),
+      );
     });
   });
   group('Layout', () {

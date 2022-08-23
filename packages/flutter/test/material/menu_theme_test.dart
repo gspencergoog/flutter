@@ -151,7 +151,7 @@ void main() {
                           itemForeground: Colors.grey,
                           itemOverlay: Colors.blueGrey,
                           itemPadding: const EdgeInsetsDirectional.all(11.0),
-                          itemShape: const BeveledRectangleBorder(),
+                          itemShape: const StadiumBorder(),
                         ),
                       ),
                       const Expanded(child: Placeholder()),
@@ -175,18 +175,18 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 586.0, 236.0)));
-    expect(subMenuMaterial.elevation, equals(15));
-    expect(subMenuMaterial.color, equals(Colors.red));
-    expect(subMenuMaterial.shape, equals(const StadiumBorder()));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 56.0, 594.0, 244.0)));
+    expect(subMenuMaterial.elevation, equals(18));
+    expect(subMenuMaterial.color, equals(Colors.cyan));
+    expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));
 
     final Finder menuItem = findSubMenuItem();
-    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(346.0, 66.0, 576.0, 114.0)));
+    expect(tester.getRect(menuItem.first), equals(const Rect.fromLTRB(350.0, 70.0, 580.0, 118.0)));
     final Material menuItemMaterial = tester.widget<Material>(
         find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).first);
     expect(menuItemMaterial.color, equals(Colors.amber));
     expect(menuItemMaterial.elevation, equals(0.0));
-    expect(menuItemMaterial.shape, equals(const BeveledRectangleBorder()));
+    expect(menuItemMaterial.shape, equals(const StadiumBorder()));
     expect(getLabelStyle(tester, TestMenu.subMenu10.label).style.color, equals(Colors.grey));
     final ButtonStyle? textButtonStyle = tester
         .widget<TextButton>(find
