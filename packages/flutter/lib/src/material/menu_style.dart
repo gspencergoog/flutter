@@ -16,6 +16,7 @@ import 'theme_data.dart';
 // Examples can assume:
 // late Widget child;
 // late BuildContext context;
+// late MenuStyle style;
 // @immutable
 // class MyAppHome extends StatelessWidget {
 //   const MyAppHome({super.key});
@@ -241,6 +242,48 @@ class MenuStyle with Diagnosticable {
       mouseCursor: mouseCursor ?? this.mouseCursor,
       visualDensity: visualDensity ?? this.visualDensity,
       alignment: alignment ?? this.alignment,
+    );
+  }
+
+  /// Returns a copy of this object, but resets to null any properties passed as
+  /// true.
+  ///
+  /// For instance, if you want to have a [MenuStyle] that is the same as
+  /// another style, but reset the `backgroundColor` to null so that it uses the
+  /// default color, you can call:
+  ///
+  /// ```dart
+  /// MenuStyle newStyle = style.copyWithout(backgroundColor: true);
+  /// ```
+  MenuStyle copyWithout({
+    bool? backgroundColor,
+    bool? shadowColor,
+    bool? surfaceTintColor,
+    bool? elevation,
+    bool? padding,
+    bool? minimumSize,
+    bool? fixedSize,
+    bool? maximumSize,
+    bool? side,
+    bool? shape,
+    bool? mouseCursor,
+    bool? visualDensity,
+    bool? alignment,
+  }) {
+    return MenuStyle(
+      backgroundColor: backgroundColor ?? false ? null : this.backgroundColor,
+      shadowColor: shadowColor ?? false ? null : this.shadowColor,
+      surfaceTintColor: surfaceTintColor ?? false ? null : this.surfaceTintColor,
+      elevation: elevation ?? false ? null : this.elevation,
+      padding: padding ?? false ? null : this.padding,
+      minimumSize: minimumSize ?? false ? null : this.minimumSize,
+      fixedSize: fixedSize ?? false ? null : this.fixedSize,
+      maximumSize: maximumSize ?? false ? null : this.maximumSize,
+      side: side ?? false ? null : this.side,
+      shape: shape ?? false ? null : this.shape,
+      mouseCursor: mouseCursor ?? false ? null : this.mouseCursor,
+      visualDensity: visualDensity ?? false ? null : this.visualDensity,
+      alignment: alignment ?? false ? null : this.alignment,
     );
   }
 

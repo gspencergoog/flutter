@@ -924,20 +924,24 @@ class _MenuButtonState extends State<MenuButton> {
   void _updateChildMenu() {
     final MenuController controller = MenuController.maybeOf(context) ?? (_internalMenuController ??= MenuController());
     final _MenuNode parent = _MenuNode.maybeOf(context) ?? controller._root;
+    final MenuStyle? themeStyle = MenuTheme.of(context).style;
+    final MenuStyle defaultStyle = _MenuDefaultsM3(context);
 
-    final MenuThemeData menuTheme = MenuTheme.of(context);
-    final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
-    final MenuStyle menuStyle = widget.menuStyle?.merge(menuTheme.style).merge(_MenuDefaultsM3(context)) ??
-        menuTheme.style?.merge(_MenuDefaultsM3(context)) ??
-        _MenuDefaultsM3(context);
-    final ButtonStyle menuButtonStyle =
-        widget.style?.merge(menuButtonTheme.style).merge(_MenuButtonDefaultsM3(context)) ??
-            menuButtonTheme.style?.merge(_MenuButtonDefaultsM3(context)) ??
-            _MenuButtonDefaultsM3(context);
+    T? effectiveValue<T>(T? Function(MenuStyle? style) getProperty) {
+      return getProperty(widget.menuStyle) ?? getProperty(themeStyle) ?? getProperty(defaultStyle);
+    }
+
+    T? resolve<T>(MaterialStateProperty<T>? Function(MenuStyle? style) getProperty) {
+      return effectiveValue(
+        (MenuStyle? style) {
+          return getProperty(style)?.resolve(widget.statesController?.value ?? const<MaterialState>{});
+        },
+      );
+    }
 
     final Offset menuPaddingOffset;
     final TextDirection textDirection = Directionality.of(context);
-    final EdgeInsets menuPadding = menuStyle.padding!.resolve(<MaterialState>{})!.resolve(textDirection);
+    final EdgeInsets menuPadding = resolve<EdgeInsetsGeometry?>((MenuStyle? style) => style?.padding)!.resolve(textDirection);
     switch (parent.orientation) {
       case Axis.horizontal:
         switch (textDirection) {
@@ -960,13 +964,14 @@ class _MenuButtonState extends State<MenuButton> {
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
         menuScopeNode: _menuScopeNode,
-        buttonStyle: menuButtonStyle,
-        menuStyle: menuStyle,
+        buttonStyle: widget.style,
+        menuStyle: widget.menuStyle,
         menuClipBehavior: widget.clipBehavior,
         onOpen: widget.onOpen,
         onClose: widget.onClose,
         alignmentOffset: menuPaddingOffset,
         widgetChildren: widget.menuChildren,
+        statesController: widget.statesController,
       );
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
@@ -975,13 +980,14 @@ class _MenuButtonState extends State<MenuButton> {
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
         ..menuScopeNode = _menuScopeNode
-        ..buttonStyle = menuButtonStyle
-        ..menuStyle = menuStyle
+        ..buttonStyle = widget.style
+        ..menuStyle = widget.menuStyle
         ..menuClipBehavior = widget.clipBehavior
         ..onOpen = widget.onOpen
         ..onClose = widget.onClose
         ..alignmentOffset = menuPaddingOffset
-        ..widgetChildren = widget.menuChildren;
+        ..widgetChildren = widget.menuChildren
+        ..statesController = widget.statesController;
     }
   }
 
@@ -1106,8 +1112,11 @@ class MenuEntry with ChangeNotifier {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     // Setting the menuStyle value will automatically check for changes and
     // notify listeners.
-    if (alignment == null) {}
-    _entry.menuStyle = (_entry.menuStyle ?? const MenuStyle()).copyWith(alignment: value);
+    if (alignment == null) {
+      _entry.menuStyle = _entry.menuStyle?.copyWithout(alignment: true);
+      return;
+    }
+    _entry.menuStyle = _entry.menuStyle?.copyWith(alignment: value) ?? MenuStyle(alignment: value);
   }
 
   /// Sets the alignment offset of the menu relative to the alignment position
@@ -1216,7 +1225,6 @@ MenuEntry createMaterialMenu(
   Clip clipBehavior = Clip.none,
   VoidCallback? onOpen,
   VoidCallback? onClose,
-  AlignmentDirectional alignment = AlignmentDirectional.bottomStart,
   Offset alignmentOffset = Offset.zero,
   GlobalKey? buttonKey,
   List<Widget> children = const <Widget>[],
@@ -1254,7 +1262,7 @@ MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode node) {
       child: InheritedTheme.captureAll(
         // Copy all the themes from the menu bar to the overlay.
         node.topLevel.context,
-        _Menu(node: node),
+        _Submenu(node: node),
         to: overlay.context,
       ),
     );
@@ -1263,16 +1271,16 @@ MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode node) {
 }
 
 // A widget that is defines the menu inside of the overlay entry.
-class _Menu extends StatefulWidget {
-  const _Menu({required this.node});
+class _Submenu extends StatefulWidget {
+  const _Submenu({required this.node});
 
   final _ChildMenuNode node;
 
   @override
-  State<_Menu> createState() => _MenuState();
+  State<_Submenu> createState() => _SubmenuState();
 }
 
-class _MenuState extends State<_Menu> {
+class _SubmenuState extends State<_Submenu> {
   MaterialStatesController? internalStatesController;
 
   void handleStatesControllerChange() {
@@ -1296,7 +1304,7 @@ class _MenuState extends State<_Menu> {
   }
 
   @override
-  void didUpdateWidget(_Menu oldWidget) {
+  void didUpdateWidget(_Submenu oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.node.statesController != oldWidget.node.statesController) {
       oldWidget.node.statesController?.removeListener(handleStatesControllerChange);
@@ -1329,7 +1337,7 @@ class _MenuState extends State<_Menu> {
 
         final MenuStyle? themeStyle;
         final MenuStyle defaultStyle;
-        switch (widget.node.orientation) {
+        switch (widget.node.parent.orientation) {
           case Axis.horizontal:
             themeStyle = MenuBarTheme.of(context).style;
             defaultStyle = _MenuBarDefaultsM3(context);
@@ -1359,6 +1367,7 @@ class _MenuState extends State<_Menu> {
 
         return MouseRegion(
           cursor: mouseCursor,
+          hitTestBehavior: HitTestBehavior.deferToChild,
           child: Theme(
             data: Theme.of(context).copyWith(
               visualDensity: visualDensity,

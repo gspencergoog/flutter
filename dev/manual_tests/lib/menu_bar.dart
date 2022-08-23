@@ -589,7 +589,7 @@ class _ControlsState extends State<_Controls> {
     menuEntry?.dispose();
     menuEntry = createMaterialMenu(
       focusNode,
-      alignment: AlignmentDirectional.topEnd,
+      style: const MenuStyle(alignment: AlignmentDirectional.topEnd),
       alignmentOffset: const Offset(0, -8),
       controller: widget.menuController,
       children: <Widget>[
