@@ -83,7 +83,7 @@ void main() {
     );
   }
 
-  group('MenuBar', () {
+  group('Menu functions', () {
     testWidgets('basic menu structure', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -300,43 +300,33 @@ void main() {
 
       // Open the menu and make sure things are the right size, in the right place.
       await tester.tap(find.text('Press Me'));
-      // We have to pump two frames, one because there is a one frame delay in
-      // the notification because the menu is in the overlay, and once to react
-      // to the notification.
       await tester.pump();
-      await tester.pump();
-      debugDumpApp();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
-      await tester.pump();
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 276.0, 618.0, 380.0)));
 
       menuEntry.alignment = AlignmentDirectional.center;
       await tester.pump();
-      await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(400.0, 300.0, 690.0, 404.0)));
 
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
-      await tester.pump();
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(472.0, 324.0, 762.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
-      await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuEntry.alignmentOffset = const Offset(10, 20);
-      await tester.pump();
       await tester.pump();
       expect(
         tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
         equals(const Offset(10.0, 20.0)),
       );
     });
-    testWidgets('menu alignment and offset in RTL direction', (WidgetTester tester) async {
+    testWidgets('menu alignment and offset in RTL', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
@@ -392,38 +382,183 @@ void main() {
 
       // Open the menu and make sure things are the right size, in the right place.
       await tester.tap(find.text('Press Me'));
-      // We have to pump two frames, one because there is a one frame delay in
-      // the notification because the menu is in the overlay, and once to react
-      // to the notification.
-      await tester.pump();
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
       await tester.pump();
-      await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 276.0, 472.0, 380.0)));
 
       menuEntry.alignment = AlignmentDirectional.center;
-      await tester.pump();
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 300.0, 400.0, 404.0)));
 
       menuEntry.alignment = AlignmentDirectional.bottomEnd;
       await tester.pump();
-      await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(38.0, 324.0, 328.0, 428.0)));
 
       menuEntry.alignment = AlignmentDirectional.topStart;
-      await tester.pump();
       await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
-      await tester.pump();
       expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(-10, 20)));
     });
+
+    testWidgets('menu position and offset in LTR', (WidgetTester tester) async {
+      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
+      final FocusNode focusNode = FocusNode(debugLabel: 'Test');
+      final MenuEntry menuEntry = createMaterialMenu(
+        buttonKey,
+        buttonFocusNode: focusNode,
+        children: <Widget>[
+          MenuItemButton(
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyB,
+              control: true,
+            ),
+            onPressed: () {},
+            child: Text(TestMenu.subMenu00.label),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.send),
+            trailingIcon: const Icon(Icons.mail),
+            onPressed: () {},
+            child: Text(TestMenu.subMenu00.label),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: ElevatedButton(
+                key: buttonKey,
+                focusNode: focusNode,
+                onPressed: () {
+                  if (menuEntry.isOpen) {
+                    menuEntry.close();
+                  } else {
+                    menuEntry.open();
+                  }
+                },
+                child: const Text('Press Me'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final Rect buttonRect = tester.getRect(find.byType(ElevatedButton));
+      expect(buttonRect, equals(const Rect.fromLTRB(328.0, 276.0, 472.0, 324.0)));
+
+      final Finder findMenuScope =
+          find.ancestor(of: find.text(TestMenu.subMenu00.label), matching: find.byType(FocusScope)).first;
+
+      // Open the menu and make sure things are the right size, in the right place.
+      await tester.tap(find.text('Press Me'));
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
+
+      // Now move the menu by setting the accessor.
+      menuEntry.globalMenuPosition = const Offset(100, 100);
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(100.0, 100.0, 390.0, 204.0)));
+
+      // Now move the menu by calling open() again with a position.
+      menuEntry.open(position: const Offset(200, 200));
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(200, 200, 490.0, 304.0)));
+
+      final Rect menuRect = tester.getRect(findMenuScope);
+      menuEntry.alignmentOffset = const Offset(10, 20);
+      await tester.pump();
+      expect(
+        tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
+        equals(const Offset(10.0, 20.0)),
+      );
+    });
+
+    testWidgets('menu position and offset in RTL', (WidgetTester tester) async {
+      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
+      final FocusNode focusNode = FocusNode(debugLabel: 'Test');
+      final MenuEntry menuEntry = createMaterialMenu(
+        buttonKey,
+        buttonFocusNode: focusNode,
+        children: <Widget>[
+          MenuItemButton(
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyB,
+              control: true,
+            ),
+            onPressed: () {},
+            child: Text(TestMenu.subMenu00.label),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.send),
+            trailingIcon: const Icon(Icons.mail),
+            onPressed: () {},
+            child: Text(TestMenu.subMenu00.label),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Material(
+              child: Center(
+                child: ElevatedButton(
+                  key: buttonKey,
+                  focusNode: focusNode,
+                  onPressed: () {
+                    if (menuEntry.isOpen) {
+                      menuEntry.close();
+                    } else {
+                      menuEntry.open();
+                    }
+                  },
+                  child: const Text('Press Me'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final Rect buttonRect = tester.getRect(find.byType(ElevatedButton));
+      expect(buttonRect, equals(const Rect.fromLTRB(328.0, 276.0, 472.0, 324.0)));
+
+      final Finder findMenuScope =
+          find.ancestor(of: find.text(TestMenu.subMenu00.label), matching: find.byType(FocusScope)).first;
+
+      // Open the menu and make sure things are the right size, in the right place.
+      await tester.tap(find.text('Press Me'));
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
+
+      // Now move the menu by setting the accessor.
+      menuEntry.globalMenuPosition = const Offset(500, 100);
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(210.0, 100.0, 500.0, 204.0)));
+
+      // Now move the menu by calling open() again with a position.
+      menuEntry.open(position: const Offset(400, 200));
+      await tester.pump();
+      expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 200.0, 400.0, 304.0)));
+
+      final Rect menuRect = tester.getRect(findMenuScope);
+      menuEntry.alignmentOffset = const Offset(10, 20);
+      await tester.pump();
+      expect(
+        tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
+        equals(const Offset(-10.0, 20.0)),
+      );
+    });
+
     testWidgets('works with Padding around menu and overlay', (WidgetTester tester) async {
       await tester.pumpWidget(
         Padding(
@@ -543,7 +678,7 @@ void main() {
                       child: MenuBar(
                         style: MenuStyle(
                           elevation: MaterialStateProperty.all<double?>(10),
-                          backgroundColor: MaterialStateProperty.all(Colors.red),
+                          backgroundColor: const MaterialStatePropertyAll<Color>(Colors.red),
                         ),
                         children: createTestMenus(onPressed: onPressed),
                       ),
@@ -642,9 +777,9 @@ void main() {
       );
       final MenuBar menuBar = MenuBar(
         controller: MenuController(),
-        style: MenuStyle(
-          backgroundColor: MaterialStateProperty.all(Colors.red),
-          elevation: MaterialStateProperty.all<double?>(10.0),
+        style: const MenuStyle(
+          backgroundColor: MaterialStatePropertyAll<Color>(Colors.red),
+          elevation: MaterialStatePropertyAll<double?>(10.0),
         ),
         children: const <Widget>[item],
       );
@@ -839,7 +974,7 @@ void main() {
 
       // Have to open a menu initially to start things going.
       await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       expect(focusedMenu, equals('MenuButton(Text("Menu 1"))'));
@@ -930,7 +1065,7 @@ void main() {
 
       // Have to open a menu initially to start things going.
       await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(focusedMenu, equals('MenuButton(Text("Menu 0"))'));
 
       // Hovering when the menu is already  open does nothing.
@@ -961,6 +1096,137 @@ void main() {
       expect(focusedMenu, equals('MenuItemButton(Text("Sub Sub Menu 100"))'));
     });
   });
+
+  group('MenuStyle', () {
+    testWidgets('fixedSize affects geometry', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBarTheme(
+                  data: const MenuBarThemeData(
+                    style: MenuStyle(
+                      fixedSize: MaterialStatePropertyAll<Size>(Size(600, 60)),
+                    ),
+                  ),
+                  child: MenuTheme(
+                    data: const MenuThemeData(
+                      style: MenuStyle(
+                        fixedSize: MaterialStatePropertyAll<Size>(Size(100, 100)),
+                      ),
+                    ),
+                    child: MenuBar(
+                      children: createTestMenus(onPressed: onPressed),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Have to open a menu initially to start things going.
+      await tester.tap(find.text(TestMenu.mainMenu0.label));
+      await tester.pump();
+
+      // MenuBarTheme affects MenuBar.
+      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(100.0, 0.0, 700.0, 60.0)));
+      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(600.0, 60.0)));
+
+      // MenuTheme affects menus.
+      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(104.0, 48.0, 204.0, 148.0)));
+      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(100.0, 100.0)));
+    });
+
+    testWidgets('maximumSize affects geometry', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBarTheme(
+                  data: const MenuBarThemeData(
+                    style: MenuStyle(
+                      maximumSize: MaterialStatePropertyAll<Size>(Size(250, 40)),
+                    ),
+                  ),
+                  child: MenuTheme(
+                    data: const MenuThemeData(
+                      style: MenuStyle(
+                        maximumSize: MaterialStatePropertyAll<Size>(Size(100, 100)),
+                      ),
+                    ),
+                    child: MenuBar(
+                      children: createTestMenus(onPressed: onPressed),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Have to open a menu initially to start things going.
+      await tester.tap(find.text(TestMenu.mainMenu0.label));
+      await tester.pump();
+
+      // MenuBarTheme affects MenuBar.
+      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(275.0, 0.0, 525.0, 40.0)));
+      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(250.0, 40.0)));
+
+      // MenuTheme affects menus.
+      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(279.0, 48.0, 379.0, 148.0)));
+      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(100.0, 100.0)));
+    });
+    testWidgets('minimumSize affects geometry', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBarTheme(
+                  data: const MenuBarThemeData(
+                    style: MenuStyle(
+                      minimumSize: MaterialStatePropertyAll<Size>(Size(400, 60)),
+                    ),
+                  ),
+                  child: MenuTheme(
+                    data: const MenuThemeData(
+                      style: MenuStyle(
+                        minimumSize: MaterialStatePropertyAll<Size>(Size(300, 300)),
+                      ),
+                    ),
+                    child: MenuBar(
+                      children: createTestMenus(onPressed: onPressed),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Have to open a menu initially to start things going.
+      await tester.tap(find.text(TestMenu.mainMenu0.label));
+      await tester.pump();
+
+      // MenuBarTheme affects MenuBar.
+      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(200.0, 0.0, 600.0, 60.0)));
+      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(400.0, 60.0)));
+
+      // MenuTheme affects menus.
+      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(204.0, 48.0, 504.0, 348.0)));
+      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(300.0, 300.0)));
+    });
+  });
+
   group('MenuItemGroup', () {
     testWidgets('Top level menu groups have appropriate dividers', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -1320,12 +1586,12 @@ void main() {
       final ButtonStyle style = ButtonStyle(
         shape: MaterialStateProperty.all<OutlinedBorder?>(const StadiumBorder()),
         elevation: MaterialStateProperty.all<double?>(10.0),
-        backgroundColor: MaterialStateProperty.all(Colors.red),
+        backgroundColor: const MaterialStatePropertyAll<Color>(Colors.red),
       );
       final MenuStyle menuStyle = MenuStyle(
         shape: MaterialStateProperty.all<OutlinedBorder?>(const RoundedRectangleBorder()),
         elevation: MaterialStateProperty.all<double?>(20.0),
-        backgroundColor: MaterialStateProperty.all(Colors.green),
+        backgroundColor: const MaterialStatePropertyAll<Color>(Colors.green),
       );
       await tester.pumpWidget(
         MaterialApp(

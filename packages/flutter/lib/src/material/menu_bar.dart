@@ -981,9 +981,9 @@ class MenuButton extends StatefulWidget {
 
 class _MenuButtonState extends State<MenuButton> {
   late _ChildMenuNode _node;
+  final GlobalKey _buttonKey = GlobalKey();
   MenuEntry? _childMenu;
   bool get _enabled => widget.menuChildren.isNotEmpty;
-  GlobalKey buttonKey = GlobalKey();
   FocusNode? _internalFocusNode;
   MenuController? _internalMenuController;
   FocusNode get _buttonFocusNode => widget.focusNode ?? _internalFocusNode!;
@@ -1083,7 +1083,7 @@ class _MenuButtonState extends State<MenuButton> {
 
     if (_childMenu == null) {
       _node = _ChildMenuNode(
-        buttonKey: buttonKey,
+        buttonKey: _buttonKey,
         parent: parent,
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
@@ -1099,7 +1099,7 @@ class _MenuButtonState extends State<MenuButton> {
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
       _node
-        ..buttonKey = buttonKey
+        ..buttonKey = _buttonKey
         ..parent = parent
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
@@ -1119,7 +1119,7 @@ class _MenuButtonState extends State<MenuButton> {
     return _MenuNodeMarker(
       node: _node,
       child: TextButton(
-        key: buttonKey,
+        key: _buttonKey,
         style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
         focusNode: _buttonFocusNode,
         onHover: _enabled ? _handleHover : null,
@@ -1488,45 +1488,45 @@ class _Submenu extends StatefulWidget {
 }
 
 class _SubmenuState extends State<_Submenu> {
-  MaterialStatesController? internalStatesController;
+  MaterialStatesController? _internalStatesController;
 
-  void handleStatesControllerChange() {
+  void _handleStatesControllerChange() {
     // Force a rebuild to resolve MaterialStateProperty properties
     setState(() {});
   }
 
-  MaterialStatesController get statesController => widget.node.statesController ?? internalStatesController!;
+  MaterialStatesController get _statesController => widget.node.statesController ?? _internalStatesController!;
 
-  void initStatesController() {
+  void _initStatesController() {
     if (widget.node.statesController == null) {
-      internalStatesController = MaterialStatesController();
+      _internalStatesController = MaterialStatesController();
     }
-    statesController.addListener(handleStatesControllerChange);
+    _statesController.addListener(_handleStatesControllerChange);
   }
 
   @override
   void initState() {
     super.initState();
-    initStatesController();
+    _initStatesController();
   }
 
   @override
   void didUpdateWidget(_Submenu oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.node.statesController != oldWidget.node.statesController) {
-      oldWidget.node.statesController?.removeListener(handleStatesControllerChange);
+      oldWidget.node.statesController?.removeListener(_handleStatesControllerChange);
       if (widget.node.statesController != null) {
-        internalStatesController?.dispose();
-        internalStatesController = null;
+        _internalStatesController?.dispose();
+        _internalStatesController = null;
       }
-      initStatesController();
+      _initStatesController();
     }
   }
 
   @override
   void dispose() {
-    statesController.removeListener(handleStatesControllerChange);
-    internalStatesController?.dispose();
+    _statesController.removeListener(_handleStatesControllerChange);
+    _internalStatesController?.dispose();
     super.dispose();
   }
 
@@ -1585,7 +1585,8 @@ class _SubmenuState extends State<_Submenu> {
               alignment: alignment,
               alignmentOffset: widget.node.alignmentOffset,
               globalMenuPosition: widget.node.globalMenuPosition,
-              menuNode: widget.node,
+              orientation: widget.node.orientation,
+              parentOrientation: widget.node.parent.orientation,
             ),
             child: MouseRegion(
               cursor: mouseCursor,
@@ -1607,7 +1608,7 @@ class _SubmenuState extends State<_Submenu> {
                         child: _MenuPanel(
                           menuStyle: widgetStyle,
                           clipBehavior: widget.node.menuClipBehavior,
-                          statesController: statesController,
+                          statesController: _statesController,
                           orientation: widget.node.orientation,
                           children: MenuItemGroup._expandGroups(widget.node.widgetChildren, Axis.vertical),
                         ),
@@ -2161,7 +2162,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     required this.alignmentOffset,
     required this.avoidBounds,
     required this.globalMenuPosition,
-    required this.menuNode,
+    required this.orientation,
+    required this.parentOrientation,
   });
 
   // Rectangle of underlying button, relative to the overlay's dimensions.
@@ -2186,10 +2188,9 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   // List of rectangles that we should avoid overlapping. Unusable screen area.
   final Set<Rect> avoidBounds;
 
-  // The menuNode's global menu position, so we can detect if it changed.
   final Offset? globalMenuPosition;
-
-  final _MenuNode menuNode;
+  final Axis orientation;
+  final Axis parentOrientation;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
@@ -2208,7 +2209,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     final Rect overlayRect = Offset.zero & size;
     final Rect absoluteButtonRect = buttonRect.toRect(overlayRect);
     final Alignment alignment = this.alignment.resolve(textDirection);
-    final Offset desiredPosition = menuNode.globalMenuPosition ?? alignment.withinRect(absoluteButtonRect);
+    final Offset desiredPosition = globalMenuPosition ?? alignment.withinRect(absoluteButtonRect);
     final Offset originCenter = absoluteButtonRect.center;
     final Iterable<Rect> subScreens = DisplayFeatureSubScreen.subScreensInBounds(overlayRect, avoidBounds);
     final Rect screen = _closestScreen(subScreens, originCenter);
@@ -2248,7 +2249,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
       if (offLeftSide(x)) {
         // If the parent is a different orientation than the current one, then
         // just push it over instead of trying the other side.
-        if (menuNode.parent.orientation != menuNode.orientation) {
+        if (parentOrientation != orientation) {
           x = allowedRect.left;
         } else {
           final double newX = absoluteButtonRect.right;
@@ -2259,7 +2260,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
           }
         }
       } else if (offRightSide(x)) {
-        if (menuNode.parent.orientation != menuNode.orientation) {
+        if (parentOrientation != orientation) {
           x = allowedRect.right - childSize.width;
         } else {
           final double newX = absoluteButtonRect.left - childSize.width;
@@ -2312,6 +2313,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
         alignment != oldDelegate.alignment ||
         alignmentOffset != oldDelegate.alignmentOffset ||
         globalMenuPosition != oldDelegate.globalMenuPosition ||
+        orientation != oldDelegate.orientation ||
+        parentOrientation != oldDelegate.parentOrientation ||
         !setEquals(avoidBounds, oldDelegate.avoidBounds);
   }
 }
@@ -2510,8 +2513,15 @@ class _ChildMenuNode extends _MenuNode {
   }
 
   BuildContext get context {
-    assert(buttonKey.currentContext != null,
-      'The global key $buttonKey must be attached to a mounted widget so that it has a valid currentContext');
+    if (buttonKey.currentContext == null) {
+      throw FlutterError(
+        "The menu global key $buttonKey doesn't have a valid context.\n"
+        'The global key $buttonKey must be attached to a mounted widget so that it has a non-null '
+        'currentContext member. This provides a context for the menu to both determine the themes '
+        'that relevant for it, as well as determine the location of the menu based on the bounds '
+        'of the context attached to the GlobalKey.',
+      );
+    }
     return buttonKey.currentContext!;
   }
 
@@ -3195,6 +3205,8 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 }
 
+// Wraps the MaterialStateMouseCursor so that it can default to
+// MouseCursor.uncontrolled if none is set, and so it has a debug description.
 class _MouseCursor extends MaterialStateMouseCursor {
   const _MouseCursor(this.resolveCallback);
 
