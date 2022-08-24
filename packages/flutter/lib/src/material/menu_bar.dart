@@ -30,7 +30,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = true;
+const bool _kDebugMenus = false;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -2695,6 +2695,10 @@ class _ChildMenuNode extends _MenuNode {
     SchedulerBinding.instance.addPostFrameCallback((Duration _) {
       notifyListeners();
     });
+    // We have to actually schedule a frame, otherwise unless there are changes
+    // that cause a widget to update, no frame will get scheduled, and so the
+    // notification won't happen.
+    SchedulerBinding.instance.scheduleFrame();
   }
 
   @override
@@ -2704,6 +2708,8 @@ class _ChildMenuNode extends _MenuNode {
     properties.add(DiagnosticsProperty<FocusNode>('buttonFocusNode', buttonFocusNode));
     properties.add(DiagnosticsProperty<GlobalKey>('buttonKey', buttonKey));
     properties.add(DiagnosticsProperty<FocusScopeNode>('menuScopeNode', menuScopeNode));
+    properties.add(DiagnosticsProperty<Offset>('globalMenuPosition', globalMenuPosition));
+    properties.add(DiagnosticsProperty<Offset>('alignmentOffset', alignmentOffset));
   }
 }
 
