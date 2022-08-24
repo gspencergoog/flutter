@@ -175,10 +175,6 @@ void main() {
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
           equals(const Rect.fromLTRB(104.0, 48.0, 334.0, 216.0)));
       expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(104.0, 100.0, 334.0, 116.0)));
-
-      // Close and make sure it goes back where it was.
-      await tester.tap(find.text(TestMenu.mainMenu1.label));
-      await tester.pump();
     });
 
     testWidgets('geometry with RTL direction', (WidgetTester tester) async {

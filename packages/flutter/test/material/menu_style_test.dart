@@ -16,8 +16,36 @@ void main() {
     controller.closeAll();
   });
 
+  Finder findDividers() {
+    return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuItemDivider');
+  }
+
   Finder findMenuPanels() {
     return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuPanel');
+  }
+
+  Material getMenuBarMaterial(WidgetTester tester) {
+    return tester.widget<Material>(
+      find.descendant(of: findMenuPanels(), matching: find.byType(Material)).first,
+    );
+  }
+
+  Padding getMenuBarPadding(WidgetTester tester) {
+    return tester.widget<Padding>(
+      find.descendant(of: findMenuPanels(), matching: find.byType(Padding)).first,
+    );
+  }
+
+  Material getMenuMaterial(WidgetTester tester) {
+    return tester.widget<Material>(
+      find.descendant(of: findMenuPanels().at(1), matching: find.byType(Material)).first,
+    );
+  }
+
+  Padding getMenuPadding(WidgetTester tester) {
+    return tester.widget<Padding>(
+      find.descendant(of: findMenuPanels().at(1), matching: find.byType(Padding)).first,
+    );
   }
 
   group('MenuStyle', () {
@@ -106,6 +134,7 @@ void main() {
       expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(279.0, 48.0, 379.0, 148.0)));
       expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(100.0, 100.0)));
     });
+
     testWidgets('minimumSize affects geometry', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -147,6 +176,120 @@ void main() {
       // MenuTheme affects menus.
       expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(204.0, 48.0, 504.0, 348.0)));
       expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(300.0, 300.0)));
+    });
+
+    testWidgets('Material parameters are honored', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBarTheme(
+                  data: const MenuBarThemeData(
+                    style: MenuStyle(
+                      backgroundColor: MaterialStatePropertyAll<Color>(Colors.red),
+                      shadowColor: MaterialStatePropertyAll<Color>(Colors.green),
+                      surfaceTintColor: MaterialStatePropertyAll<Color>(Colors.blue),
+                      padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(EdgeInsets.all(10)),
+                      elevation: MaterialStatePropertyAll<double>(10),
+                      side: MaterialStatePropertyAll<BorderSide>(BorderSide(color: Colors.redAccent)),
+                      shape: MaterialStatePropertyAll<OutlinedBorder>(StadiumBorder()),
+                    ),
+                  ),
+                  child: MenuTheme(
+                    data: const MenuThemeData(
+                      style: MenuStyle(
+                        backgroundColor: MaterialStatePropertyAll<Color>(Colors.cyan),
+                        shadowColor: MaterialStatePropertyAll<Color>(Colors.purple),
+                        surfaceTintColor: MaterialStatePropertyAll<Color>(Colors.yellow),
+                        padding: MaterialStatePropertyAll<EdgeInsetsGeometry>(EdgeInsets.all(20)),
+                        elevation: MaterialStatePropertyAll<double>(20),
+                        side: MaterialStatePropertyAll<BorderSide>(BorderSide(color: Colors.cyanAccent)),
+                        shape: MaterialStatePropertyAll<OutlinedBorder>(StarBorder()),
+                      ),
+                    ),
+                    child: MenuBar(
+                      children: createTestMenus(onPressed: (TestMenu menu) {}),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Have to open a menu initially to start things going.
+      await tester.tap(find.text(TestMenu.mainMenu0.label));
+      await tester.pump();
+
+      final Material menuBarMaterial = getMenuBarMaterial(tester);
+      final Padding menuBarPadding = getMenuBarPadding(tester);
+      final Material panelMaterial = getMenuMaterial(tester);
+      final Padding panelPadding = getMenuPadding(tester);
+
+      // MenuBarTheme affects MenuBar.
+      expect(menuBarMaterial.color, equals(Colors.red));
+      expect(menuBarMaterial.shadowColor, equals(Colors.green));
+      expect(menuBarMaterial.surfaceTintColor, equals(Colors.blue));
+      expect(menuBarMaterial.shape, equals(const StadiumBorder(side: BorderSide(color: Colors.redAccent))));
+      expect(menuBarPadding.padding, equals(const EdgeInsets.all(10)));
+
+      // MenuBarTheme affects menus.
+      expect(panelMaterial.color, equals(Colors.cyan));
+      expect(panelMaterial.shadowColor, equals(Colors.purple));
+      expect(panelMaterial.surfaceTintColor, equals(Colors.yellow));
+      expect(panelMaterial.shape, equals(const StarBorder(side: BorderSide(color: Colors.cyanAccent))));
+      expect(panelPadding.padding, equals(const EdgeInsets.all(20)));
+    });
+
+    testWidgets('visual density', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Column(
+              children: <Widget>[
+                MenuBarTheme(
+                  data: const MenuBarThemeData(
+                    style: MenuStyle(
+                      visualDensity: VisualDensity(horizontal: 1.5, vertical: -1.5),
+                    ),
+                  ),
+                  child: MenuTheme(
+                    data: const MenuThemeData(
+                      style: MenuStyle(
+                        visualDensity: VisualDensity(horizontal: 0.5, vertical: -0.5),
+                      ),
+                    ),
+                    child: MenuBar(
+                      children: createTestMenus(onPressed: (TestMenu menu) {}),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Placeholder()),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(240.0, 0.0, 560.0, 48.0)));
+
+      // Open and make sure things are the right size.
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+
+      expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(240.0, 0.0, 560.0, 48.0)));
+      expect(
+        tester.getRect(find.text(TestMenu.subMenu10.label)),
+        equals(const Rect.fromLTRB(366.0, 64.0, 520.0, 78.0)),
+      );
+      expect(
+          tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
+          equals(const Rect.fromLTRB(350.0, 48.0, 602.0, 188.0)));
+      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(352.0, 92.0, 600.0, 102.0)));
     });
   });
 }
