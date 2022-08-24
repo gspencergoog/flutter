@@ -22,13 +22,13 @@ void main() {
     await tester.tap(menuButtonFinder);
     await tester.pump();
 
-    expect(find.text(example.MenuSelection.about.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.showMessage.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.resetMessage.label), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Show Message'), findsOneWidget);
+    expect(find.text('Reset Message'), findsOneWidget);
     expect(find.text('Background Color'), findsOneWidget);
-    expect(find.text(example.MenuSelection.colorRed.label), findsNothing);
-    expect(find.text(example.MenuSelection.colorGreen.label), findsNothing);
-    expect(find.text(example.MenuSelection.colorBlue.label), findsNothing);
+    expect(find.text('Red Background'), findsNothing);
+    expect(find.text('Green Background'), findsNothing);
+    expect(find.text('Blue Background'), findsNothing);
     expect(find.text(example.kMessage), findsNothing);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -36,20 +36,20 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
 
-    expect(find.text(example.MenuSelection.about.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.showMessage.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.resetMessage.label), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Show Message'), findsOneWidget);
+    expect(find.text('Reset Message'), findsOneWidget);
     expect(find.text('Background Color'), findsOneWidget);
-    expect(find.text(example.MenuSelection.colorRed.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.colorGreen.label), findsOneWidget);
-    expect(find.text(example.MenuSelection.colorBlue.label), findsOneWidget);
+    expect(find.text('Red Background'), findsOneWidget);
+    expect(find.text('Green Background'), findsOneWidget);
+    expect(find.text('Blue Background'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
     expect(find.text(example.kMessage), findsOneWidget);
-    expect(find.text('Last Selected: ${example.MenuSelection.showMessage.label}'), findsOneWidget);
+    expect(find.text('Last Selected: Show Message'), findsOneWidget);
   });
   testWidgets('Shortcuts work', (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -68,27 +68,27 @@ void main() {
     await tester.pump();
 
     expect(find.text(example.kMessage), findsNothing);
-    expect(find.text('Last Selected: ${example.MenuSelection.resetMessage.label}'), findsOneWidget);
+    expect(find.text('Last Selected: Reset Message'), findsOneWidget);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pump();
 
-    expect(find.text('Last Selected: ${example.MenuSelection.colorRed.label}'), findsOneWidget);
+    expect(find.text('Last Selected: Red Background'), findsOneWidget);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyG);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pump();
 
-    expect(find.text('Last Selected: ${example.MenuSelection.colorGreen.label}'), findsOneWidget);
+    expect(find.text('Last Selected: Green Background'), findsOneWidget);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pump();
 
-    expect(find.text('Last Selected: ${example.MenuSelection.colorBlue.label}'), findsOneWidget);
+    expect(find.text('Last Selected: Blue Background'), findsOneWidget);
   });
 }

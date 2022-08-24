@@ -74,7 +74,6 @@ class MyMenuBar extends StatefulWidget {
 class _MyMenuBarState extends State<MyMenuBar> {
   ShortcutRegistryEntry? _shortcutsEntry;
   String? _lastSelection;
-  List<MenuSelection> menus = <MenuSelection>[];
 
   bool get showingMessage => _showMessage;
   bool _showMessage = false;
@@ -98,89 +97,89 @@ class _MyMenuBarState extends State<MyMenuBar> {
 
   List<MenuSelection> _getMenus() {
     final List<MenuSelection> result = <MenuSelection>[
-        MenuSelection(
-          label: 'Menu Demo',
-          menuChildren: <MenuSelection>[
-            MenuSelection(
-              label: 'About',
-              onPressed: () {
-                setState(() {
-                  showAboutDialog(
-                    context: context,
-                    applicationName: 'MenuBar Sample',
-                    applicationVersion: '1.0.0',
-                  );
-                  _lastSelection = 'About';
-                });
-              },
-            ),
-            // Toggles the message.
-            MenuSelection(
-              label: showingMessage ? 'Hide Message' : 'Show Message',
-              onPressed: () {
-                setState(() {
-                  _lastSelection = showingMessage ? 'Hide Message' : 'Show Message';
-                  showingMessage = !showingMessage;
-                });
-              },
-              shortcut: const SingleActivator(LogicalKeyboardKey.keyS, control: true),
-            ),
-            // Hides the message, but is only enabled if the message isn't
-            // already hidden.
-            MenuSelection(
-              label: 'Reset Message',
-              onPressed: showingMessage
-                  ? () {
-                      setState(() {
-                        _lastSelection = 'Reset Message';
-                        showingMessage = false;
-                      });
-                    }
-                  : null,
-              shortcut: const SingleActivator(LogicalKeyboardKey.escape),
-            ),
-            MenuSelection(
-              label: 'Color Menu',
-              menuChildren: <MenuSelection>[
-                MenuSelection(
-                  label: 'Red Background',
-                  onPressed: () {
+      MenuSelection(
+        label: 'Menu Demo',
+        menuChildren: <MenuSelection>[
+          MenuSelection(
+            label: 'About',
+            onPressed: () {
+              setState(() {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'MenuBar Sample',
+                  applicationVersion: '1.0.0',
+                );
+                _lastSelection = 'About';
+              });
+            },
+          ),
+          // Toggles the message.
+          MenuSelection(
+            label: showingMessage ? 'Hide Message' : 'Show Message',
+            onPressed: () {
+              setState(() {
+                _lastSelection = showingMessage ? 'Hide Message' : 'Show Message';
+                showingMessage = !showingMessage;
+              });
+            },
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, control: true),
+          ),
+          // Hides the message, but is only enabled if the message isn't
+          // already hidden.
+          MenuSelection(
+            label: 'Reset Message',
+            onPressed: showingMessage
+                ? () {
                     setState(() {
-                      _lastSelection = 'Red Background';
-                      backgroundColor = Colors.red;
+                      _lastSelection = 'Reset Message';
+                      showingMessage = false;
                     });
-                  },
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyR, control: true),
-                ),
-                MenuSelection(
-                  label: 'Green Background',
-                  onPressed: () {
-                    setState(() {
-                      _lastSelection = 'Green Background';
-                      backgroundColor = Colors.green;
-                    });
-                  },
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyG, control: true),
-                ),
-                MenuSelection(
-                  label: 'Blue Background',
-                  onPressed: () {
-                    setState(() {
-                      _lastSelection = 'Blue Background';
-                      backgroundColor = Colors.blue;
-                    });
-                  },
-                  shortcut: const SingleActivator(LogicalKeyboardKey.keyB, control: true),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ];
+                  }
+                : null,
+            shortcut: const SingleActivator(LogicalKeyboardKey.escape),
+          ),
+          MenuSelection(
+            label: 'Background Color',
+            menuChildren: <MenuSelection>[
+              MenuSelection(
+                label: 'Red Background',
+                onPressed: () {
+                  setState(() {
+                    _lastSelection = 'Red Background';
+                    backgroundColor = Colors.red;
+                  });
+                },
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyR, control: true),
+              ),
+              MenuSelection(
+                label: 'Green Background',
+                onPressed: () {
+                  setState(() {
+                    _lastSelection = 'Green Background';
+                    backgroundColor = Colors.green;
+                  });
+                },
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyG, control: true),
+              ),
+              MenuSelection(
+                label: 'Blue Background',
+                onPressed: () {
+                  setState(() {
+                    _lastSelection = 'Blue Background';
+                    backgroundColor = Colors.blue;
+                  });
+                },
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyB, control: true),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ];
     // (Re-)register the shortcuts with the ShortcutRegistry so that they are
     // available to the entire application, and update them if they've changed.
     _shortcutsEntry?.dispose();
-    _shortcutsEntry = ShortcutRegistry.of(context).addAll(MenuSelection.shortcuts(menus));
+    _shortcutsEntry = ShortcutRegistry.of(context).addAll(MenuSelection.shortcuts(result));
     return result;
   }
 

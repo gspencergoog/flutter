@@ -30,7 +30,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = false;
+const bool _kDebugMenus = true;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -1584,6 +1584,7 @@ class _SubmenuState extends State<_Submenu> {
               avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
               alignment: alignment,
               alignmentOffset: widget.node.alignmentOffset,
+              globalMenuPosition: widget.node.globalMenuPosition,
               menuNode: widget.node,
             ),
             child: MouseRegion(
@@ -1813,7 +1814,7 @@ class MenuController with Diagnosticable, ChangeNotifier {
   // has been closed.
   void _menuClosed(_MenuNode close, {bool inDispose = false}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    if (!menuIsOpen) {
+    if (!menuIsOpen && _previousFocus != null) {
       // This needs to happen in the next frame so that in cases where we're
       // closing everything, and the _previousFocus is a focus scope that thinks
       // that currently thinks its first focus is in the menu bar, the menu bar
@@ -2152,13 +2153,14 @@ class _MenuItemLabel extends StatelessWidget {
 // Positions the menu in the view while trying to keep as much as possible
 // visible in the view.
 class _MenuLayout extends SingleChildLayoutDelegate {
-  _MenuLayout({
+  const _MenuLayout({
     required this.buttonRect,
     required this.textDirection,
     required this.buttonPadding,
     required this.alignment,
     required this.alignmentOffset,
     required this.avoidBounds,
+    required this.globalMenuPosition,
     required this.menuNode,
   });
 
@@ -2175,14 +2177,17 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   final EdgeInsetsGeometry buttonPadding;
 
   // The alignment to use when finding the ideal location for the menu.
-  AlignmentGeometry alignment;
+  final AlignmentGeometry alignment;
 
   // The offset from the alignment position or the globalMenuPosition to find
   // the ideal location for the menu.
-  Offset alignmentOffset;
+  final Offset alignmentOffset;
 
   // List of rectangles that we should avoid overlapping. Unusable screen area.
   final Set<Rect> avoidBounds;
+
+  // The menuNode's global menu position, so we can detect if it changed.
+  final Offset? globalMenuPosition;
 
   final _MenuNode menuNode;
 
@@ -2303,8 +2308,10 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   bool shouldRelayout(_MenuLayout oldDelegate) {
     return buttonRect != oldDelegate.buttonRect ||
         textDirection != oldDelegate.textDirection ||
+        buttonPadding != oldDelegate.buttonPadding ||
         alignment != oldDelegate.alignment ||
         alignmentOffset != oldDelegate.alignmentOffset ||
+        globalMenuPosition != oldDelegate.globalMenuPosition ||
         !setEquals(avoidBounds, oldDelegate.avoidBounds);
   }
 }
@@ -2625,11 +2632,11 @@ class _ChildMenuNode extends _MenuNode {
 
   void open({Offset? position}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
+    globalMenuPosition = position;
     if (isOpen) {
       assert(_menuDebug("Not opening $this because it's already open"));
       return;
     }
-    globalMenuPosition = position;
     assert(!root.openMenus.contains(this), 'Attempted to open menu $this that is already open');
     parent.closeChildren();
     final bool wasOpen = controller.menuIsOpen;

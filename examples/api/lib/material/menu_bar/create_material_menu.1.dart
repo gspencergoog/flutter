@@ -186,50 +186,32 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     }
   }
 
+  void _handleSecondaryTapDown(TapDownDetails details) {
+    _menuEntry.open(position: details.globalPosition);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        // The controlling widget for the menu must be wrapped by a TapRegion
-        // with the MenuController that the menu is using as its group ID. This
-        // prevents tapping on the button when the menu is open from closing the
-        // menu by activating the "tap outside" action of the menu.
-        TapRegion(
-          groupId: _controller,
-          child: TextButton(
-            key: _buttonKey,
-            focusNode: _buttonFocusNode,
-            onPressed: () {
-              if (_menuEntry.isOpen) {
-                _menuEntry.close();
-              } else {
-                _menuEntry.open();
-              }
-            },
-            child: const Text('OPEN MENU'),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            alignment: Alignment.center,
-            color: backgroundColor,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    showingMessage ? kMessage : '',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
-              ],
+    return GestureDetector(
+      key: _buttonKey,
+      onSecondaryTapDown: _handleSecondaryTapDown,
+      child: Container(
+        alignment: Alignment.center,
+        color: backgroundColor,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                showingMessage ? kMessage : '',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
             ),
-          ),
+            Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
