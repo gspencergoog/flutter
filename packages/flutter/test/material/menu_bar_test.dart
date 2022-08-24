@@ -136,6 +136,7 @@ void main() {
       expect(find.text(TestMenu.subSubMenu102.label), findsOneWidget);
       expect(opened.last, equals(TestMenu.subMenu11));
     });
+
     testWidgets('geometry', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -179,6 +180,7 @@ void main() {
       await tester.tap(find.text(TestMenu.mainMenu1.label));
       await tester.pump();
     });
+
     testWidgets('geometry with RTL direction', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -326,6 +328,7 @@ void main() {
         equals(const Offset(10.0, 20.0)),
       );
     });
+
     testWidgets('menu alignment and offset in RTL', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
@@ -611,6 +614,7 @@ void main() {
 
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
     });
+
     testWidgets('works with Padding around menu and overlay with RTL direction', (WidgetTester tester) async {
       await tester.pumpWidget(
         Padding(
@@ -666,6 +670,7 @@ void main() {
 
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
     });
+
     testWidgets('visual attributes can be set', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -696,6 +701,7 @@ void main() {
       expect(material.elevation, equals(10));
       expect(material.color, equals(Colors.red));
     });
+
     testWidgets('open and close works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -740,6 +746,7 @@ void main() {
       expect(opened, equals(<TestMenu>[TestMenu.mainMenu0]));
       expect(closed, equals(<TestMenu>[TestMenu.mainMenu1]));
     });
+
     testWidgets('select works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -770,6 +777,7 @@ void main() {
       expect(find.text(TestMenu.subSubMenu100.label), findsNothing);
       expect(find.text(TestMenu.subMenu11.label), findsNothing);
     });
+
     testWidgets('diagnostics', (WidgetTester tester) async {
       const MenuItemButton item = MenuItemButton(
         shortcut: SingleActivator(LogicalKeyboardKey.keyA),
@@ -810,6 +818,7 @@ void main() {
         ),
       );
     });
+
     testWidgets('keyboard tab traversal works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -868,6 +877,7 @@ void main() {
       expect(opened, isEmpty);
       expect(closed, <TestMenu>[TestMenu.mainMenu0]);
     });
+
     testWidgets('keyboard directional traversal works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -951,6 +961,7 @@ void main() {
       await tester.pump();
       expect(focusedMenu, equals('MenuButton(Text("Menu 2"))'));
     });
+
     testWidgets('keyboard directional traversal works in RTL mode', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -1040,6 +1051,7 @@ void main() {
       await tester.pump();
       expect(focusedMenu, equals('MenuButton(Text("Menu 2"))'));
     });
+
     testWidgets('hover traversal works', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -1097,136 +1109,6 @@ void main() {
     });
   });
 
-  group('MenuStyle', () {
-    testWidgets('fixedSize affects geometry', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Column(
-              children: <Widget>[
-                MenuBarTheme(
-                  data: const MenuBarThemeData(
-                    style: MenuStyle(
-                      fixedSize: MaterialStatePropertyAll<Size>(Size(600, 60)),
-                    ),
-                  ),
-                  child: MenuTheme(
-                    data: const MenuThemeData(
-                      style: MenuStyle(
-                        fixedSize: MaterialStatePropertyAll<Size>(Size(100, 100)),
-                      ),
-                    ),
-                    child: MenuBar(
-                      children: createTestMenus(onPressed: onPressed),
-                    ),
-                  ),
-                ),
-                const Expanded(child: Placeholder()),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      // Have to open a menu initially to start things going.
-      await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pump();
-
-      // MenuBarTheme affects MenuBar.
-      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(100.0, 0.0, 700.0, 60.0)));
-      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(600.0, 60.0)));
-
-      // MenuTheme affects menus.
-      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(104.0, 48.0, 204.0, 148.0)));
-      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(100.0, 100.0)));
-    });
-
-    testWidgets('maximumSize affects geometry', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Column(
-              children: <Widget>[
-                MenuBarTheme(
-                  data: const MenuBarThemeData(
-                    style: MenuStyle(
-                      maximumSize: MaterialStatePropertyAll<Size>(Size(250, 40)),
-                    ),
-                  ),
-                  child: MenuTheme(
-                    data: const MenuThemeData(
-                      style: MenuStyle(
-                        maximumSize: MaterialStatePropertyAll<Size>(Size(100, 100)),
-                      ),
-                    ),
-                    child: MenuBar(
-                      children: createTestMenus(onPressed: onPressed),
-                    ),
-                  ),
-                ),
-                const Expanded(child: Placeholder()),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      // Have to open a menu initially to start things going.
-      await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pump();
-
-      // MenuBarTheme affects MenuBar.
-      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(275.0, 0.0, 525.0, 40.0)));
-      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(250.0, 40.0)));
-
-      // MenuTheme affects menus.
-      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(279.0, 48.0, 379.0, 148.0)));
-      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(100.0, 100.0)));
-    });
-    testWidgets('minimumSize affects geometry', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Column(
-              children: <Widget>[
-                MenuBarTheme(
-                  data: const MenuBarThemeData(
-                    style: MenuStyle(
-                      minimumSize: MaterialStatePropertyAll<Size>(Size(400, 60)),
-                    ),
-                  ),
-                  child: MenuTheme(
-                    data: const MenuThemeData(
-                      style: MenuStyle(
-                        minimumSize: MaterialStatePropertyAll<Size>(Size(300, 300)),
-                      ),
-                    ),
-                    child: MenuBar(
-                      children: createTestMenus(onPressed: onPressed),
-                    ),
-                  ),
-                ),
-                const Expanded(child: Placeholder()),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      // Have to open a menu initially to start things going.
-      await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pump();
-
-      // MenuBarTheme affects MenuBar.
-      expect(tester.getRect(findMenuPanels().first), equals(const Rect.fromLTRB(200.0, 0.0, 600.0, 60.0)));
-      expect(tester.getRect(findMenuPanels().first).size, equals(const Size(400.0, 60.0)));
-
-      // MenuTheme affects menus.
-      expect(tester.getRect(findMenuPanels().at(1)), equals(const Rect.fromLTRB(204.0, 48.0, 504.0, 348.0)));
-      expect(tester.getRect(findMenuPanels().at(1)).size, equals(const Size(300.0, 300.0)));
-    });
-  });
-
   group('MenuItemGroup', () {
     testWidgets('Top level menu groups have appropriate dividers', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -1266,6 +1148,7 @@ void main() {
         ),
       );
     });
+
     testWidgets('Submenus have appropriate dividers', (WidgetTester tester) async {
       final GlobalKey menuKey = GlobalKey(debugLabel: 'MenuBar');
       await tester.pumpWidget(
@@ -1313,6 +1196,7 @@ void main() {
       );
     });
   });
+
   group('MenuController', () {
     testWidgets("disposed controllers don't notify listeners", (WidgetTester tester) async {
       final MenuController controller = MenuController();
@@ -1401,6 +1285,7 @@ void main() {
       expect(opened, isEmpty);
     });
   });
+
   group('MenuItemButton', () {
     testWidgets('Shortcut mnemonics are displayed', (WidgetTester tester) async {
       final MenuController controller = MenuController();
@@ -1554,6 +1439,7 @@ void main() {
 
       expect(find.text('leadingIcon'), findsOneWidget);
     });
+
     testWidgets('trailingIcon is used when set', (WidgetTester tester) async {
       final MenuController controller = MenuController();
       await tester.pumpWidget(
@@ -1582,6 +1468,7 @@ void main() {
 
       expect(find.text('trailingIcon'), findsOneWidget);
     });
+
     testWidgets('diagnostics', (WidgetTester tester) async {
       final ButtonStyle style = ButtonStyle(
         shape: MaterialStateProperty.all<OutlinedBorder?>(const StadiumBorder()),
@@ -1643,6 +1530,7 @@ void main() {
       );
     });
   });
+
   group('Layout', () {
     List<Rect> collectMenuRects() {
       final List<Rect> menuRects = <Rect>[];
@@ -1693,6 +1581,7 @@ void main() {
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
       expect(menuRects[3], equals(const Rect.fromLTRB(104.0, 116.0, 334.0, 164.0)));
     });
+
     testWidgets('unconstrained menus show up in the right place in RTL', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 600));
       await tester.pumpWidget(
@@ -1733,6 +1622,7 @@ void main() {
       expect(menuRects[2], equals(const Rect.fromLTRB(496.0, 0.0, 596.0, 48.0)));
       expect(menuRects[3], equals(const Rect.fromLTRB(466.0, 116.0, 696.0, 164.0)));
     });
+
     testWidgets('constrained menus show up in the right place in LTR', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(300, 300));
       await tester.pumpWidget(
@@ -1771,6 +1661,7 @@ void main() {
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
       expect(menuRects[3], equals(const Rect.fromLTRB(62.0, 116.0, 292.0, 164.0)));
     });
+
     testWidgets('constrained menus show up in the right place in RTL', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(300, 300));
       await tester.pumpWidget(
@@ -1810,6 +1701,7 @@ void main() {
       expect(menuRects[3], equals(const Rect.fromLTRB(8.0, 116.0, 238.0, 164.0)));
     });
   });
+
   group('LocalizedShortcutLabeler', () {
     testWidgets('getShortcutLabel returns the right labels', (WidgetTester tester) async {
       String expectedMeta;

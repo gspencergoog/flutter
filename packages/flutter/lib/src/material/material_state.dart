@@ -735,7 +735,7 @@ class MaterialStatePropertyAll<T> implements MaterialStateProperty<T> {
 ///
 /// Used by widgets that expose their internal state for the sake of
 /// extensions that add support for additional states. See
-/// [TextButton._statesController] for example.
+/// [TextButton.statesController] for example.
 ///
 /// The controller's [value] is its current set of states. Listeners
 /// are notified whenever the [value] changes. The [value] should only be
