@@ -330,6 +330,7 @@ class ThemeData with Diagnosticable {
     Typography? typography,
     // COMPONENT THEMES
     AppBarTheme? appBarTheme,
+    MaterialBannerThemeData? bannerTheme,
     BottomAppBarTheme? bottomAppBarTheme,
     BottomNavigationBarThemeData? bottomNavigationBarTheme,
     BottomSheetThemeData? bottomSheetTheme,
@@ -348,7 +349,6 @@ class ThemeData with Diagnosticable {
     FloatingActionButtonThemeData? floatingActionButtonTheme,
     IconButtonThemeData? iconButtonTheme,
     ListTileThemeData? listTileTheme,
-    MaterialBannerThemeData? bannerTheme,
     MenuBarThemeData? menuBarTheme,
     MenuButtonThemeData? menuButtonTheme,
     MenuThemeData? menuTheme,

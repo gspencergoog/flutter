@@ -198,6 +198,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         TapRegion(
           groupId: _controller,
           child: TextButton(
+            key: _buttonKey,
             focusNode: _buttonFocusNode,
             onPressed: () {
               if (_menuEntry.isOpen) {

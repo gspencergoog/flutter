@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late MenuController controller;
-  void onSelected(TestMenu item) {}
+  void onPressed(TestMenu item) {}
 
   setUp(() {
     controller = MenuController();
@@ -81,7 +81,7 @@ void main() {
                 child: Column(
                   children: <Widget>[
                     MenuBar(
-                      children: createTestMenus(onSelected: onSelected),
+                      children: createTestMenus(onPressed: onPressed),
                     ),
                     const Expanded(child: Placeholder()),
                   ],
@@ -142,7 +142,7 @@ void main() {
                           ),
                         ),
                         children: createTestMenus(
-                          onSelected: onSelected,
+                          onPressed: onPressed,
                           menuBackground: Colors.cyan,
                           menuElevation: 18.0,
                           menuPadding: const EdgeInsetsDirectional.all(14.0),
@@ -220,7 +220,7 @@ enum TestMenu {
 }
 
 List<Widget> createTestMenus({
-  void Function(TestMenu)? onSelected,
+  void Function(TestMenu)? onPressed,
   void Function(TestMenu)? onOpen,
   void Function(TestMenu)? onClose,
   Map<TestMenu, MenuSerializableShortcut> shortcuts = const <TestMenu, MenuSerializableShortcut>{},
@@ -254,7 +254,7 @@ List<Widget> createTestMenus({
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu0) : null,
       menuChildren: <Widget>[
         MenuItemButton(
-          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
+          onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
           child: Text(TestMenu.subMenu00.label),
         ),
@@ -269,7 +269,7 @@ List<Widget> createTestMenus({
         MenuItemGroup(
           members: <Widget>[
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu10) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu10) : null,
               shortcut: shortcuts[TestMenu.subMenu10],
               style: itemStyle,
               child: Text(TestMenu.subMenu10.label),
@@ -283,24 +283,24 @@ List<Widget> createTestMenus({
             MenuItemGroup(
               members: <Widget>[
                 MenuItemButton(
-                  onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
+                  onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu100) : null,
                   shortcut: shortcuts[TestMenu.subSubMenu100],
                   child: Text(TestMenu.subSubMenu100.label),
                 ),
               ],
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu101) : null,
               shortcut: shortcuts[TestMenu.subSubMenu101],
               child: Text(TestMenu.subSubMenu101.label),
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu102) : null,
               shortcut: shortcuts[TestMenu.subSubMenu102],
               child: Text(TestMenu.subSubMenu102.label),
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu103) : null,
               shortcut: shortcuts[TestMenu.subSubMenu103],
               child: Text(TestMenu.subSubMenu103.label),
             ),
@@ -308,7 +308,7 @@ List<Widget> createTestMenus({
           child: Text(TestMenu.subMenu11.label),
         ),
         MenuItemButton(
-          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
+          onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu12) : null,
           shortcut: shortcuts[TestMenu.subMenu12],
           child: Text(TestMenu.subMenu12.label),
         ),

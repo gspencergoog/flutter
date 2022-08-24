@@ -16,7 +16,7 @@ void main() {
   final List<TestMenu> opened = <TestMenu>[];
   final List<TestMenu> closed = <TestMenu>[];
 
-  void onSelected(TestMenu item) {
+  void onPressed(TestMenu item) {
     selected.add(item);
   }
 
@@ -91,7 +91,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               children: createTestMenus(
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
@@ -146,7 +146,7 @@ void main() {
                   children: <Widget>[
                     Expanded(
                       child: MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                        children: createTestMenus(onPressed: onPressed),
                       ),
                     ),
                   ],
@@ -191,7 +191,7 @@ void main() {
                     children: <Widget>[
                       Expanded(
                         child: MenuBar(
-                          children: createTestMenus(onSelected: onSelected),
+                          children: createTestMenus(onPressed: onPressed),
                         ),
                       ),
                     ],
@@ -234,7 +234,7 @@ void main() {
             child: Column(
               children: <Widget>[
                 MenuBar(
-                  children: createTestMenus(onSelected: onSelected),
+                  children: createTestMenus(onPressed: onPressed),
                 ),
                 const Expanded(child: Placeholder()),
               ],
@@ -438,7 +438,7 @@ void main() {
                       children: <Widget>[
                         Expanded(
                           child: MenuBar(
-                            children: createTestMenus(onSelected: onSelected),
+                            children: createTestMenus(onPressed: onPressed),
                           ),
                         ),
                       ],
@@ -492,7 +492,7 @@ void main() {
                         children: <Widget>[
                           Expanded(
                             child: MenuBar(
-                              children: createTestMenus(onSelected: onSelected),
+                              children: createTestMenus(onPressed: onPressed),
                             ),
                           ),
                         ],
@@ -545,7 +545,7 @@ void main() {
                           elevation: MaterialStateProperty.all<double?>(10),
                           backgroundColor: MaterialStateProperty.all(Colors.red),
                         ),
-                        children: createTestMenus(onSelected: onSelected),
+                        children: createTestMenus(onPressed: onPressed),
                       ),
                     ),
                   ],
@@ -567,7 +567,7 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              children: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              children: createTestMenus(onPressed: onPressed, onOpen: onOpen, onClose: onClose),
             ),
           ),
         ),
@@ -611,7 +611,7 @@ void main() {
           home: Material(
             child: MenuBar(
               controller: controller,
-              children: createTestMenus(onSelected: onSelected, onOpen: onOpen, onClose: onClose),
+              children: createTestMenus(onPressed: onPressed, onOpen: onOpen, onClose: onClose),
             ),
           ),
         ),
@@ -684,7 +684,7 @@ void main() {
                 MenuBar(
                   controller: controller,
                   children: createTestMenus(
-                    onSelected: onSelected,
+                    onPressed: onPressed,
                     onOpen: onOpen,
                     onClose: onClose,
                   ),
@@ -740,7 +740,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               children: createTestMenus(
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
@@ -825,7 +825,7 @@ void main() {
               child: MenuBar(
                 controller: controller,
                 children: createTestMenus(
-                  onSelected: onSelected,
+                  onPressed: onPressed,
                   onOpen: onOpen,
                   onClose: onClose,
                 ),
@@ -912,7 +912,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               children: createTestMenus(
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
@@ -970,7 +970,7 @@ void main() {
               controller: controller,
               children: createTestMenus(
                 includeExtraGroups: true,
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
@@ -1010,7 +1010,7 @@ void main() {
               controller: controller,
               children: createTestMenus(
                 includeExtraGroups: true,
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
               ),
@@ -1101,7 +1101,7 @@ void main() {
             child: MenuBar(
               controller: controller,
               children: createTestMenus(
-                onSelected: onSelected,
+                onPressed: onPressed,
                 onOpen: onOpen,
                 onClose: onClose,
                 shortcuts: <TestMenu, MenuSerializableShortcut>{
@@ -1401,7 +1401,7 @@ void main() {
                   children: <Widget>[
                     Expanded(
                       child: MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                        children: createTestMenus(onPressed: onPressed),
                       ),
                     ),
                   ],
@@ -1440,7 +1440,7 @@ void main() {
                     children: <Widget>[
                       Expanded(
                         child: MenuBar(
-                          children: createTestMenus(onSelected: onSelected),
+                          children: createTestMenus(onPressed: onPressed),
                         ),
                       ),
                     ],
@@ -1479,7 +1479,7 @@ void main() {
                   child: Column(
                     children: <Widget>[
                       MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                        children: createTestMenus(onPressed: onPressed),
                       ),
                       const Expanded(child: Placeholder()),
                     ],
@@ -1517,7 +1517,7 @@ void main() {
                   child: Column(
                     children: <Widget>[
                       MenuBar(
-                        children: createTestMenus(onSelected: onSelected),
+                        children: createTestMenus(onPressed: onPressed),
                       ),
                       const Expanded(child: Placeholder()),
                     ],
@@ -1640,7 +1640,7 @@ enum TestMenu {
 }
 
 List<Widget> createTestMenus({
-  void Function(TestMenu)? onSelected,
+  void Function(TestMenu)? onPressed,
   void Function(TestMenu)? onOpen,
   void Function(TestMenu)? onClose,
   Map<TestMenu, MenuSerializableShortcut> shortcuts = const <TestMenu, MenuSerializableShortcut>{},
@@ -1653,14 +1653,14 @@ List<Widget> createTestMenus({
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu0) : null,
       menuChildren: <Widget>[
         MenuItemButton(
-          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu00) : null,
+          onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu00) : null,
           shortcut: shortcuts[TestMenu.subMenu00],
           child: Text(TestMenu.subMenu00.label),
         ),
         MenuItemGroup(
           members: <Widget>[
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu01) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu01) : null,
               shortcut: shortcuts[TestMenu.subMenu01],
               child: Text(TestMenu.subMenu01.label),
             ),
@@ -1669,7 +1669,7 @@ List<Widget> createTestMenus({
         MenuItemGroup(
           members: <Widget>[
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu02) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu02) : null,
               shortcut: shortcuts[TestMenu.subMenu02],
               child: Text(TestMenu.subMenu02.label),
             ),
@@ -1685,7 +1685,7 @@ List<Widget> createTestMenus({
         MenuItemGroup(
           members: <Widget>[
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu10) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu10) : null,
               shortcut: shortcuts[TestMenu.subMenu10],
               child: Text(TestMenu.subMenu10.label),
             ),
@@ -1699,24 +1699,24 @@ List<Widget> createTestMenus({
               members: <Widget>[
                 MenuItemButton(
                   key: UniqueKey(),
-                  onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu100) : null,
+                  onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu100) : null,
                   shortcut: shortcuts[TestMenu.subSubMenu100],
                   child: Text(TestMenu.subSubMenu100.label),
                 ),
               ],
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu101) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu101) : null,
               shortcut: shortcuts[TestMenu.subSubMenu101],
               child: Text(TestMenu.subSubMenu101.label),
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu102) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu102) : null,
               shortcut: shortcuts[TestMenu.subSubMenu102],
               child: Text(TestMenu.subSubMenu102.label),
             ),
             MenuItemButton(
-              onPressed: onSelected != null ? () => onSelected(TestMenu.subSubMenu103) : null,
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu103) : null,
               shortcut: shortcuts[TestMenu.subSubMenu103],
               child: Text(TestMenu.subSubMenu103.label),
             ),
@@ -1724,7 +1724,7 @@ List<Widget> createTestMenus({
           child: Text(TestMenu.subMenu11.label),
         ),
         MenuItemButton(
-          onPressed: onSelected != null ? () => onSelected(TestMenu.subMenu12) : null,
+          onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu12) : null,
           shortcut: shortcuts[TestMenu.subMenu12],
           child: Text(TestMenu.subMenu12.label),
         ),

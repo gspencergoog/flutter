@@ -11,19 +11,45 @@ const String kMessage = '"Talk less. Smile more." - A. Burr';
 
 void main() => runApp(const MenuBarApp());
 
-enum MenuSelection {
-  about('About'),
-  showMessage('Show Message', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
-  resetMessage('Reset Message', SingleActivator(LogicalKeyboardKey.escape)),
-  hideMessage('Hide Message'),
-  colorMenu('Color Menu'),
-  colorRed('Red Background', SingleActivator(LogicalKeyboardKey.keyR, control: true)),
-  colorGreen('Green Background', SingleActivator(LogicalKeyboardKey.keyG, control: true)),
-  colorBlue('Blue Background', SingleActivator(LogicalKeyboardKey.keyB, control: true));
+class MenuSelection {
+  const MenuSelection({required this.label, this.shortcut, this.onPressed, this.menuChildren});
 
-  const MenuSelection(this.label, [this.shortcut]);
   final String label;
   final MenuSerializableShortcut? shortcut;
+  final VoidCallback? onPressed;
+  final List<MenuSelection>? menuChildren;
+
+  static List<Widget> build(List<MenuSelection> selections) {
+    Widget buildSelection(MenuSelection selection) {
+      if (selection.menuChildren != null) {
+        return MenuButton(
+          menuChildren: MenuSelection.build(selection.menuChildren!),
+          child: Text(selection.label),
+        );
+      }
+      return MenuItemButton(
+        shortcut: selection.shortcut,
+        onPressed: selection.onPressed,
+        child: Text(selection.label),
+      );
+    }
+
+    return selections.map<Widget>(buildSelection).toList();
+  }
+
+  static Map<MenuSerializableShortcut, Intent> shortcuts(List<MenuSelection> selections) {
+    final Map<MenuSerializableShortcut, Intent> result = <MenuSerializableShortcut, Intent>{};
+    for (final MenuSelection selection in selections) {
+      if (selection.menuChildren != null) {
+        result.addAll(MenuSelection.shortcuts(selection.menuChildren!));
+      } else {
+        if (selection.shortcut != null && selection.onPressed != null) {
+          result[selection.shortcut!] = VoidCallbackIntent(selection.onPressed!);
+        }
+      }
+    }
+    return result;
+  }
 }
 
 class MenuBarApp extends StatelessWidget {
@@ -46,8 +72,9 @@ class MyMenuBar extends StatefulWidget {
 }
 
 class _MyMenuBarState extends State<MyMenuBar> {
-  MenuSelection? _lastSelection;
   ShortcutRegistryEntry? _shortcutsEntry;
+  String? _lastSelection;
+  List<MenuSelection> menus = <MenuSelection>[];
 
   bool get showingMessage => _showMessage;
   bool _showMessage = false;
@@ -69,56 +96,98 @@ class _MyMenuBarState extends State<MyMenuBar> {
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  List<MenuSelection> _getMenus() {
+    final List<MenuSelection> result = <MenuSelection>[
+        MenuSelection(
+          label: 'Menu Demo',
+          menuChildren: <MenuSelection>[
+            MenuSelection(
+              label: 'About',
+              onPressed: () {
+                setState(() {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'MenuBar Sample',
+                    applicationVersion: '1.0.0',
+                  );
+                  _lastSelection = 'About';
+                });
+              },
+            ),
+            // Toggles the message.
+            MenuSelection(
+              label: showingMessage ? 'Hide Message' : 'Show Message',
+              onPressed: () {
+                setState(() {
+                  _lastSelection = showingMessage ? 'Hide Message' : 'Show Message';
+                  showingMessage = !showingMessage;
+                });
+              },
+              shortcut: const SingleActivator(LogicalKeyboardKey.keyS, control: true),
+            ),
+            // Hides the message, but is only enabled if the message isn't
+            // already hidden.
+            MenuSelection(
+              label: 'Reset Message',
+              onPressed: showingMessage
+                  ? () {
+                      setState(() {
+                        _lastSelection = 'Reset Message';
+                        showingMessage = false;
+                      });
+                    }
+                  : null,
+              shortcut: const SingleActivator(LogicalKeyboardKey.escape),
+            ),
+            MenuSelection(
+              label: 'Color Menu',
+              menuChildren: <MenuSelection>[
+                MenuSelection(
+                  label: 'Red Background',
+                  onPressed: () {
+                    setState(() {
+                      _lastSelection = 'Red Background';
+                      backgroundColor = Colors.red;
+                    });
+                  },
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyR, control: true),
+                ),
+                MenuSelection(
+                  label: 'Green Background',
+                  onPressed: () {
+                    setState(() {
+                      _lastSelection = 'Green Background';
+                      backgroundColor = Colors.green;
+                    });
+                  },
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyG, control: true),
+                ),
+                MenuSelection(
+                  label: 'Blue Background',
+                  onPressed: () {
+                    setState(() {
+                      _lastSelection = 'Blue Background';
+                      backgroundColor = Colors.blue;
+                    });
+                  },
+                  shortcut: const SingleActivator(LogicalKeyboardKey.keyB, control: true),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ];
+    // (Re-)register the shortcuts with the ShortcutRegistry so that they are
+    // available to the entire application, and update them if they've changed.
     _shortcutsEntry?.dispose();
-    // Register the shortcuts with the ShortcutRegistry so that they are available
-    // to the entire application.
-    final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
-      for (final MenuSelection item in MenuSelection.values)
-        if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
-    };
-    _shortcutsEntry = ShortcutRegistry.of(context).addAll(shortcuts);
+    _shortcutsEntry = ShortcutRegistry.of(context).addAll(MenuSelection.shortcuts(menus));
+    return result;
   }
 
   @override
   void dispose() {
     _shortcutsEntry?.dispose();
     super.dispose();
-  }
-
-  void _activate(MenuSelection selection) {
-    setState(() {
-      _lastSelection = selection;
-    });
-    switch (selection) {
-      case MenuSelection.about:
-        showAboutDialog(
-          context: context,
-          applicationName: 'MenuBar Sample',
-          applicationVersion: '1.0.0',
-        );
-        break;
-      case MenuSelection.showMessage:
-        showingMessage = !showingMessage;
-        break;
-      case MenuSelection.resetMessage:
-      case MenuSelection.hideMessage:
-        showingMessage = false;
-        break;
-      case MenuSelection.colorMenu:
-        break;
-      case MenuSelection.colorRed:
-        backgroundColor = Colors.red;
-        break;
-      case MenuSelection.colorGreen:
-        backgroundColor = Colors.green;
-        break;
-      case MenuSelection.colorBlue:
-        backgroundColor = Colors.blue;
-        break;
-    }
   }
 
   @override
@@ -129,53 +198,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
           children: <Widget>[
             Expanded(
               child: MenuBar(
-                children: <Widget>[
-                  MenuButton(
-                    menuChildren: <Widget>[
-                      MenuItemButton(
-                        child: Text(MenuSelection.about.label),
-                        onPressed: () => _activate(MenuSelection.about),
-                      ),
-                      // Toggles the message.
-                      MenuItemButton(
-                        onPressed: () => _activate(MenuSelection.showMessage),
-                        shortcut: MenuSelection.showMessage.shortcut,
-                        child:
-                            Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
-                      ),
-                      // Hides the message, but is only enabled if the message isn't already hidden.
-                      MenuItemButton(
-                        onPressed:
-                            showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
-                        shortcut: MenuSelection.resetMessage.shortcut,
-                        child: Text(MenuSelection.resetMessage.label),
-                      ),
-                      MenuButton(
-                        menuChildren: <Widget>[
-                          MenuItemGroup(members: <Widget>[
-                            MenuItemButton(
-                              onPressed: () => _activate(MenuSelection.colorRed),
-                              shortcut: MenuSelection.colorRed.shortcut,
-                              child: Text(MenuSelection.colorRed.label),
-                            ),
-                            MenuItemButton(
-                              onPressed: () => _activate(MenuSelection.colorGreen),
-                              shortcut: MenuSelection.colorGreen.shortcut,
-                              child: Text(MenuSelection.colorGreen.label),
-                            ),
-                          ]),
-                          MenuItemButton(
-                            onPressed: () => _activate(MenuSelection.colorBlue),
-                            shortcut: MenuSelection.colorBlue.shortcut,
-                            child: Text(MenuSelection.colorBlue.label),
-                          ),
-                        ],
-                        child: const Text('Background Color'),
-                      ),
-                    ],
-                    child: const Text('Menu App'),
-                  ),
-                ],
+                children: MenuSelection.build(_getMenus()),
               ),
             ),
           ],
@@ -194,7 +217,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
+                Text(_lastSelection != null ? 'Last Selected: $_lastSelection' : ''),
               ],
             ),
           ),
@@ -202,10 +225,4 @@ class _MyMenuBarState extends State<MyMenuBar> {
       ],
     );
   }
-}
-
-/// An intent that activates a menu item in our example app.
-class ActivateMenuItemIntent extends Intent {
-  const ActivateMenuItemIntent(this.menu);
-  final MenuSelection menu;
 }

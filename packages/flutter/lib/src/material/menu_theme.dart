@@ -40,7 +40,7 @@ class MenuThemeData with Diagnosticable {
   /// The [MenuStyle] of a [MenuButton] menu.
   final MenuStyle? style;
 
-  /// Linearly interpolate between two text button themes.
+  /// Linearly interpolate between two menu button themes.
   static MenuThemeData? lerp(MenuThemeData? a, MenuThemeData? b, double t) {
     assert (t != null);
     if (a == null && b == null) {
@@ -113,7 +113,7 @@ class MenuTheme extends InheritedTheme {
   ///   return MenuTheme(
   ///     data: const MenuThemeData(
   ///       style: MenuStyle(
-  ///         backgroundColor: MaterialStatePropertyAll<Color?>(Colors.red),
+  ///         backgroundColor: MaterialStatePropertyAll<Color>(Colors.red),
   ///       ),
   ///     ),
   ///     child: child,

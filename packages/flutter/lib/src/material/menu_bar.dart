@@ -409,6 +409,8 @@ class MenuItemButton extends StatefulWidget {
   /// The optional shortcut that selects this [MenuItemButton].
   ///
   /// This shortcut is only enabled when [onPressed] is set.
+  ///
+  /// {@macro flutter.material.menu_bar.shortcuts_note}
   final MenuSerializableShortcut? shortcut;
 
   /// An optional icon to display before the [child] label.
@@ -683,12 +685,12 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   }
 }
 
-/// A menu item widget that displays a hierarchical cascading menu as part of a
-/// [MenuBar].
+/// A menu button that displays a cascading menu as part of a [MenuBar], or as
+/// part of a menu defined by [createMaterialMenu].
 ///
-/// This widget represents an item in a [MenuBar] that has a submenu. Like the
-/// leaf [MenuItemButton], it shows a label with an optional leading or trailing
-/// icon, along with an arrow icon showing that it has a submenu.
+/// This widget represents an item in a [MenuBar] or menu that has a submenu.
+/// Like the leaf [MenuItemButton], it shows a label with an optional leading or
+/// trailing icon, along with an arrow icon showing that it has a submenu.
 ///
 /// By default the submenu will appear to the side of the controlling button.
 /// The alignment and offset of the submenu can be controlled by setting
@@ -698,7 +700,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 /// When activated (clicked, through keyboard navigation, or via hovering with a
 /// mouse), it will open a submenu containing the [menuChildren].
 ///
-/// If [menuChildren] is empty, then this menu item will be disabled.
+/// If [menuChildren] is empty, then this menu item will appear disabled.
 ///
 /// See also:
 ///
@@ -706,6 +708,8 @@ class _MenuItemButtonState extends State<MenuItemButton> {
 ///   host a submenu.
 /// * [MenuBar], a widget that renders menu items in a row in a Material Design
 ///   style.
+/// * [createMaterialMenu], a function that creates a menu and shows it when
+///   requested.
 /// * [PlatformMenuBar], a widget that renders similar menu bar items from a
 ///   [PlatformMenuItem] using platform-native APIs instead of Flutter.
 class MenuButton extends StatefulWidget {
@@ -1227,6 +1231,11 @@ class MenuEntry with ChangeNotifier {
   ///
   /// The alignment depends on the value of the ambient [Directionality] of the
   /// controlling widget to know which direction is the 'start' of the widget.
+  ///
+  /// See also:
+  ///
+  ///  * [globalMenuPosition], which, if set, overrides this alignment with a
+  ///    global position for the menu.
   AlignmentGeometry? get alignment => _entry.menuStyle?.alignment;
   set alignment(AlignmentGeometry? value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
@@ -1239,22 +1248,41 @@ class MenuEntry with ChangeNotifier {
     _entry.menuStyle = _entry.menuStyle?.copyWith(alignment: value) ?? MenuStyle(alignment: value);
   }
 
-  /// Sets the alignment offset of the menu relative to the alignment position
-  /// specified by [alignment] on the controlling widget that the menu is
-  /// attached to.
+  /// Sets the alignment offset of the menu relative to the [alignment] position
+  /// or the [globalMenuPosition] on the widget that the menu is attached to.
   ///
-  /// The offset is a directional offset starting at the alignment point, so
-  /// increasingly larger positive values of [Offset.dx] will offset from
-  /// 'begin' moving towards 'end' from the alignment point specified by
-  /// [alignment] on the controlling widget. This will either offset the menu
-  /// to the right (for [TextDirection.ltr]) or left (for [TextDirection.rtl]),
-  /// depending on the ambient [Directionality].
+  /// The offset is relative to either the [alignment] point or the
+  /// [globalMenuPosition], depending on which is set, and sensitive to text
+  /// direction. Increasingly larger positive values of [Offset.dx] will offset
+  /// from 'begin' moving towards 'end' from the [alignment] point on the
+  /// controlling widget, or from the [globalMenuPosition], if set. This will
+  /// either offset the menu to the right (for [TextDirection.ltr]) or left (for
+  /// [TextDirection.rtl]), depending on the ambient [Directionality].
   Offset get alignmentOffset => _entry.alignmentOffset;
   set alignmentOffset(Offset value) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     // Setting the _entry.alignmentOffset value will automatically check for
     // changes and notify listeners.
     _entry.alignmentOffset = value;
+  }
+
+  /// Sets the position of the origin of the menu in global coordinates.
+  ///
+  /// If set, this overrides the position described by [alignment]. The
+  /// [alignmentOffset] is then applied to this position instead of the
+  /// [alignment] position.
+  ///
+  /// By default, this is null, and [alignment] is used to determine the
+  /// position of the menu.
+  ///
+  /// If an opening `position` is supplied to the [open] method, this value will
+  /// be set to that `position`.
+  Offset? get globalMenuPosition => _entry.globalMenuPosition;
+  set globalMenuPosition(Offset? value) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    // Setting the _entry.alignmentOffset value will automatically check for
+    // changes and notify listeners.
+    _entry.globalMenuPosition = value;
   }
 
   /// Sets the [MenuStyle] to use for configuring the menu.
@@ -1277,9 +1305,19 @@ class MenuEntry with ChangeNotifier {
   /// Open the menu.
   ///
   /// Call this from the controlling widget when the menu should open up.
-  void open() {
+  ///
+  /// The optional `position` argument is the global coordinate where the menu
+  /// should be opened. Passing a `position` will set the [alignmentOffset] to
+  /// match the global position described so that the menu appears at that
+  /// position, taking into account the [MenuStyle.alignment] and the
+  /// [alignmentOffset].
+  ///
+  /// By default, the menu appears at the location that is [alignmentOffset]
+  /// away from the alignment origin specified by [MenuStyle.alignment] for the
+  /// menu.
+  void open({Offset? position}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    _entry.open();
+    _entry.open(position: position);
   }
 
   /// Close the menu.
@@ -1323,6 +1361,56 @@ class MenuEntry with ChangeNotifier {
 /// update the menu with those changes in the next frame. The [MenuEntry] can be
 /// listened to for state changes.
 ///
+/// The required argument is a [GlobalKey] that corresponds to a widget with a
+/// [BuildContext] that contains the themes and directionality to use for the
+/// menu to be created. If `globalMenuPosition` is not supplied, then this also
+/// serves to provide the rectangle used for determining the alignment of the
+/// submenu. Typically this is a [GlobalKey] attached to the button that is used
+/// to open the menu, but a `globalMenuPosition` may be supplied to override
+/// that position.
+///
+/// The `buttonFocusNode` argument supplies the optional [FocusNode] of the
+/// widget that opens the menu.  If not supplied, then keyboard traversal from
+/// the menu to the controlling button will not be possible.
+///
+/// The `controller` argument is a [MenuController] that allows multiple menus
+/// to be grouped together for the purposes of traversal, and so that calling
+/// [MenuController.closeAll] closes all associated menus.
+///
+/// The `statesController` argument supplies a [MaterialStatesController] for
+/// the submenu created, so that state changes in the menu may be listened to.
+/// The states controller is only used for the immediate child menu, not all
+/// descendant menus.
+///
+/// The `style` attribute is the [MenuStyle] object that describes the stylistic
+/// attributes of the menu. Any null style attribute will defer to the ambient
+/// [MenuTheme] in the context of the [GlobalKey] given as the required
+/// argument.
+///
+/// The `clipBehavior` argument describes how the immediate menu child clips its
+/// children. It defaults to [Clip.none].
+///
+/// The optional `onOpen` callback argument is called whenever the child menu is
+/// opened.
+///
+/// The optional `onClose` callback argument is called whenever the child menu
+/// is closed.
+///
+/// The `alignmentOffset` argument describes a directional offset from either
+/// the [MenuStyle.alignment] origin, or from the `globalMenuPosition`, if set.
+/// It depends on the ambient [Directionality], so increases in
+/// `alignmentOffset.dx` will result in moving towards the "end", and decreases
+/// will move towards "start".
+///
+/// The `globalMenuPosition` argument describes the global coordinate where the
+/// menu should appear. If unset, then the [MenuStyle.alignment] is used to
+/// determine the location instead. The `alignmentOffset` is applied to this
+/// position to find the final position that is used.
+///
+/// The `children` attribute is a list of child menu items to place in the menu.
+/// These are typically a tree made up of [MenuButton]s and [MenuItemButton]s,
+/// but can be any Widget.
+///
 /// {@tool dartpad}
 /// This example shows a menu created with `createMaterialMenu` that contains a
 /// single top level menu, containing three items: one for "About", a checkbox
@@ -1337,6 +1425,9 @@ class MenuEntry with ChangeNotifier {
 /// * [MenuEntry], the handle returned from this function.
 /// * [MenuBar], a widget that creates and manages a menu bar with cascading
 ///   menus.
+/// * [MenuButton], a menu button that hosts a submenu.
+/// * [MenuItemButton], a menu button that is a leaf menu item, showing an
+///   optional shortcut label and leading/trailing icon.
 MenuEntry createMaterialMenu(
   GlobalKey buttonKey, {
   FocusNode? buttonFocusNode,
@@ -1347,6 +1438,7 @@ MenuEntry createMaterialMenu(
   VoidCallback? onOpen,
   VoidCallback? onClose,
   Offset alignmentOffset = Offset.zero,
+  Offset? globalMenuPosition,
   List<Widget> children = const <Widget>[],
 }) {
   controller ??= MenuController();
@@ -1361,6 +1453,7 @@ MenuEntry createMaterialMenu(
     onOpen: onOpen,
     onClose: onClose,
     alignmentOffset: alignmentOffset,
+    globalMenuPosition: globalMenuPosition,
     widgetChildren: children,
   );
   return _createMenuEntryFromExistingNode(entry);
@@ -2084,8 +2177,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   // The alignment to use when finding the ideal location for the menu.
   AlignmentGeometry alignment;
 
-  // The offset from the alignment to add to the alignment position to find the
-  // ideal location for the menu.
+  // The offset from the alignment position or the globalMenuPosition to find
+  // the ideal location for the menu.
   Offset alignmentOffset;
 
   // List of rectangles that we should avoid overlapping. Unusable screen area.
@@ -2095,8 +2188,8 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    // The menu can be at most the size of the overlay minus 8.0 pixels in each
-    // direction.
+    // The menu can be at most the size of the overlay minus _kMenuViewPadding
+    // pixels in each direction.
     return BoxConstraints.loose(constraints.biggest).deflate(
       const EdgeInsets.all(_kMenuViewPadding),
     );
@@ -2110,7 +2203,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     final Rect overlayRect = Offset.zero & size;
     final Rect absoluteButtonRect = buttonRect.toRect(overlayRect);
     final Alignment alignment = this.alignment.resolve(textDirection);
-    final Offset desiredPosition = alignment.withinRect(absoluteButtonRect);
+    final Offset desiredPosition = menuNode.globalMenuPosition ?? alignment.withinRect(absoluteButtonRect);
     final Offset originCenter = absoluteButtonRect.center;
     final Iterable<Rect> subScreens = DisplayFeatureSubScreen.subScreensInBounds(overlayRect, avoidBounds);
     final Rect screen = _closestScreen(subScreens, originCenter);
@@ -2225,6 +2318,7 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
   _MenuNode get parent;
   bool get enabled => true;
   FocusScopeNode get menuScopeNode;
+  Offset? get globalMenuPosition;
 
   @protected
   List<_ChildMenuNode> children = <_ChildMenuNode>[];
@@ -2315,6 +2409,9 @@ class _RootMenuNode extends _MenuNode {
   Axis get orientation => Axis.horizontal;
 
   @override
+  Offset? get globalMenuPosition => null;
+
+  @override
   FocusScopeNode menuScopeNode;
 
   @override
@@ -2331,10 +2428,10 @@ class _ChildMenuNode extends _MenuNode {
     this.onOpen,
     this.onClose,
     Offset alignmentOffset = Offset.zero,
+    Offset? globalMenuPosition,
     Axis orientation = Axis.vertical,
     ButtonStyle? buttonStyle,
     MenuStyle? menuStyle,
-    MenuStyle? menuBarStyle,
     Clip menuClipBehavior = Clip.none,
     MaterialStatesController? statesController,
   })  : _buttonFocusNode = buttonFocusNode,
@@ -2344,10 +2441,10 @@ class _ChildMenuNode extends _MenuNode {
         _widgetChildren = widgetChildren,
         _orientation = orientation,
         _alignmentOffset = alignmentOffset,
+        _globalMenuPosition = globalMenuPosition,
         _buttonStyle = buttonStyle,
         _menuStyle = menuStyle,
         _menuClipBehavior = menuClipBehavior,
-        _menuBarStyle = menuBarStyle,
         menuScopeNode = FocusScopeNode() {
     assert((){
       menuScopeNode.debugLabel = 'Menu Scope';
@@ -2395,6 +2492,16 @@ class _ChildMenuNode extends _MenuNode {
     }
   }
 
+  @override
+  Offset? get globalMenuPosition => _globalMenuPosition;
+  Offset? _globalMenuPosition;
+  set globalMenuPosition(Offset? value) {
+    if (_globalMenuPosition != value) {
+      _globalMenuPosition = value;
+      _notifyNextFrame();
+    }
+  }
+
   BuildContext get context {
     assert(buttonKey.currentContext != null,
       'The global key $buttonKey must be attached to a mounted widget so that it has a valid currentContext');
@@ -2428,15 +2535,6 @@ class _ChildMenuNode extends _MenuNode {
   set orientation(Axis value) {
     if (_orientation != value) {
       _orientation = value;
-      _notifyNextFrame();
-    }
-  }
-
-  MenuStyle? get menuBarStyle => _menuBarStyle;
-  MenuStyle? _menuBarStyle;
-  set menuBarStyle(MenuStyle? value) {
-    if (_menuBarStyle != value) {
-      _menuBarStyle = value;
       _notifyNextFrame();
     }
   }
@@ -2525,20 +2623,19 @@ class _ChildMenuNode extends _MenuNode {
     return null;
   }
 
-  void open() {
+  void open({Offset? position}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (isOpen) {
       assert(_menuDebug("Not opening $this because it's already open"));
       return;
     }
+    globalMenuPosition = position;
     assert(!root.openMenus.contains(this), 'Attempted to open menu $this that is already open');
     parent.closeChildren();
     final bool wasOpen = controller.menuIsOpen;
     root.openMenus.add(this);
-    if (context != null) {
-      Overlay.of(context)!.insert(overlayEntry!);
-      isOpen = true;
-    }
+    Overlay.of(context)!.insert(overlayEntry!);
+    isOpen = true;
     controller._menuOpened(this, wasOpen: wasOpen);
     onOpen?.call();
     _notifyNextFrame();
