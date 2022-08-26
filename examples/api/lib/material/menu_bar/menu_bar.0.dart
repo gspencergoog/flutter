@@ -131,6 +131,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
             onPressed: showingMessage
                 ? () {
                     setState(() {
+                      debugDumpRenderTree();
                       _lastSelection = 'Reset Message';
                       showingMessage = false;
                     });
@@ -194,6 +195,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
     return Column(
       children: <Widget>[
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Expanded(
               child: MenuBar(

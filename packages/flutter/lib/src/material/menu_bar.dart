@@ -1948,7 +1948,6 @@ class _MenuPanelState extends State<_MenuPanel> {
     final EdgeInsetsGeometry resolvedPadding = padding
         .add(EdgeInsets.fromLTRB(dx, dy, dx, dy))
         .clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity); // ignore_clamp_double_lint
-
     final MenuController controller = MenuController.of(context);
     return ConstrainedBox(
       constraints: effectiveConstraints,
@@ -1958,9 +1957,9 @@ class _MenuPanelState extends State<_MenuPanel> {
           assert(_debugMenuInfo('Tapped Outside'));
           MenuController.of(context).closeAll();
         },
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          scrollDirection: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+        child: FittedOverflowBox(
+          axis: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
+          key: const ValueKey<String>('Hello! '),
           child: _intrinsicCrossSize(
             child: Material(
               elevation: elevation,
@@ -2628,7 +2627,6 @@ class _ChildMenuNode extends _MenuNode {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_debugMenuInfo('Disposing of $this'));
     if (!isOpen) {
-      parent.removeChild(this);
       children.clear();
       if (ownsController) {
         controller.dispose();

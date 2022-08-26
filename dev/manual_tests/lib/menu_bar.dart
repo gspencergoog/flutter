@@ -262,12 +262,12 @@ class _ControlsState extends State<_Controls> {
             ),
           ),
           ConstrainedBox(
-            constraints: const BoxConstraints.tightFor(width: 400),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Extra Padding: ${widget.extraPadding.toStringAsFixed(1)}'),
-                Slider(
+                _ControlSlider(
+                  label: 'Extra Padding: ${widget.extraPadding.toStringAsFixed(1)}',
                   value: widget.extraPadding,
                   max: 40,
                   divisions: 20,
@@ -275,16 +275,8 @@ class _ControlsState extends State<_Controls> {
                     widget.onExtraPaddingChanged(value);
                   },
                 ),
-              ],
-            ),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints.tightFor(width: 400),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                Text('Horizontal Density: ${widget.density.horizontal.toStringAsFixed(1)}'),
-                Slider(
+                _ControlSlider(
+                  label: 'Horizontal Density: ${widget.density.horizontal.toStringAsFixed(1)}',
                   value: widget.density.horizontal,
                   max: 4,
                   min: -4,
@@ -298,17 +290,9 @@ class _ControlsState extends State<_Controls> {
                     );
                   },
                 ),
-              ],
-            ),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints.tightFor(width: 400),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                Text('Vertical Density: ${widget.density.vertical.toStringAsFixed(1)}'),
-                Slider(
-                  value: widget.density.vertical,
+                _ControlSlider(
+                  label: 'Vertical Density: ${widget.density.vertical.toStringAsFixed(1)}',
+                  value: widget.density.horizontal,
                   max: 4,
                   min: -4,
                   divisions: 12,
@@ -428,6 +412,47 @@ class _ControlsState extends State<_Controls> {
             _itemSelected(TestMenu.standaloneMenu2);
           },
           child: Text(TestMenu.standaloneMenu2.label),
+        ),
+      ],
+    );
+  }
+}
+
+class _ControlSlider extends StatelessWidget {
+  const _ControlSlider({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.min = 0,
+    this.max = 1,
+    this.divisions,
+  });
+
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+  final double min;
+  final double max;
+  final int? divisions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: <Widget>[
+        Container(
+          alignment: AlignmentDirectional.centerEnd,
+          constraints: const BoxConstraints(minWidth: 150),
+          child: Text(label),
+        ),
+        Expanded(
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
         ),
       ],
     );
