@@ -29,7 +29,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = true;
+const bool _kDebugMenus = false;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -188,7 +188,10 @@ class MenuBar extends StatefulWidget with DiagnosticableTreeMixin {
 class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   MenuController? _internalController;
   MaterialStatesController? _internalStatesController;
-  MenuController get _controller => widget.controller ?? _internalController!;
+  MenuController get _controller {
+    return widget.controller ?? (_internalController ??= MenuController());
+  }
+
   MaterialStatesController get _statesController => widget.statesController ?? _internalStatesController!;
 
   void _handleStatesControllerChange() {
@@ -199,21 +202,14 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   void initState() {
     super.initState();
-    _initController();
     assert(() {
       _controller._root.menuScopeNode.debugLabel = 'MenuBar';
       return true;
     }());
-    _initStatesController();
+    initStatesController();
   }
 
-  void _initController() {
-    if (widget.controller == null) {
-      _internalController = MenuController();
-    }
-  }
-
-  void _initStatesController() {
+  void initStatesController() {
     if (widget.statesController == null) {
       _internalStatesController = MaterialStatesController();
     }
@@ -227,14 +223,13 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
       _internalController?.dispose();
       _internalController = null;
     }
-    _initController();
     if (widget.statesController != oldWidget.statesController) {
       oldWidget.statesController?.removeListener(_handleStatesControllerChange);
       if (widget.statesController != null) {
         _internalStatesController?.dispose();
         _internalStatesController = null;
       }
-      _initStatesController();
+      initStatesController();
     }
   }
 
