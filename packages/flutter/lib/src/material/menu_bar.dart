@@ -29,7 +29,7 @@ import 'theme.dart';
 import 'theme_data.dart';
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = false;
+const bool _kDebugMenus = true;
 
 // How close to the edge of the safe area the menu will be placed.
 const double _kMenuViewPadding = 8.0;
@@ -256,22 +256,16 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
       builder: (BuildContext context, Widget? child) {
         return ExcludeFocus(
           excluding: !_controller.menuIsOpen,
-          child: TapRegion(
-            groupId: _controller,
-            onTapOutside: (PointerDownEvent event) {
-              _controller.closeAll();
-            },
-            child: _MenuControllerMarker(
-              controller: _controller,
-              child: FocusScope(
-                node: _controller._root.menuScopeNode,
-                child: Actions(
-                  actions: <Type, Action<Intent>>{
-                    DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
-                    DismissIntent: _MenuDismissAction(controller: _controller),
-                  },
-                  child: child!,
-                ),
+          child: _MenuControllerMarker(
+            controller: _controller,
+            child: FocusScope(
+              node: _controller._root.menuScopeNode,
+              child: Actions(
+                actions: <Type, Action<Intent>>{
+                  DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
+                  DismissIntent: _MenuDismissAction(controller: _controller),
+                },
+                child: child!,
               ),
             ),
           ),
@@ -975,7 +969,7 @@ class MenuButton extends StatefulWidget {
 
 class _MenuButtonState extends State<MenuButton> {
   late _ChildMenuNode _node;
-  final GlobalKey _buttonKey = GlobalKey();
+  final GlobalKey _contextKey = GlobalKey();
   MenuEntry? _childMenu;
   bool get _enabled => widget.menuChildren.isNotEmpty;
   FocusNode? _internalFocusNode;
@@ -1079,7 +1073,7 @@ class _MenuButtonState extends State<MenuButton> {
 
     if (_childMenu == null) {
       _node = _ChildMenuNode(
-        contextKey: _buttonKey,
+        contextKey: _contextKey,
         parent: parent,
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
@@ -1095,7 +1089,7 @@ class _MenuButtonState extends State<MenuButton> {
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
       _node
-        ..contextKey = _buttonKey
+        ..contextKey = _contextKey
         ..parent = parent
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
@@ -1115,7 +1109,7 @@ class _MenuButtonState extends State<MenuButton> {
     return _MenuNodeMarker(
       node: _node,
       child: TextButton(
-        key: _buttonKey,
+        key: _contextKey,
         style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
         focusNode: _buttonFocusNode,
         onHover: _enabled ? _handleHover : null,
@@ -1966,6 +1960,7 @@ class _MenuPanelState extends State<_MenuPanel> {
       child: TapRegion(
         groupId: controller,
         onTapOutside: (PointerDownEvent event) {
+          assert(_debugMenuInfo('Tapped Outside'));
           MenuController.of(context).closeAll();
         },
         child: SingleChildScrollView(
@@ -2286,6 +2281,7 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
     assert(isRoot || _debugMenuInfo('Added root child: $child'));
     assert(!children.contains(child));
     children.add(child);
+    assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
   void removeChild(_ChildMenuNode child) {
@@ -2293,6 +2289,7 @@ abstract class _MenuNode with DiagnosticableTreeMixin, ChangeNotifier {
     assert(isRoot || _debugMenuInfo('Removed root child: $child'));
     assert(children.contains(child));
     children.remove(child);
+    assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
   void closeChildren({bool inDispose = false}) {
@@ -2396,7 +2393,7 @@ class _ChildMenuNode extends _MenuNode {
     Clip menuClipBehavior = Clip.none,
     MaterialStatesController? statesController,
   })  : _buttonFocusNode = buttonFocusNode,
-        _buttonKey = contextKey,
+        _contextKey = contextKey,
         _controller = controller,
         _statesController = statesController,
         _widgetChildren = widgetChildren,
@@ -2489,11 +2486,11 @@ class _ChildMenuNode extends _MenuNode {
     }
   }
 
-  GlobalKey get contextKey => _buttonKey;
-  GlobalKey _buttonKey;
+  GlobalKey get contextKey => _contextKey;
+  GlobalKey _contextKey;
   set contextKey(GlobalKey value) {
-    if (_buttonKey != value) {
-      _buttonKey = value;
+    if (_contextKey != value) {
+      _contextKey = value;
       _notifyNextFrame();
     }
   }
@@ -2602,6 +2599,7 @@ class _ChildMenuNode extends _MenuNode {
       assert(_debugMenuInfo("Not opening $this because it's already open"));
       return;
     }
+    assert(_debugMenuInfo('Opening $this'));
     assert(!root.openMenus.contains(this), 'Attempted to open menu $this that is already open');
     parent.closeChildren();
     final bool wasOpen = controller.menuIsOpen;
@@ -2616,8 +2614,10 @@ class _ChildMenuNode extends _MenuNode {
   void close({bool inDispose = false}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (!isOpen) {
+      assert(_debugMenuInfo("Not closing $this because it's already closed"));
       return;
     }
+    assert(_debugMenuInfo('Closing $this'));
     assert(root.openMenus.contains(this), 'Menu $this was never recorded as being opened.');
     closeChildren();
     root.openMenus.remove(this);
@@ -2633,6 +2633,11 @@ class _ChildMenuNode extends _MenuNode {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_debugMenuInfo('Disposing of $this'));
     if (!isOpen) {
+      parent.removeChild(this);
+      children.clear();
+      if (ownsController) {
+        controller.dispose();
+      }
       return;
     }
     closeChildren(inDispose: true);
@@ -2640,8 +2645,8 @@ class _ChildMenuNode extends _MenuNode {
     overlayEntry?.remove();
     overlayEntry = null;
     isOpen = false;
-    children.clear();
     parent.removeChild(this);
+    children.clear();
     if (ownsController) {
       controller.dispose();
     }
