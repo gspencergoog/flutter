@@ -18,7 +18,7 @@ import 'theme.dart';
 /// overall [Theme]'s [ThemeData.menuTheme].
 ///
 /// The [style]'s properties override [MenuItemButton]'s and [MenuButton]'s
-/// default style, i.e.  the [ButtonStyle] returned by
+/// default style, i.e. the [ButtonStyle] returned by
 /// [MenuItemButton.defaultStyleOf] and [MenuButton.defaultStyleOf]. Only the
 /// style's non-null property values or resolved non-null
 /// [MaterialStateProperty] values are used.
