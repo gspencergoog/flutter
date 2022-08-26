@@ -47,18 +47,25 @@ class MyCascadingMenu extends StatefulWidget {
 
 class _MyCascadingMenuState extends State<MyCascadingMenu> {
   MenuSelection? _lastSelection;
-  late MenuController _controller;
-  late FocusNode _buttonFocusNode;
+  final MenuController _controller = MenuController();
+  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
   late MenuEntry _menuEntry;
   ShortcutRegistryEntry? _shortcutsEntry;
+
+  // This is the global key that the menu uses to determine which themes should
+  // be used for the menus, as well as determining what the bounding box is for
+  // the widget that is hosting the menu, so that the menu knows where to
+  // appear.
   final GlobalKey _buttonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _controller = MenuController();
-    _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-    _menuEntry = createMaterialMenu(_buttonKey, buttonFocusNode: _buttonFocusNode, controller: _controller);
+    _menuEntry = createMaterialMenu(
+      _buttonKey,
+      buttonFocusNode: _buttonFocusNode,
+      controller: _controller,
+    );
     _updateMenuEntry();
   }
 
@@ -73,7 +80,10 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     // shortcuts, they only display the shortcut hint text.
     final Map<ShortcutActivator, Intent> shortcuts = <ShortcutActivator, Intent>{
       for (final MenuSelection item in MenuSelection.values)
-        if (item.shortcut != null) item.shortcut!: VoidCallbackIntent(() => _activate(item)),
+        if (item.shortcut != null)
+          item.shortcut!: VoidCallbackIntent(
+            () => _activate(item),
+          ),
     };
     // Register the shortcuts with the ShortcutRegistry so that they are
     // available to the entire application.
@@ -99,7 +109,9 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
       MenuItemButton(
         onPressed: () => _activate(MenuSelection.showMessage),
         shortcut: MenuSelection.showMessage.shortcut,
-        child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
+        child: Text(
+          showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label,
+        ),
       ),
       // Hides the message, but is only enabled if the message isn't already hidden.
       MenuItemButton(
@@ -224,7 +236,9 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
+                Text(
+                  _lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : '',
+                ),
               ],
             ),
           ),

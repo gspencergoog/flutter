@@ -47,18 +47,29 @@ class MyCascadingMenu extends StatefulWidget {
 
 class _MyCascadingMenuState extends State<MyCascadingMenu> {
   MenuSelection? _lastSelection;
-  late MenuController _controller;
-  late FocusNode _buttonFocusNode;
+  final MenuController _controller = MenuController();
+  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
   late MenuEntry _menuEntry;
   ShortcutRegistryEntry? _shortcutsEntry;
+
+  /// This is the global key that the menu uses to determine which themes should
+  /// be used for the menus. When the position of the menu is supplied to the
+  /// [MenuEntry], as is the case in this example in [_handleSecondaryTapDown],
+  /// it can be attached to any widget that is in the right context to collect
+  /// the correct ancestor themes from (e.g. [TextButtonTheme], [MenuBarTheme],
+  /// etc.). If the [MenuEntry.globalMenuPosition] is not set, then this key is
+  /// also used to determine the bounding box of the widget that the menu is
+  /// aligned to with [MenuEntry.alignment].
   final GlobalKey _buttonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _controller = MenuController();
-    _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-    _menuEntry = createMaterialMenu(_buttonKey, buttonFocusNode: _buttonFocusNode, controller: _controller);
+    _menuEntry = createMaterialMenu(
+      _buttonKey,
+      buttonFocusNode: _buttonFocusNode,
+      controller: _controller,
+    );
     _updateMenuEntry();
   }
 
@@ -99,9 +110,12 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
       MenuItemButton(
         onPressed: () => _activate(MenuSelection.showMessage),
         shortcut: MenuSelection.showMessage.shortcut,
-        child: Text(showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label),
+        child: Text(
+          showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label,
+        ),
       ),
-      // Hides the message, but is only enabled if the message isn't already hidden.
+      // Hides the message, but is only enabled if the message isn't already
+      // hidden.
       MenuItemButton(
         onPressed: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
         shortcut: MenuSelection.resetMessage.shortcut,
@@ -201,6 +215,10 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text('Right-click anywhere to show menu.'),
+            ),
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Text(
@@ -208,7 +226,9 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ),
-            Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
+            Text(
+              _lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : '',
+            ),
           ],
         ),
       ),
