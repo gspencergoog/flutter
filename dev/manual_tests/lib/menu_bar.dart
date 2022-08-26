@@ -502,37 +502,33 @@ class _TestMenusState extends State<_TestMenus> {
                 ],
                 child: Text(TestMenu.mainMenu1.label),
               ),
-              MenuItemGroup(
-                members: <Widget>[
-                  MenuButton(
-                    onOpen: () {
-                      _openItem(TestMenu.mainMenu2);
+              MenuButton(
+                onOpen: () {
+                  _openItem(TestMenu.mainMenu2);
+                },
+                onClose: () {
+                  _closeItem(TestMenu.mainMenu2);
+                },
+                menuChildren: <Widget>[
+                  TextButton(
+                    child: const Text('TEST'),
+                    onPressed: () {
+                      _itemSelected(TestMenu.testButton);
+                      widget.menuController.closeAll();
                     },
-                    onClose: () {
-                      _closeItem(TestMenu.mainMenu2);
+                  ),
+                  MenuItemButton(
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.enter,
+                      control: true,
+                    ),
+                    onPressed: () {
+                      _itemSelected(TestMenu.subMenu3);
                     },
-                    menuChildren: <Widget>[
-                      TextButton(
-                        child: const Text('TEST'),
-                        onPressed: () {
-                          _itemSelected(TestMenu.testButton);
-                          widget.menuController.closeAll();
-                        },
-                      ),
-                      MenuItemButton(
-                        shortcut: const SingleActivator(
-                          LogicalKeyboardKey.enter,
-                          control: true,
-                        ),
-                        onPressed: () {
-                          _itemSelected(TestMenu.subMenu3);
-                        },
-                        child: Text(TestMenu.subMenu3.label),
-                      ),
-                    ],
-                    child: Text(TestMenu.mainMenu2.label),
+                    child: Text(TestMenu.subMenu3.label),
                   ),
                 ],
+                child: Text(TestMenu.mainMenu2.label),
               ),
               MenuButton(
                 onOpen: () {
@@ -559,36 +555,34 @@ class _TestMenusState extends State<_TestMenus> {
                   _closeItem(TestMenu.mainMenu4);
                 },
                 menuChildren: <Widget>[
-                  MenuItemGroup(members: <Widget>[
-                    Actions(
-                      actions: <Type, Action<Intent>>{
-                        ActivateIntent: CallbackAction<ActivateIntent>(
-                          onInvoke: (ActivateIntent? intent) {
-                            debugPrint('Activated!');
-                            return;
-                          },
-                        )
-                      },
-                      child: MenuItemButton(
-                        shortcut: const SingleActivator(
-                          LogicalKeyboardKey.keyA,
-                          control: true,
-                        ),
-                        onPressed: () {
-                          debugPrint('Activated text input item with ${textController.text} as a value.');
+                  Actions(
+                    actions: <Type, Action<Intent>>{
+                      ActivateIntent: CallbackAction<ActivateIntent>(
+                        onInvoke: (ActivateIntent? intent) {
+                          debugPrint('Activated!');
+                          return;
                         },
-                        child: SizedBox(
-                          width: 200,
-                          child: TextField(
-                            controller: textController,
-                            onSubmitted: (String value) {
-                              debugPrint('String $value submitted.');
-                            },
-                          ),
+                      )
+                    },
+                    child: MenuItemButton(
+                      shortcut: const SingleActivator(
+                        LogicalKeyboardKey.keyA,
+                        control: true,
+                      ),
+                      onPressed: () {
+                        debugPrint('Activated text input item with ${textController.text} as a value.');
+                      },
+                      child: SizedBox(
+                        width: 200,
+                        child: TextField(
+                          controller: textController,
+                          onSubmitted: (String value) {
+                            debugPrint('String $value submitted.');
+                          },
                         ),
                       ),
                     ),
-                  ]),
+                  ),
                   MenuButton(
                     onOpen: () {
                       _openItem(TestMenu.subMenu5);

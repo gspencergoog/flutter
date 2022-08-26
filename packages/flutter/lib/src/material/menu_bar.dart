@@ -15,7 +15,6 @@ import 'button_style_button.dart';
 import 'color_scheme.dart';
 import 'colors.dart';
 import 'constants.dart';
-import 'divider.dart';
 import 'icons.dart';
 import 'ink_well.dart';
 import 'material.dart';
@@ -116,8 +115,6 @@ const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivat
 /// See also:
 ///
 /// * [MenuButton], a menu item which manages a submenu.
-/// * [MenuItemGroup], a menu item which collects its members into a group
-///   separated from other menu items by a divider.
 /// * [MenuItemButton], a leaf menu item which displays the label, an optional
 ///   shortcut label, and optional leading and trailing icons.
 /// * [createMaterialMenu], a function that creates a [MenuEntry] that allows
@@ -287,7 +284,7 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
           clipBehavior: widget.clipBehavior,
           statesController: _statesController,
           orientation: Axis.horizontal,
-          children: MenuItemGroup._expandGroups(widget.children, Axis.horizontal),
+          children: widget.children,
         ),
       ),
     );
@@ -324,8 +321,6 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
 /// * [MenuBar], a class that creates a top level menu bar in a Material Design
 ///   style.
 /// * [MenuButton], a menu item which manages a submenu.
-/// * [MenuItemGroup], a menu item which collects its members into a group
-///   separated from other menu items by a divider.
 /// * [MenuItemButton], a leaf menu item which displays the label, an optional
 ///   shortcut label, and optional leading and trailing icons.
 /// * [createMaterialMenu], a function that creates a [MenuEntry] that allows
@@ -1633,7 +1628,7 @@ class _SubmenuState extends State<_Submenu> {
                           clipBehavior: widget.node.menuClipBehavior,
                           statesController: _statesController,
                           orientation: widget.node.orientation,
-                          children: MenuItemGroup._expandGroups(widget.node.widgetChildren, Axis.vertical),
+                          children: widget.node.widgetChildren,
                         ),
                       ),
                     ),
@@ -1653,94 +1648,6 @@ class _SubmenuState extends State<_Submenu> {
     final Offset upperLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
     final Offset lowerRight = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
     return RelativeRect.fromRect(Rect.fromPoints(upperLeft, lowerRight), overlay.paintBounds);
-  }
-}
-
-/// A group of menu items surrounded by dividers in the menu.
-///
-/// The group will only have dividers between the group and other menu items. If
-/// the group appears at the beginning of the menu, it will only have a divider
-/// following, and if it appears at the end of a menu, it will only have a
-/// divider before it.
-///
-/// It works for horizontal menus (e.g. [MenuBar]) as well as vertical ones.
-class MenuItemGroup extends StatelessWidget {
-  /// Creates a const [MenuItemGroup].
-  ///
-  /// The [members] attribute is required, and must not be empty.
-  const MenuItemGroup({
-    super.key,
-    required this.members,
-    this.orientation = Axis.vertical,
-  }) : assert(members.length != 0);
-
-  /// The members of this [MenuItemGroup].
-  ///
-  /// The list must not be empty.
-  final List<Widget> members;
-
-  /// The layout orientation of this group, which determines the layout of the
-  /// group items, as well as the orientation of the separating [Divider]s.
-  ///
-  /// Defaults to [Axis.vertical].
-  final Axis orientation;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (orientation) {
-      case Axis.horizontal:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: members,
-        );
-      case Axis.vertical:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: members,
-        );
-    }
-  }
-
-  static List<Widget> _expandGroups(List<Widget> menus, Axis orientation) {
-    int nodeIndex = 0;
-    List<Widget> expand(List<Widget> childMenus) {
-      final List<Widget> result = <Widget>[];
-      for (int widgetIndex = 0; widgetIndex < childMenus.length; widgetIndex += 1) {
-        final Widget child = childMenus[widgetIndex];
-        if (child is! MenuItemGroup) {
-          // Non-MenuItemGroups aren't counted as part of the menu item tree, just
-          // rendered.
-          result.add(
-            FocusTraversalOrder(
-              order: NumericFocusOrder(nodeIndex.toDouble()),
-              child: child,
-            ),
-          );
-          continue;
-        }
-        if (child.members.isNotEmpty) {
-          if (result.isNotEmpty && result.last is! _MenuItemDivider) {
-            result.add(_MenuItemDivider(menuOrientation: orientation));
-          }
-          result.addAll(expand(child.members));
-          if (widgetIndex != childMenus.length - 1 && result.last is! _MenuItemDivider) {
-            result.add(_MenuItemDivider(menuOrientation: orientation));
-          }
-        } else {
-          result.add(child);
-          nodeIndex += 1;
-        }
-      }
-      return result;
-    }
-
-    return expand(menus);
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(IterableProperty<Widget>('members', members));
   }
 }
 
@@ -1896,22 +1803,6 @@ class _MenuNodeMarker extends InheritedWidget {
   @override
   bool updateShouldNotify(_MenuNodeMarker oldWidget) {
     return node != oldWidget.node;
-  }
-}
-
-class _MenuItemDivider extends StatelessWidget {
-  const _MenuItemDivider({this.menuOrientation = Axis.vertical});
-
-  final Axis menuOrientation;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (menuOrientation) {
-      case Axis.horizontal:
-        return VerticalDivider(width: math.max(2, 16 + Theme.of(context).visualDensity.horizontal * 4));
-      case Axis.vertical:
-        return Divider(height: math.max(2, 16 + Theme.of(context).visualDensity.vertical * 4));
-    }
   }
 }
 

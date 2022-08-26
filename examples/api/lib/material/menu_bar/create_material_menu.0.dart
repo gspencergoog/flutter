@@ -121,18 +121,16 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
       ),
       MenuButton(
         menuChildren: <Widget>[
-          MenuItemGroup(members: <Widget>[
-            MenuItemButton(
-              onPressed: () => _activate(MenuSelection.colorRed),
-              shortcut: MenuSelection.colorRed.shortcut,
-              child: Text(MenuSelection.colorRed.label),
-            ),
-            MenuItemButton(
-              onPressed: () => _activate(MenuSelection.colorGreen),
-              shortcut: MenuSelection.colorGreen.shortcut,
-              child: Text(MenuSelection.colorGreen.label),
-            ),
-          ]),
+          MenuItemButton(
+            onPressed: () => _activate(MenuSelection.colorRed),
+            shortcut: MenuSelection.colorRed.shortcut,
+            child: Text(MenuSelection.colorRed.label),
+          ),
+          MenuItemButton(
+            onPressed: () => _activate(MenuSelection.colorGreen),
+            shortcut: MenuSelection.colorGreen.shortcut,
+            child: Text(MenuSelection.colorGreen.label),
+          ),
           MenuItemButton(
             onPressed: () => _activate(MenuSelection.colorBlue),
             shortcut: MenuSelection.colorBlue.shortcut,

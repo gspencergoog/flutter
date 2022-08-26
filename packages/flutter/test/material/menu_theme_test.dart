@@ -265,28 +265,20 @@ List<Widget> createTestMenus({
       onClose: onClose != null ? () => onClose(TestMenu.mainMenu1) : null,
       menuStyle: menuStyle,
       menuChildren: <Widget>[
-        MenuItemGroup(
-          members: <Widget>[
-            MenuItemButton(
-              onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu10) : null,
-              shortcut: shortcuts[TestMenu.subMenu10],
-              style: itemStyle,
-              child: Text(TestMenu.subMenu10.label),
-            ),
-          ],
+        MenuItemButton(
+          onPressed: onPressed != null ? () => onPressed(TestMenu.subMenu10) : null,
+          shortcut: shortcuts[TestMenu.subMenu10],
+          style: itemStyle,
+          child: Text(TestMenu.subMenu10.label),
         ),
         MenuButton(
           onOpen: onOpen != null ? () => onOpen(TestMenu.subMenu11) : null,
           onClose: onClose != null ? () => onClose(TestMenu.subMenu11) : null,
           menuChildren: <Widget>[
-            MenuItemGroup(
-              members: <Widget>[
-                MenuItemButton(
-                  onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu100) : null,
-                  shortcut: shortcuts[TestMenu.subSubMenu100],
-                  child: Text(TestMenu.subSubMenu100.label),
-                ),
-              ],
+            MenuItemButton(
+              onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu100) : null,
+              shortcut: shortcuts[TestMenu.subSubMenu100],
+              child: Text(TestMenu.subSubMenu100.label),
             ),
             MenuItemButton(
               onPressed: onPressed != null ? () => onPressed(TestMenu.subSubMenu101) : null,
