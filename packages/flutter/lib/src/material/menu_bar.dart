@@ -1957,9 +1957,10 @@ class _MenuPanelState extends State<_MenuPanel> {
           assert(_debugMenuInfo('Tapped Outside'));
           MenuController.of(context).closeAll();
         },
-        child: FittedOverflowBox(
-          axis: widget.orientation == Axis.horizontal ? Axis.vertical : Axis.horizontal,
-          key: const ValueKey<String>('Hello! '),
+        child: UnconstrainedBox(
+          constrainedAxis: widget.orientation,
+          clipBehavior: Clip.hardEdge,
+          alignment: AlignmentDirectional.centerStart,
           child: _intrinsicCrossSize(
             child: Material(
               elevation: elevation,
