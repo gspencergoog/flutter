@@ -102,7 +102,7 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.green));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(340.0, 48.0, 590.0, 228.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(340.0, 48.0, 590.0, 212.0)));
     expect(subMenuMaterial.elevation, equals(15));
     expect(subMenuMaterial.color, equals(Colors.red));
   });
@@ -175,7 +175,7 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 60.0, 594.0, 248.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 60.0, 594.0, 232.0)));
     expect(subMenuMaterial.elevation, equals(18));
     expect(subMenuMaterial.color, equals(Colors.cyan));
     expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));

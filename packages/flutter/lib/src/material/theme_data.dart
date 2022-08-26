@@ -578,6 +578,7 @@ class ThemeData with Diagnosticable {
     dividerTheme ??= const DividerThemeData();
     drawerTheme ??= const DrawerThemeData();
     elevatedButtonTheme ??= const ElevatedButtonThemeData();
+    expansionTileTheme ??= const ExpansionTileThemeData();
     filledButtonTheme ??= const FilledButtonThemeData();
     floatingActionButtonTheme ??= const FloatingActionButtonThemeData();
     iconButtonTheme ??= const IconButtonThemeData();

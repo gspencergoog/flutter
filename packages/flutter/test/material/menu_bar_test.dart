@@ -50,10 +50,6 @@ void main() {
     addTearDown(() => FocusManager.instance.removeListener(handleFocusChange));
   }
 
-  Finder findDividers() {
-    return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuItemDivider');
-  }
-
   Finder findMenuPanels() {
     return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuPanel');
   }
@@ -173,8 +169,7 @@ void main() {
       );
       expect(
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-          equals(const Rect.fromLTRB(104.0, 48.0, 334.0, 216.0)));
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(104.0, 100.0, 334.0, 116.0)));
+          equals(const Rect.fromLTRB(104.0, 48.0, 334.0, 200.0)));
     });
 
     testWidgets('geometry with RTL direction', (WidgetTester tester) async {
@@ -216,8 +211,7 @@ void main() {
       );
       expect(
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-          equals(const Rect.fromLTRB(466.0, 48.0, 696.0, 216.0)));
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(466.0, 100.0, 696.0, 116.0)));
+          equals(const Rect.fromLTRB(466.0, 48.0, 696.0, 200.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -600,9 +594,8 @@ void main() {
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(126.0, 70.0, 356.0, 238.0)),
+        equals(const Rect.fromLTRB(126.0, 70.0, 356.0, 222.0)),
       );
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(126.0, 122.0, 356.0, 138.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -656,9 +649,8 @@ void main() {
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(444.0, 70.0, 674.0, 238.0)),
+        equals(const Rect.fromLTRB(444.0, 70.0, 674.0, 222.0)),
       );
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(444.0, 122.0, 674.0, 138.0)));
 
       // Close and make sure it goes back where it was.
       await tester.tap(find.text(TestMenu.mainMenu1.label));
@@ -1105,94 +1097,6 @@ void main() {
     });
   });
 
-  group('MenuItemGroup', () {
-    testWidgets('Top level menu groups have appropriate dividers', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              controller: controller,
-              children: createTestMenus(
-                includeExtraGroups: true,
-                onPressed: onPressed,
-                onOpen: onOpen,
-                onClose: onClose,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(findDividers(), findsNWidgets(2));
-      // Children of the top level menu bar should be in the right order (with
-      // the dividers between the right items).
-      final Finder topLevelMenuPanel = findMenuPanels().first;
-      // ignore: avoid_dynamic_calls
-      final List<Widget> children = (tester.widget(topLevelMenuPanel) as dynamic).children as List<Widget>;
-      expect(
-        children.map<String>((Widget child) => child.runtimeType.toString()),
-        equals(
-          <String>[
-            'FocusTraversalOrder',
-            'FocusTraversalOrder',
-            'FocusTraversalOrder',
-            '_MenuItemDivider',
-            'FocusTraversalOrder',
-            '_MenuItemDivider',
-            'FocusTraversalOrder'
-          ],
-        ),
-      );
-    });
-
-    testWidgets('Submenus have appropriate dividers', (WidgetTester tester) async {
-      final GlobalKey menuKey = GlobalKey(debugLabel: 'MenuBar');
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: MenuBar(
-              key: menuKey,
-              controller: controller,
-              children: createTestMenus(
-                includeExtraGroups: true,
-                onPressed: onPressed,
-                onOpen: onOpen,
-                onClose: onClose,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text(TestMenu.mainMenu0.label));
-      await tester.pumpAndSettle();
-
-      expect(findDividers(), findsNWidgets(4));
-
-      // The menu item that is open.
-      final Finder firstMenuList = find
-          .descendant(
-            of: find.byWidget(Navigator.of(menuKey.currentContext!).overlay!.widget),
-            matching: findMenuPanels(),
-          )
-          .at(1);
-      // ignore: avoid_dynamic_calls
-      final List<Widget> children = (tester.widget(firstMenuList) as dynamic).children as List<Widget>;
-      expect(
-        children.map<String>((Widget child) => child.runtimeType.toString()),
-        equals(
-          <String>[
-            'FocusTraversalOrder',
-            '_MenuItemDivider',
-            'FocusTraversalOrder',
-            '_MenuItemDivider',
-            'FocusTraversalOrder'
-          ],
-        ),
-      );
-    });
-  });
-
   group('MenuController', () {
     testWidgets("disposed controllers don't notify listeners", (WidgetTester tester) async {
       final MenuController controller = MenuController();
@@ -1516,7 +1420,7 @@ void main() {
         equalsIgnoringHashCodes(
           <String>[
             'label: Text("Menu 0")',
-            'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(Color(0xff000000), 0.0, BorderStyle.none), BorderRadius.zero)))'
+            'menuStyle: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xff4caf50))), elevation: MaterialStatePropertyAll(20.0), shape: MaterialStatePropertyAll(RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.zero)))',
           ],
         ),
       );
@@ -1571,7 +1475,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 104.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(104.0, 0.0, 204.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(104.0, 116.0, 334.0, 164.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(104.0, 100.0, 334.0, 148.0)));
     });
 
     testWidgets('unconstrained menus show up in the right place in RTL', (WidgetTester tester) async {
@@ -1612,7 +1516,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(696.0, 0.0, 796.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(596.0, 0.0, 696.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(496.0, 0.0, 596.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(466.0, 116.0, 696.0, 164.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(466.0, 100.0, 696.0, 148.0)));
     });
 
     testWidgets('constrained menus show up in the right place in LTR', (WidgetTester tester) async {
@@ -1651,7 +1555,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(4.0, 0.0, 104.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(104.0, 0.0, 204.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(204.0, 0.0, 304.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(62.0, 116.0, 292.0, 164.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(62.0, 100.0, 292.0, 148.0)));
     });
 
     testWidgets('constrained menus show up in the right place in RTL', (WidgetTester tester) async {
@@ -1690,7 +1594,7 @@ void main() {
       expect(menuRects[0], equals(const Rect.fromLTRB(196.0, 0.0, 296.0, 48.0)));
       expect(menuRects[1], equals(const Rect.fromLTRB(96.0, 0.0, 196.0, 48.0)));
       expect(menuRects[2], equals(const Rect.fromLTRB(-4.0, 0.0, 96.0, 48.0)));
-      expect(menuRects[3], equals(const Rect.fromLTRB(8.0, 116.0, 238.0, 164.0)));
+      expect(menuRects[3], equals(const Rect.fromLTRB(8.0, 100.0, 238.0, 148.0)));
     });
   });
 

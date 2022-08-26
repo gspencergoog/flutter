@@ -16,10 +16,6 @@ void main() {
     controller.closeAll();
   });
 
-  Finder findDividers() {
-    return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuItemDivider');
-  }
-
   Finder findMenuPanels() {
     return find.byWidgetPredicate((Widget widget) => widget.runtimeType.toString() == '_MenuPanel');
   }
@@ -288,8 +284,7 @@ void main() {
       );
       expect(
           tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-          equals(const Rect.fromLTRB(350.0, 48.0, 602.0, 188.0)));
-      expect(tester.getRect(findDividers()), equals(const Rect.fromLTRB(352.0, 92.0, 600.0, 102.0)));
+          equals(const Rect.fromLTRB(350.0, 48.0, 602.0, 178.0)));
     });
   });
 }

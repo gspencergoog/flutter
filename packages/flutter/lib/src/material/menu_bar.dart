@@ -199,11 +199,11 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   void initState() {
     super.initState();
+    _initController();
     assert(() {
       _controller._root.menuScopeNode.debugLabel = 'MenuBar';
       return true;
     }());
-    _initController();
     _initStatesController();
   }
 
