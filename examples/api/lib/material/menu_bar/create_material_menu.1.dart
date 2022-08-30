@@ -66,7 +66,6 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   void initState() {
     super.initState();
     _menuEntry = createMaterialMenu(
-      context,
       buttonFocusNode: _buttonFocusNode,
       controller: _controller,
     );
@@ -199,7 +198,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   void _handleSecondaryTapDown(TapDownDetails details) {
-    _menuEntry.open(position: details.globalPosition);
+    _menuEntry.open(context, position: details.globalPosition);
   }
 
   @override

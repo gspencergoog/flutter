@@ -243,7 +243,6 @@ void main() {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        buttonKey,
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -267,17 +266,21 @@ void main() {
         MaterialApp(
           home: Material(
             child: Center(
-              child: ElevatedButton(
-                key: buttonKey,
-                focusNode: focusNode,
-                onPressed: () {
-                  if (menuEntry.isOpen) {
-                    menuEntry.close();
-                  } else {
-                    menuEntry.open();
-                  }
-                },
-                child: const Text('Press Me'),
+              child: MenuAnchor(
+                builder: (BuildContext context) {
+                  return ElevatedButton(
+                    key: buttonKey,
+                    focusNode: focusNode,
+                    onPressed: () {
+                      if (menuEntry.isOpen) {
+                        menuEntry.close();
+                      } else {
+                        menuEntry.open(context);
+                      }
+                    },
+                    child: const Text('Press Me'),
+                  );
+                }
               ),
             ),
           ),
@@ -323,7 +326,6 @@ void main() {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        buttonKey,
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -349,17 +351,21 @@ void main() {
             textDirection: TextDirection.rtl,
             child: Material(
               child: Center(
-                child: ElevatedButton(
-                  key: buttonKey,
-                  focusNode: focusNode,
-                  onPressed: () {
-                    if (menuEntry.isOpen) {
-                      menuEntry.close();
-                    } else {
-                      menuEntry.open();
-                    }
-                  },
-                  child: const Text('Press Me'),
+                child: MenuAnchor(
+                  builder: (BuildContext context) {
+                    return ElevatedButton(
+                      key: buttonKey,
+                      focusNode: focusNode,
+                      onPressed: () {
+                        if (menuEntry.isOpen) {
+                          menuEntry.close();
+                        } else {
+                          menuEntry.open(context);
+                        }
+                      },
+                      child: const Text('Press Me'),
+                    );
+                  }
                 ),
               ),
             ),
@@ -403,7 +409,6 @@ void main() {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        buttonKey,
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -422,22 +427,27 @@ void main() {
           ),
         ],
       );
-
+      BuildContext? testContext;
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
             child: Center(
-              child: ElevatedButton(
-                key: buttonKey,
-                focusNode: focusNode,
-                onPressed: () {
-                  if (menuEntry.isOpen) {
-                    menuEntry.close();
-                  } else {
-                    menuEntry.open();
-                  }
-                },
-                child: const Text('Press Me'),
+              child: MenuAnchor(
+                builder: (BuildContext context) {
+                  testContext = context;
+                  return ElevatedButton(
+                    key: buttonKey,
+                    focusNode: focusNode,
+                    onPressed: () {
+                      if (menuEntry.isOpen) {
+                        menuEntry.close();
+                      } else {
+                        menuEntry.open(context);
+                      }
+                    },
+                    child: const Text('Press Me'),
+                  );
+                }
               ),
             ),
           ),
@@ -461,7 +471,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(100.0, 100.0, 390.0, 204.0)));
 
       // Now move the menu by calling open() again with a position.
-      menuEntry.open(position: const Offset(200, 200));
+      menuEntry.open(testContext!, position: const Offset(200, 200));
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(200, 200, 490.0, 304.0)));
 
@@ -478,7 +488,6 @@ void main() {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuEntry menuEntry = createMaterialMenu(
-        buttonKey,
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -498,23 +507,29 @@ void main() {
         ],
       );
 
+      BuildContext? testContext;
       await tester.pumpWidget(
         MaterialApp(
           home: Directionality(
             textDirection: TextDirection.rtl,
             child: Material(
               child: Center(
-                child: ElevatedButton(
-                  key: buttonKey,
-                  focusNode: focusNode,
-                  onPressed: () {
-                    if (menuEntry.isOpen) {
-                      menuEntry.close();
-                    } else {
-                      menuEntry.open();
-                    }
-                  },
-                  child: const Text('Press Me'),
+                child: MenuAnchor(
+                  builder: (BuildContext context) {
+                    testContext = context;
+                    return ElevatedButton(
+                      key: buttonKey,
+                      focusNode: focusNode,
+                      onPressed: () {
+                        if (menuEntry.isOpen) {
+                          menuEntry.close();
+                        } else {
+                          menuEntry.open(context);
+                        }
+                      },
+                      child: const Text('Press Me'),
+                    );
+                  }
                 ),
               ),
             ),
@@ -539,7 +554,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(210.0, 100.0, 500.0, 204.0)));
 
       // Now move the menu by calling open() again with a position.
-      menuEntry.open(position: const Offset(400, 200));
+      menuEntry.open(testContext!, position: const Offset(400, 200));
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 200.0, 400.0, 304.0)));
 
