@@ -49,17 +49,17 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   MenuSelection? _lastSelection;
   final MenuController _controller = MenuController();
   final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-  late MenuEntry _menuEntry;
+  late MenuHandle _menuEntry;
   ShortcutRegistryEntry? _shortcutsEntry;
 
   /// This is the global key that the menu uses to determine which themes should
   /// be used for the menus. When the position of the menu is supplied to the
-  /// [MenuEntry], as is the case in this example in [_handleSecondaryTapDown],
+  /// [MenuHandle], as is the case in this example in [_handleSecondaryTapDown],
   /// it can be attached to any widget that is in the right context to collect
   /// the correct ancestor themes from (e.g. [TextButtonTheme], [MenuBarTheme],
-  /// etc.). If the [MenuEntry.globalMenuPosition] is not set, then this key is
+  /// etc.). If the [MenuHandle.globalMenuPosition] is not set, then this key is
   /// also used to determine the bounding box of the widget that the menu is
-  /// aligned to with [MenuEntry.alignment].
+  /// aligned to with [MenuHandle.alignment].
   final GlobalKey _buttonKey = GlobalKey();
 
   @override
@@ -100,7 +100,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   void _updateMenuEntry() {
-    _menuEntry.children = <Widget>[
+    _menuEntry._children = <Widget>[
       MenuItemButton(
         child: Text(MenuSelection.about.label),
         onPressed: () => _activate(MenuSelection.about),

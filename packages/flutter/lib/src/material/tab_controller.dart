@@ -97,7 +97,7 @@ class TabController extends ChangeNotifier {
   ///
   /// The [length] must not be null or negative. Typically it's a value greater
   /// than one, i.e. typically there are two or more tabs. The [length] must
-  /// match [TabBar.tabs]'s and [TabBarView.children]'s length.
+  /// match [TabBar.tabs]'s and [TabBarView._children]'s length.
   ///
   /// The `initialIndex` must be valid given [length] and must not be null. If
   /// [length] is zero, then `initialIndex` must be 0 (the default).
@@ -173,7 +173,7 @@ class TabController extends ChangeNotifier {
   /// The total number of tabs.
   ///
   /// Typically greater than one. Must match [TabBar.tabs]'s and
-  /// [TabBarView.children]'s length.
+  /// [TabBarView._children]'s length.
   final int length;
 
   void _changeIndex(int value, { Duration? duration, Curve? curve }) {
@@ -339,7 +339,7 @@ class DefaultTabController extends StatefulWidget {
   /// Creates a default tab controller for the given [child] widget.
   ///
   /// The [length] argument is typically greater than one. The [length] must
-  /// match [TabBar.tabs]'s and [TabBarView.children]'s length.
+  /// match [TabBar.tabs]'s and [TabBarView._children]'s length.
   ///
   /// The [initialIndex] argument must not be null.
   const DefaultTabController({
@@ -355,7 +355,7 @@ class DefaultTabController extends StatefulWidget {
   /// The total number of tabs.
   ///
   /// Typically greater than one. Must match [TabBar.tabs]'s and
-  /// [TabBarView.children]'s length.
+  /// [TabBarView._children]'s length.
   final int length;
 
   /// The initial index of the selected tab.

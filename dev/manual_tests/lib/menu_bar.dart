@@ -215,7 +215,7 @@ class _Controls extends StatefulWidget {
 class _ControlsState extends State<_Controls> {
   final GlobalKey _buttonKey = GlobalKey();
   final FocusNode _focusNode = FocusNode(debugLabel: 'Floating');
-  MenuEntry? _menuEntry;
+  MenuHandle? _menuEntry;
 
   @override
   void initState() {

@@ -242,7 +242,7 @@ void main() {
     testWidgets('menu alignment and offset in LTR', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createMaterialMenu(
+      final MenuHandle menuEntry = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -325,7 +325,7 @@ void main() {
     testWidgets('menu alignment and offset in RTL', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createMaterialMenu(
+      final MenuHandle menuEntry = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -408,7 +408,7 @@ void main() {
     testWidgets('menu position and offset in LTR', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createMaterialMenu(
+      final MenuHandle menuEntry = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -487,7 +487,7 @@ void main() {
     testWidgets('menu position and offset in RTL', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuEntry menuEntry = createMaterialMenu(
+      final MenuHandle menuEntry = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(

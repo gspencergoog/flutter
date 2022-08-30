@@ -49,7 +49,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   MenuSelection? _lastSelection;
   final MenuController _controller = MenuController();
   final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
-  late MenuEntry _menuEntry;
+  late MenuHandle _menuHandle;
   ShortcutRegistryEntry? _shortcutsEntry;
 
   // This is the global key that the menu uses to determine which themes should
@@ -61,7 +61,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   @override
   void initState() {
     super.initState();
-    _menuEntry = createMaterialMenu(
+    _menuHandle = createMaterialMenu(
       buttonFocusNode: _buttonFocusNode,
       controller: _controller,
     );
@@ -92,14 +92,14 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   @override
   void dispose() {
     _shortcutsEntry?.dispose();
-    _menuEntry.dispose();
+    _menuHandle.dispose();
     _controller.dispose();
     _buttonFocusNode.dispose();
     super.dispose();
   }
 
   void _updateMenuEntry() {
-    _menuEntry.children = <Widget>[
+    _menuHandle.widgetChildren = <Widget>[
       MenuItemButton(
         child: Text(MenuSelection.about.label),
         onPressed: () => _activate(MenuSelection.about),
@@ -212,10 +212,10 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
                 key: _buttonKey,
                 focusNode: _buttonFocusNode,
                 onPressed: () {
-                  if (_menuEntry.isOpen) {
-                    _menuEntry.close();
+                  if (_menuHandle.isOpen) {
+                    _menuHandle.close();
                   } else {
-                    _menuEntry.open(context);
+                    _menuHandle.open(context);
                   }
                 },
                 child: const Text('OPEN MENU'),

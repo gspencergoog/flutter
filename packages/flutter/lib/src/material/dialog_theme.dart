@@ -54,7 +54,7 @@ class DialogTheme with Diagnosticable {
   /// [AlertDialog.title].
   final TextStyle? titleTextStyle;
 
-  /// Overrides the default value for [DefaultTextStyle] for [SimpleDialog.children] and
+  /// Overrides the default value for [DefaultTextStyle] for [SimpleDialog._children] and
   /// [AlertDialog.content].
   final TextStyle? contentTextStyle;
 
