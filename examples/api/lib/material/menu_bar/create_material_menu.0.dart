@@ -62,7 +62,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   void initState() {
     super.initState();
     _menuEntry = createMaterialMenu(
-      _buttonKey,
+      context,
       buttonFocusNode: _buttonFocusNode,
       controller: _controller,
     );
@@ -207,17 +207,21 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
         // menu by activating the "tap outside" action of the menu.
         TapRegion(
           groupId: _controller,
-          child: TextButton(
-            key: _buttonKey,
-            focusNode: _buttonFocusNode,
-            onPressed: () {
-              if (_menuEntry.isOpen) {
-                _menuEntry.close();
-              } else {
-                _menuEntry.open();
-              }
+          child: MenuAnchor(
+            builder: (BuildContext context) {
+              return TextButton(
+                key: _buttonKey,
+                focusNode: _buttonFocusNode,
+                onPressed: () {
+                  if (_menuEntry.isOpen) {
+                    _menuEntry.close();
+                  } else {
+                    _menuEntry.open(context);
+                  }
+                },
+                child: const Text('OPEN MENU'),
+              );
             },
-            child: const Text('OPEN MENU'),
           ),
         ),
         Expanded(

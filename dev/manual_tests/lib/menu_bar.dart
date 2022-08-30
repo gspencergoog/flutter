@@ -248,17 +248,21 @@ class _ControlsState extends State<_Controls> {
         children: <Widget>[
           TapRegion(
             groupId: widget.menuController,
-            child: TextButton(
-              key: _buttonKey,
-              focusNode: _focusNode,
-              onPressed: () {
-                if (_menuEntry!.isOpen) {
-                  _menuEntry!.close();
-                } else {
-                  _menuEntry!.open();
-                }
+            child: MenuAnchor(
+              builder: (BuildContext context) {
+                return TextButton(
+                  key: _buttonKey,
+                  focusNode: _focusNode,
+                  onPressed: () {
+                    if (_menuEntry!.isOpen) {
+                      _menuEntry!.close();
+                    } else {
+                      _menuEntry!.open(context);
+                    }
+                  },
+                  child: const Text('Open Menu'),
+                );
               },
-              child: const Text('Open Menu'),
             ),
           ),
           ConstrainedBox(
@@ -389,7 +393,7 @@ class _ControlsState extends State<_Controls> {
   void _createMenuEntry() {
     _menuEntry?.dispose();
     _menuEntry = createMaterialMenu(
-      _buttonKey,
+      context,
       buttonFocusNode: _focusNode,
       style: const MenuStyle(alignment: AlignmentDirectional.topEnd),
       alignmentOffset: const Offset(0, -8),

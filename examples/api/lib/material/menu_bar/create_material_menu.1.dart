@@ -66,7 +66,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   void initState() {
     super.initState();
     _menuEntry = createMaterialMenu(
-      _buttonKey,
+      context,
       buttonFocusNode: _buttonFocusNode,
       controller: _controller,
     );

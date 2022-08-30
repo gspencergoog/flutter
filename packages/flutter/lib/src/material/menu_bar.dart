@@ -1068,10 +1068,10 @@ class _MenuButtonState extends State<MenuButton> {
 
     if (_childMenu == null) {
       _node = _ChildMenuNode(
-        contextKey: _contextKey,
         parent: parent,
         controller: controller,
         buttonFocusNode: _buttonFocusNode,
+        layerLink: _MenuAnchorMarker.maybeOf(context),
         buttonStyle: widget.style,
         menuStyle: widget.menuStyle,
         menuClipBehavior: widget.clipBehavior,
@@ -1084,10 +1084,10 @@ class _MenuButtonState extends State<MenuButton> {
       _childMenu = _createMenuEntryFromExistingNode(_node);
     } else {
       _node
-        ..contextKey = _contextKey
         ..parent = parent
         ..controller = controller
         ..buttonFocusNode = _buttonFocusNode
+        ..layerLink = _MenuAnchorMarker.maybeOf(context)
         ..buttonStyle = widget.style
         ..menuStyle = widget.menuStyle
         ..menuClipBehavior = widget.clipBehavior
@@ -1104,7 +1104,6 @@ class _MenuButtonState extends State<MenuButton> {
     return _MenuNodeMarker(
       node: _node,
       child: TextButton(
-        key: _contextKey,
         style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
         focusNode: _buttonFocusNode,
         onHover: _enabled ? _handleHover : null,
@@ -1124,7 +1123,7 @@ class _MenuButtonState extends State<MenuButton> {
     if (_node.isOpen) {
       _node.close();
     } else {
-      _node.open();
+      _node.open(context);
       if (!_waitingToFocusMenu) {
         // Only schedule this if it's not already scheduled.
         SchedulerBinding.instance.addPostFrameCallback((Duration _) {
@@ -1150,14 +1149,14 @@ class _MenuButtonState extends State<MenuButton> {
     }
 
     if (hovering) {
-      _node.open();
+      _node.open(context);
       _node.focusButton();
     }
   }
 
   void _handleFocusChange() {
     if (_buttonFocusNode.hasPrimaryFocus) {
-      _node.open();
+      _node.open(context);
     }
   }
 
@@ -1319,9 +1318,9 @@ class MenuEntry with ChangeNotifier {
   /// By default, the menu appears at the location that is [alignmentOffset]
   /// away from the alignment origin specified by [MenuStyle.alignment] for the
   /// menu.
-  void open({Offset? position}) {
+  void open(BuildContext context, {Offset? position}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    _node.open(position: position);
+    _node.open(context, position: position);
   }
 
   /// Close the menu.
@@ -1343,6 +1342,53 @@ class MenuEntry with ChangeNotifier {
     _node.removeListener(notifyListeners);
     _node.dispose();
     super.dispose();
+  }
+}
+
+///
+class MenuAnchor extends StatefulWidget {
+  ///
+  const MenuAnchor({super.key, required this.builder});
+
+  ///
+  final WidgetBuilder builder;
+
+  @override
+  State<MenuAnchor> createState() => _MenuAnchorState();
+}
+
+class _MenuAnchorState extends State<MenuAnchor> {
+  final LayerLink _link = LayerLink();
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _link,
+      child: _MenuAnchorMarker(
+        link: _link,
+        child: Builder(
+          builder: widget.builder,
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuAnchorMarker extends InheritedWidget {
+  const _MenuAnchorMarker({
+    required super.child,
+    required this.link,
+  });
+
+  final LayerLink link;
+
+  static LayerLink? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_MenuAnchorMarker>()?.link;
+  }
+
+  @override
+  bool updateShouldNotify(_MenuAnchorMarker oldWidget) {
+    return link != oldWidget.link;
   }
 }
 
@@ -1452,8 +1498,7 @@ class MenuEntry with ChangeNotifier {
 /// * [MenuButton], a menu button that hosts a submenu.
 /// * [MenuItemButton], a menu button that is a leaf menu item, showing an
 ///   optional shortcut label and leading/trailing icon.
-MenuEntry createMaterialMenu(
-  GlobalKey contextKey, {
+MenuEntry createMaterialMenu({
   FocusNode? buttonFocusNode,
   MenuController? controller,
   MaterialStatesController? statesController,
@@ -1468,7 +1513,6 @@ MenuEntry createMaterialMenu(
   final bool ownsController = controller == null;
   controller ??= MenuController();
   final _ChildMenuNode node = _ChildMenuNode(
-    contextKey: contextKey,
     buttonFocusNode: buttonFocusNode,
     controller: controller,
     ownsController: ownsController,
@@ -1488,18 +1532,6 @@ MenuEntry createMaterialMenu(
 MenuEntry _createMenuEntryFromExistingNode(_ChildMenuNode node) {
   assert(_debugMenuInfo('Creating menu entry from $node'));
   final MenuEntry menuEntry = MenuEntry._(node);
-  node.overlayEntry = OverlayEntry(builder: (BuildContext context) {
-    final OverlayState overlay = Overlay.of(context)!;
-    return _MenuNodeMarker(
-      node: node,
-      child: InheritedTheme.captureAll(
-        // Copy all the themes from the menu bar to the overlay.
-        node.topLevel.context,
-        _Submenu(node: node),
-        to: overlay.context,
-      ),
-    );
-  });
   return menuEntry;
 }
 
@@ -1562,7 +1594,7 @@ class _SubmenuState extends State<_Submenu> {
       animation: widget.node,
       builder: (BuildContext context, Widget? ignoredChild) {
         // Use the text direction of the context where the button is.
-        final TextDirection textDirection = Directionality.of(widget.node.topLevel.context);
+        final TextDirection textDirection = widget.node.topLevel.textDirection!;
         final MenuButtonThemeData menuButtonTheme = MenuButtonTheme.of(context);
         final Set<MaterialState> state = <MaterialState>{
           if (!widget.node.enabled) MaterialState.disabled,
@@ -1602,18 +1634,8 @@ class _SubmenuState extends State<_Submenu> {
           data: Theme.of(context).copyWith(
             visualDensity: visualDensity,
           ),
-          child: CustomSingleChildLayout(
-            delegate: _MenuLayout(
-              buttonRect: _getMenuButtonRect(),
-              textDirection: textDirection,
-              buttonPadding: buttonPadding,
-              avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-              alignment: alignment,
-              alignmentOffset: widget.node.alignmentOffset,
-              globalMenuPosition: widget.node.globalMenuPosition,
-              orientation: widget.node.orientation,
-              parentOrientation: widget.node.parent.orientation,
-            ),
+          child: CompositedTransformFollower(
+            link:
             child: MouseRegion(
               cursor: mouseCursor,
               hitTestBehavior: HitTestBehavior.deferToChild,
@@ -2376,8 +2398,9 @@ class _ChildMenuNode extends _MenuNode {
     required MenuController controller,
     this.ownsController = false,
     required List<Widget> widgetChildren,
-    required GlobalKey contextKey,
     FocusNode? buttonFocusNode,
+    TextDirection? textDirection,
+    required LayerLink? layerLink,
     this.onOpen,
     this.onClose,
     Offset alignmentOffset = Offset.zero,
@@ -2388,7 +2411,8 @@ class _ChildMenuNode extends _MenuNode {
     Clip menuClipBehavior = Clip.none,
     MaterialStatesController? statesController,
   })  : _buttonFocusNode = buttonFocusNode,
-        _contextKey = contextKey,
+        _textDirection = textDirection,
+        _layerLink = layerLink,
         _controller = controller,
         _statesController = statesController,
         _widgetChildren = widgetChildren,
@@ -2419,6 +2443,8 @@ class _ChildMenuNode extends _MenuNode {
   @override
   bool get isRoot => false;
 
+  bool get isOpen => overlayEntry != null;
+
   @override
   _MenuNode parent;
 
@@ -2426,7 +2452,6 @@ class _ChildMenuNode extends _MenuNode {
   // node.
   bool ownsController;
   OverlayEntry? overlayEntry;
-  bool isOpen = false;
   VoidCallback? onOpen;
   VoidCallback? onClose;
   bool _notificationScheduled = false;
@@ -2459,17 +2484,22 @@ class _ChildMenuNode extends _MenuNode {
     }
   }
 
-  BuildContext get context {
-    if (contextKey.currentContext == null) {
-      throw FlutterError(
-        "The menu global key $contextKey doesn't have a valid context.\n"
-        'The global key $contextKey must be attached to a mounted widget so that it has a non-null '
-        'currentContext member. This provides a context for the menu to both determine the themes '
-        'that relevant for it, as well as determine the location of the menu based on the bounds '
-        'of the context attached to the GlobalKey.',
-      );
+  TextDirection? get textDirection => _textDirection;
+  TextDirection? _textDirection;
+  set textDirection(TextDirection? value) {
+    if (_textDirection != value) {
+      _textDirection = value;
+      _notifyNextFrame();
     }
-    return contextKey.currentContext!;
+  }
+
+  LayerLink? get layerLink => _layerLink;
+  LayerLink? _layerLink;
+  set layerLink(LayerLink? value) {
+    if (_layerLink != value) {
+      _layerLink = value;
+      _notifyNextFrame();
+    }
   }
 
   FocusNode? get buttonFocusNode => _buttonFocusNode;
@@ -2477,15 +2507,6 @@ class _ChildMenuNode extends _MenuNode {
   set buttonFocusNode(FocusNode? value) {
     if (_buttonFocusNode != value) {
       _buttonFocusNode = value;
-      _notifyNextFrame();
-    }
-  }
-
-  GlobalKey get contextKey => _contextKey;
-  GlobalKey _contextKey;
-  set contextKey(GlobalKey value) {
-    if (_contextKey != value) {
-      _contextKey = value;
       _notifyNextFrame();
     }
   }
@@ -2587,7 +2608,7 @@ class _ChildMenuNode extends _MenuNode {
     return null;
   }
 
-  void open({Offset? position}) {
+  void open(BuildContext context, {Offset? position}) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     globalMenuPosition = position;
     if (isOpen) {
@@ -2599,6 +2620,19 @@ class _ChildMenuNode extends _MenuNode {
     parent.closeChildren();
     final bool wasOpen = controller.menuIsOpen;
     root.openMenus.add(this);
+    assert(overlayEntry == null);
+    overlayEntry = OverlayEntry(builder: (BuildContext context) {
+      final OverlayState overlay = Overlay.of(context)!;
+      return _MenuNodeMarker(
+        node: this,
+        child: InheritedTheme.captureAll(
+          // Copy all the themes from the menu bar to the overlay.
+          context,
+          _Submenu(node: this),
+          to: overlay.context,
+        ),
+      );
+    });
     Overlay.of(context)!.insert(overlayEntry!);
     isOpen = true;
     controller._menuOpened(this, wasOpen: wasOpen);
@@ -2617,6 +2651,7 @@ class _ChildMenuNode extends _MenuNode {
     closeChildren();
     root.openMenus.remove(this);
     overlayEntry?.remove();
+    overlayEntry = null;
     isOpen = false;
     controller._menuClosed(this, inDispose: inDispose);
     onClose?.call();
@@ -2677,7 +2712,6 @@ class _ChildMenuNode extends _MenuNode {
     super.debugFillProperties(properties);
     properties.add(FlagProperty('isOpen', value: isOpen, ifTrue: 'OPEN', defaultValue: false));
     properties.add(DiagnosticsProperty<FocusNode>('buttonFocusNode', buttonFocusNode));
-    properties.add(DiagnosticsProperty<GlobalKey>('contextKey', contextKey));
     properties.add(DiagnosticsProperty<FocusScopeNode>('menuScopeNode', menuScopeNode));
     properties.add(DiagnosticsProperty<Offset>('globalMenuPosition', globalMenuPosition));
     properties.add(DiagnosticsProperty<Offset>('alignmentOffset', alignmentOffset));
