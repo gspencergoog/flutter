@@ -20,7 +20,7 @@ void main() {
   Finder findMenuPanels(Axis orientation) {
     return find.byWidgetPredicate((Widget widget) {
       // ignore: avoid_dynamic_calls
-      return widget.runtimeType.toString() == '_MenuPanel' && (widget as dynamic).orientation == orientation;
+      return widget.runtimeType.toString() == '_MenuPanel' && (widget as dynamic)._orientation == orientation;
     });
   }
 

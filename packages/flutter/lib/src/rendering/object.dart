@@ -4094,7 +4094,7 @@ abstract class _InterestingSemanticsFragment extends _SemanticsFragment {
 /// the semantics tree.
 ///
 /// The root node is available as the only element in the Iterable returned by
-/// [_children].
+/// [children].
 class _RootSemanticsFragment extends _InterestingSemanticsFragment {
   _RootSemanticsFragment({
     required super.owner,
@@ -4171,7 +4171,7 @@ class _RootSemanticsFragment extends _InterestingSemanticsFragment {
 /// Similarly, the new node will also take over the children that otherwise
 /// would have been added to the parent's [SemanticsNode].
 ///
-/// After a call to [markAsExplicit] the only element returned by [_children]
+/// After a call to [markAsExplicit] the only element returned by [children]
 /// is the newly created node and [config] will return null as the fragment
 /// no longer wants to merge any semantic information into the parent's
 /// [SemanticsNode].

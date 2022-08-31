@@ -57,7 +57,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   /// [MenuHandle], as is the case in this example in [_handleSecondaryTapDown],
   /// it can be attached to any widget that is in the right context to collect
   /// the correct ancestor themes from (e.g. [TextButtonTheme], [MenuBarTheme],
-  /// etc.). If the [MenuHandle.globalMenuPosition] is not set, then this key is
+  /// etc.). If the [MenuHandle._globalMenuPosition] is not set, then this key is
   /// also used to determine the bounding box of the widget that the menu is
   /// aligned to with [MenuHandle.alignment].
   final GlobalKey _buttonKey = GlobalKey();
@@ -100,7 +100,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   void _updateMenuEntry() {
-    _menuEntry.widgetChildren = <Widget>[
+    _menuEntry._widgetChildren = <Widget>[
       MenuItemButton(
         child: Text(MenuSelection.about.label),
         onPressed: () => _activate(MenuSelection.about),
