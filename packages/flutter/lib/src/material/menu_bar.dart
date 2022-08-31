@@ -234,11 +234,15 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
       },
       child: Shortcuts(
         shortcuts: _kMenuTraversalShortcuts,
-        child: _MenuPanel(
-          menuStyle: widget.style,
-          clipBehavior: widget.clipBehavior,
-          orientation: Axis.horizontal,
-          children: widget.children,
+        child: MenuAnchor(
+          builder: (BuildContext context) {
+            return _MenuPanel(
+              menuStyle: widget.style,
+              clipBehavior: widget.clipBehavior,
+              orientation: Axis.horizontal,
+              children: widget.children,
+            );
+          }
         ),
       ),
     );
@@ -1051,21 +1055,23 @@ class _MenuButtonState extends State<MenuButton> {
   Widget build(BuildContext context) {
     return _MenuHandleMarker(
       handle: _handle!,
-      child: MenuAnchor(builder: (BuildContext context) {
-        return TextButton(
-          style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
-          focusNode: _buttonFocusNode,
-          onHover: _enabled ? (bool hovering) => _handleHover(hovering, context) : null,
-          onPressed: _enabled ? () => _toggleShowMenu(context) : null,
-          child: _MenuItemLabel(
-            leadingIcon: widget.leadingIcon,
-            trailingIcon: widget.trailingIcon,
-            hasSubmenu: true,
-            showDecoration: !_handle!.isTopLevel,
-            child: widget.child!,
-          ),
-        );
-      }),
+      child: MenuAnchor(
+        builder: (BuildContext context) {
+          return TextButton(
+            style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
+            focusNode: _buttonFocusNode,
+            onHover: _enabled ? (bool hovering) => _handleHover(hovering, context) : null,
+            onPressed: _enabled ? () => _toggleShowMenu(context) : null,
+            child: _MenuItemLabel(
+              leadingIcon: widget.leadingIcon,
+              trailingIcon: widget.trailingIcon,
+              hasSubmenu: true,
+              showDecoration: !_handle!.isTopLevel,
+              child: widget.child!,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -1366,40 +1372,44 @@ class _SubmenuState extends State<_Submenu> {
       data: Theme.of(context).copyWith(
         visualDensity: visualDensity,
       ),
-      child: CustomSingleChildLayout(
-        delegate: _MenuLayout(
-          buttonRect: _getMenuButtonRect(anchor!.anchorKey.currentContext!),
-          textDirection: textDirection,
-          buttonPadding: buttonPadding,
-          avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-          alignment: alignment,
-          alignmentOffset: _handle.alignmentOffset,
-          globalMenuPosition: _handle.globalMenuPosition,
-          orientation: _handle.orientation,
-          parentOrientation: _handle._parent!.orientation,
-        ),
-        child: MouseRegion(
-          cursor: mouseCursor,
-          hitTestBehavior: HitTestBehavior.deferToChild,
-          child: FocusScope(
-            node: _handle.menuScopeNode,
-            child: Actions(
-              actions: <Type, Action<Intent>>{
-                DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle.root),
-                DismissIntent: _MenuDismissAction(controller: _handle.root),
-              },
-              child: Shortcuts(
-                shortcuts: _kMenuTraversalShortcuts,
-                child: _MenuHandleMarker(
-                  handle: _handle,
-                  child: Directionality(
-                    // Copy the directionality from the button into the overlay.
-                    textDirection: textDirection,
-                    child: _MenuPanel(
-                      menuStyle: widgetStyle,
-                      clipBehavior: _handle.menuClipBehavior,
-                      orientation: _handle.orientation,
-                      children: _handle.widgetChildren,
+      child: CompositedTransformFollower(
+        link: anchor!.link,
+        offset: _handle.alignmentOffset - (_handle.buttonRect?.topLeft ?? Offset.zero),
+        child: CustomSingleChildLayout(
+          delegate: _MenuLayout(
+            buttonRect: _getMenuButtonRect(anchor!.anchorKey.currentContext!),
+            textDirection: textDirection,
+            buttonPadding: buttonPadding,
+            avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
+            alignment: alignment,
+            alignmentOffset: _handle.alignmentOffset,
+            globalMenuPosition: _handle.globalMenuPosition,
+            orientation: _handle.orientation,
+            parentOrientation: _handle._parent!.orientation,
+          ),
+          child: MouseRegion(
+            cursor: mouseCursor,
+            hitTestBehavior: HitTestBehavior.deferToChild,
+            child: FocusScope(
+              node: _handle.menuScopeNode,
+              child: Actions(
+                actions: <Type, Action<Intent>>{
+                  DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle.root),
+                  DismissIntent: _MenuDismissAction(controller: _handle.root),
+                },
+                child: Shortcuts(
+                  shortcuts: _kMenuTraversalShortcuts,
+                  child: _MenuHandleMarker(
+                    handle: _handle,
+                    child: Directionality(
+                      // Copy the directionality from the button into the overlay.
+                      textDirection: textDirection,
+                      child: _MenuPanel(
+                        menuStyle: widgetStyle,
+                        clipBehavior: _handle.menuClipBehavior,
+                        orientation: _handle.orientation,
+                        children: _handle.widgetChildren,
+                      ),
                     ),
                   ),
                 ),
@@ -2175,6 +2185,7 @@ class MenuHandle extends _MenuHandleBase {
 
   List<Widget> widgetChildren;
   Offset alignmentOffset;
+  Rect? buttonRect;
   Offset? globalMenuPosition;
   MenuStyle? menuStyle;
   ButtonStyle? buttonStyle;
@@ -2221,6 +2232,11 @@ class MenuHandle extends _MenuHandleBase {
     _parent?.closeChildren(); // Close all siblings.
     final bool somethingWasOpen = root.descendantIsOpen;
     assert(_overlayEntry == null);
+    final RenderBox renderBox = context.findRenderObject()! as RenderBox;
+    buttonRect = Rect.fromPoints(
+      renderBox.localToGlobal(Offset.zero),
+      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
+    );
     final _MenuAnchorMarker anchor = _MenuAnchorMarker.maybeOf(context)!;
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
