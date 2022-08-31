@@ -100,7 +100,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   }
 
   void _updateMenuEntry() {
-    _menuEntry._widgetChildren = <Widget>[
+    _menuEntry.widgetChildren = <Widget>[
       MenuItemButton(
         child: Text(MenuSelection.about.label),
         onPressed: () => _activate(MenuSelection.about),

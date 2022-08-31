@@ -314,7 +314,7 @@ void main() {
       await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry._alignmentOffset = const Offset(10, 20);
+      menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       expect(
         tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
@@ -400,7 +400,7 @@ void main() {
       await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry._alignmentOffset = const Offset(10, 20);
+      menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(-10, 20)));
     });
@@ -466,7 +466,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
 
       // Now move the menu by setting the accessor.
-      menuEntry._globalMenuPosition = const Offset(100, 100);
+      menuEntry.globalMenuPosition = const Offset(100, 100);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(100.0, 100.0, 390.0, 204.0)));
 
@@ -476,7 +476,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(200, 200, 490.0, 304.0)));
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry._alignmentOffset = const Offset(10, 20);
+      menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       expect(
         tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
@@ -549,7 +549,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
 
       // Now move the menu by setting the accessor.
-      menuEntry._globalMenuPosition = const Offset(500, 100);
+      menuEntry.globalMenuPosition = const Offset(500, 100);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(210.0, 100.0, 500.0, 204.0)));
 
@@ -559,7 +559,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 200.0, 400.0, 304.0)));
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry._alignmentOffset = const Offset(10, 20);
+      menuEntry.alignmentOffset = const Offset(10, 20);
       await tester.pump();
       expect(
         tester.getRect(findMenuScope).topLeft - menuRect.topLeft,

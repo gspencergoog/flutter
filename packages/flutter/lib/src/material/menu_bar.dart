@@ -2007,7 +2007,7 @@ class MenuController extends _MenuHandleBase {
   bool get menuIsOpen => descendantIsOpen;
 
   @override
-  FocusScopeNode _menuScopeNode;
+  final FocusScopeNode _menuScopeNode;
 
   @override
   Axis get _orientation => Axis.horizontal;
@@ -2105,8 +2105,6 @@ class MenuController extends _MenuHandleBase {
         _previousFocus = null;
       });
     }
-    if (!inDispose) {
-    }
     assert(_debugMenuInfo('Menu closed $close'));
   }
 
@@ -2184,18 +2182,20 @@ class MenuHandle extends _MenuHandleBase {
   @override
   Axis get _orientation => Axis.vertical;
 
-  List<Widget> _widgetChildren;
-  Offset _alignmentOffset;
+  @override
+  final FocusScopeNode _menuScopeNode;
+
+  final List<Widget> _widgetChildren;
+  final Offset _alignmentOffset;
   Rect? _buttonRect;
   Offset? _globalMenuPosition;
-  MenuStyle? _menuStyle;
-  ButtonStyle? _buttonStyle;
-  VoidCallback? _onOpen;
-  VoidCallback? _onClose;
-  FocusScopeNode _menuScopeNode;
-  FocusNode? _buttonFocusNode;
-  Clip _menuClipBehavior;
-  bool _ownsParent;
+  final MenuStyle? _menuStyle;
+  final ButtonStyle? _buttonStyle;
+  final VoidCallback? _onOpen;
+  final VoidCallback? _onClose;
+  final FocusNode? _buttonFocusNode;
+  final Clip _menuClipBehavior;
+  final bool _ownsParent;
 
   @protected
   OverlayEntry? _overlayEntry;
