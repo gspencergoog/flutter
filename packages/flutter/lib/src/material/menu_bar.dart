@@ -538,7 +538,8 @@ class MenuItemButton extends StatefulWidget {
     properties.add(DiagnosticsProperty<Widget?>('trailingIcon', trailingIcon, defaultValue: null));
     properties.add(DiagnosticsProperty<FocusNode?>('focusNode', focusNode, defaultValue: null));
     properties.add(EnumProperty<Clip>('clipBehavior', clipBehavior, defaultValue: Clip.none));
-    properties.add(DiagnosticsProperty<MaterialStatesController?>('statesController', statesController, defaultValue: null));
+    properties
+        .add(DiagnosticsProperty<MaterialStatesController?>('statesController', statesController, defaultValue: null));
   }
 }
 
@@ -590,8 +591,8 @@ class _MenuItemButtonState extends State<MenuItemButton> {
     // each type of style exists. Each "*StyleOf" function is only called once.
     final ButtonStyle mergedStyle =
         widget.style?.merge(widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context))) ??
-        widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context)) ??
-        widget.defaultStyleOf(context);
+            widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context)) ??
+            widget.defaultStyleOf(context);
 
     return TextButton(
       onPressed: _enabled ? _handleSelect : null,
@@ -1047,7 +1048,7 @@ class _MenuButtonState extends State<MenuButton> {
       onOpen: widget.onOpen,
       onClose: widget.onClose,
       alignmentOffset: menuPaddingOffset,
-      children: widget.menuChildren,
+      menuChildren: widget.menuChildren,
     );
   }
 
@@ -1300,7 +1301,7 @@ MenuHandle createMaterialMenu({
     onClose: onClose,
     alignmentOffset: alignmentOffset,
     globalMenuPosition: globalMenuPosition,
-    children: children,
+    menuChildren: children,
     ownsParent: ownsController,
   );
 }
@@ -1367,51 +1368,42 @@ class _SubmenuState extends State<_Submenu> {
         menuButtonTheme.style?.padding?.resolve(state) ??
         _MenuButtonDefaultsM3(context).padding!.resolve(state);
 
-    final _MenuAnchorMarker anchor = _MenuAnchorMarker.maybeOf(context)!;
+    final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        visualDensity: visualDensity,
+    Widget child = CustomSingleChildLayout(
+      delegate: _MenuLayout(
+        buttonRect: anchor != null ? _getMenuButtonRect(anchor.anchorKey.currentContext!) : null,
+        textDirection: textDirection,
+        buttonPadding: buttonPadding,
+        avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
+        alignment: alignment,
+        alignmentOffset: _handle._alignmentOffset,
+        globalMenuPosition: _handle._globalMenuPosition,
+        orientation: _handle._orientation,
+        parentOrientation: _handle._parent!._orientation,
       ),
-      child: CompositedTransformFollower(
-        link: anchor.link,
-        offset: _handle._alignmentOffset - (_handle._buttonRect?.topLeft ?? Offset.zero),
-        child: CustomSingleChildLayout(
-          delegate: _MenuLayout(
-            buttonRect: _getMenuButtonRect(anchor.anchorKey.currentContext!),
-            textDirection: textDirection,
-            buttonPadding: buttonPadding,
-            avoidBounds: DisplayFeatureSubScreen.avoidBounds(MediaQuery.of(context)).toSet(),
-            alignment: alignment,
-            alignmentOffset: _handle._alignmentOffset,
-            globalMenuPosition: _handle._globalMenuPosition,
-            orientation: _handle._orientation,
-            parentOrientation: _handle._parent!._orientation,
-          ),
-          child: MouseRegion(
-            cursor: mouseCursor,
-            hitTestBehavior: HitTestBehavior.deferToChild,
-            child: FocusScope(
-              node: _handle._menuScopeNode,
-              child: Actions(
-                actions: <Type, Action<Intent>>{
-                  DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle.root),
-                  DismissIntent: _MenuDismissAction(controller: _handle.root),
-                },
-                child: Shortcuts(
-                  shortcuts: _kMenuTraversalShortcuts,
-                  child: _MenuHandleMarker(
-                    handle: _handle,
-                    child: Directionality(
-                      // Copy the directionality from the button into the overlay.
-                      textDirection: textDirection,
-                      child: _MenuPanel(
-                        menuStyle: widgetStyle,
-                        clipBehavior: _handle._menuClipBehavior,
-                        orientation: _handle._orientation,
-                        children: _handle._children,
-                      ),
-                    ),
+      child: MouseRegion(
+        cursor: mouseCursor,
+        hitTestBehavior: HitTestBehavior.deferToChild,
+        child: FocusScope(
+          node: _handle._menuScopeNode,
+          child: Actions(
+            actions: <Type, Action<Intent>>{
+              DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle.root),
+              DismissIntent: _MenuDismissAction(controller: _handle.root),
+            },
+            child: Shortcuts(
+              shortcuts: _kMenuTraversalShortcuts,
+              child: _MenuHandleMarker(
+                handle: _handle,
+                child: Directionality(
+                  // Copy the directionality from the button into the overlay.
+                  textDirection: textDirection,
+                  child: _MenuPanel(
+                    menuStyle: widgetStyle,
+                    clipBehavior: _handle._menuClipBehavior,
+                    orientation: _handle._orientation,
+                    children: _handle._menuChildren,
                   ),
                 ),
               ),
@@ -1419,6 +1411,21 @@ class _SubmenuState extends State<_Submenu> {
           ),
         ),
       ),
+    );
+
+    if (anchor != null) {
+      child = CompositedTransformFollower(
+        link: anchor.link,
+        offset: _handle._alignmentOffset - (_handle._buttonRect?.topLeft ?? Offset.zero),
+        child: child,
+      );
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        visualDensity: visualDensity,
+      ),
+      child: child,
     );
   }
 }
@@ -1714,7 +1721,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   });
 
   // Rectangle of underlying button, relative to the overlay's dimensions.
-  final RelativeRect buttonRect;
+  final RelativeRect? buttonRect;
 
   // Whether to prefer going to the left or to the right.
   final TextDirection textDirection;
@@ -1754,7 +1761,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     // childSize: The size of the menu, when fully open, as determined by
     // getConstraintsForChild.
     final Rect overlayRect = Offset.zero & size;
-    final Rect absoluteButtonRect = buttonRect.toRect(overlayRect);
+    final Rect absoluteButtonRect = buttonRect?.toRect(overlayRect) ?? Rect.zero;
     final Alignment alignment = this.alignment.resolve(textDirection);
     final Offset desiredPosition = globalMenuPosition ?? alignment.withinRect(absoluteButtonRect);
     final Offset originCenter = absoluteButtonRect.center;
@@ -1876,25 +1883,25 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin {
   Axis get _orientation;
 
   @protected
-  final List<_MenuHandleBase> _menuChildren = <_MenuHandleBase>[];
+  final List<_MenuHandleBase> _children = <_MenuHandleBase>[];
 
   void addChild(_MenuHandleBase child) {
     assert(isRoot || _debugMenuInfo('Added root child: $child'));
-    assert(!_menuChildren.contains(child));
-    _menuChildren.add(child);
+    assert(!_children.contains(child));
+    _children.add(child);
     assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
   void removeChild(_MenuHandleBase child) {
     assert(isRoot || _debugMenuInfo('Removed root child: $child'));
-    assert(_menuChildren.contains(child));
-    _menuChildren.remove(child);
+    assert(_children.contains(child));
+    _children.remove(child);
     assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
   void closeChildren({bool inDispose = false}) {
     assert(_debugMenuInfo('Closing children of ${this}${inDispose ? ' (dispose)' : ''}'));
-    for (final MenuHandle child in List<MenuHandle>.from(_menuChildren)) {
+    for (final MenuHandle child in List<MenuHandle>.from(_children)) {
       child.close(inDispose: inDispose);
     }
   }
@@ -1923,7 +1930,7 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin {
   }
 
   bool get descendantIsOpen {
-    for (final _MenuHandleBase child in _menuChildren) {
+    for (final _MenuHandleBase child in _children) {
       if (child.descendantIsOpen) {
         return true;
       }
@@ -1932,19 +1939,19 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin {
   }
 
   _MenuHandleBase? get previousSibling {
-    final int index = _parent!._menuChildren.indexOf(this);
+    final int index = _parent!._children.indexOf(this);
     assert(index != -1, 'Unable to find this widget $this in parent $_parent');
     if (index > 0) {
-      return _parent!._menuChildren[index - 1];
+      return _parent!._children[index - 1];
     }
     return null;
   }
 
   _MenuHandleBase? get nextSibling {
-    final int index = _parent!._menuChildren.indexOf(this);
+    final int index = _parent!._children.indexOf(this);
     assert(index != -1, 'Unable to find this widget $this in parent $_parent');
-    if (index < _parent!._menuChildren.length - 1) {
-      return _parent!._menuChildren[index + 1];
+    if (index < _parent!._children.length - 1) {
+      return _parent!._children[index + 1];
     }
     return null;
   }
@@ -1960,7 +1967,7 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin {
   List<DiagnosticsNode> debugDescribeChildren() {
     return <DiagnosticsNode>[
       ...super.debugDescribeChildren(),
-      ..._menuChildren.map<DiagnosticsNode>((_MenuHandleBase child) => child.toDiagnosticsNode()),
+      ..._children.map<DiagnosticsNode>((_MenuHandleBase child) => child.toDiagnosticsNode()),
     ];
   }
 
@@ -2140,7 +2147,7 @@ class MenuHandle extends _MenuHandleBase {
   /// [createMaterialMenu].
   MenuHandle._({
     _MenuHandleBase? parent,
-    required List<Widget> children,
+    required List<Widget> menuChildren,
     FocusNode? buttonFocusNode,
     VoidCallback? onOpen,
     VoidCallback? onClose,
@@ -2151,7 +2158,7 @@ class MenuHandle extends _MenuHandleBase {
     Clip menuClipBehavior = Clip.none,
     bool ownsParent = false,
   })  : _parent = parent,
-        _children = children,
+        _menuChildren = menuChildren,
         _buttonFocusNode = buttonFocusNode,
         _onOpen = onOpen,
         _onClose = onClose,
@@ -2178,7 +2185,7 @@ class MenuHandle extends _MenuHandleBase {
   @override
   Axis get _orientation => Axis.vertical;
 
-  final List<Widget> _children;
+  final List<Widget> _menuChildren;
   final FocusScopeNode _menuScopeNode;
   final MenuStyle? _menuStyle;
   final ButtonStyle? _buttonStyle;
@@ -2232,25 +2239,32 @@ class MenuHandle extends _MenuHandleBase {
       renderBox.localToGlobal(Offset.zero),
       renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
     );
-    final _MenuAnchorMarker anchor = _MenuAnchorMarker.maybeOf(context)!;
+
+    final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
+
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         final OverlayState overlay = Overlay.of(context)!;
-        return _MenuAnchorMarker(
-          anchorKey: anchor.anchorKey,
-          link: anchor.link,
-          child: _MenuHandleMarker(
-            handle: this,
-            child: InheritedTheme.captureAll(
-              // Copy all the themes from the menu bar to the overlay.
-              context,
-              const _Submenu(),
-              to: overlay.context,
-            ),
+        final Widget child = _MenuHandleMarker(
+          handle: this,
+          child: InheritedTheme.captureAll(
+            // Copy all the themes from the menu bar to the overlay.
+            context,
+            const _Submenu(),
+            to: overlay.context,
           ),
         );
+        if (anchor != null) {
+          return _MenuAnchorMarker(
+            anchorKey: anchor.anchorKey,
+            link: anchor.link,
+            child: child,
+          );
+        }
+        return child;
       },
     );
+
     Overlay.of(context)!.insert(_overlayEntry!);
     root._menuOpened(this, wasOpen: somethingWasOpen);
     _onOpen?.call();
@@ -2282,14 +2296,14 @@ class MenuHandle extends _MenuHandleBase {
   void dispose() {
     assert(_debugMenuInfo('Disposing of $this'));
     if (!isOpen) {
-      _menuChildren.clear();
+      _children.clear();
       return;
     }
     closeChildren(inDispose: true);
     _overlayEntry?.remove();
     _overlayEntry = null;
     _parent?.removeChild(this);
-    _menuChildren.clear();
+    _children.clear();
     if (_ownsParent) {
       _parent?.dispose();
     }
@@ -2305,7 +2319,7 @@ class MenuHandle extends _MenuHandleBase {
   List<DiagnosticsNode> debugDescribeChildren() {
     return <DiagnosticsNode>[
       ...super.debugDescribeChildren(),
-      ..._menuChildren.map<DiagnosticsNode>((_MenuHandleBase child) => child.toDiagnosticsNode()),
+      ..._children.map<DiagnosticsNode>((_MenuHandleBase child) => child.toDiagnosticsNode()),
     ];
   }
 
@@ -2618,7 +2632,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     final MenuHandle? sibling = currentMenu.topLevel.nextSibling as MenuHandle?;
     if (sibling == null) {
       // Wrap around to the first top level.
-      (currentMenu.topLevel._parent!._menuChildren.first as MenuHandle)._focusButton();
+      (currentMenu.topLevel._parent!._children.first as MenuHandle)._focusButton();
     } else {
       sibling._focusButton();
     }
@@ -2629,7 +2643,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     final MenuHandle? sibling = currentMenu.topLevel.previousSibling as MenuHandle?;
     if (sibling == null) {
       // Already on the first one, wrap around to the last one.
-      (currentMenu.topLevel._parent!._menuChildren.last as MenuHandle)._focusButton();
+      (currentMenu.topLevel._parent!._children.last as MenuHandle)._focusButton();
     } else {
       sibling._focusButton();
     }
