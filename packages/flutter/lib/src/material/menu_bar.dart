@@ -1058,9 +1058,17 @@ class _MenuButtonState extends State<MenuButton> {
       handle: _handle!,
       child: MenuAnchor(
         builder: (BuildContext context) {
+          // Since we don't want to use the theme style or default style from the
+          // TextButton, we merge the styles, merging them in the right order when
+          // each type of style exists. Each "*StyleOf" function is only called once.
+          final ButtonStyle mergedStyle =
+              widget.style?.merge(widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context))) ??
+                  widget.themeStyleOf(context)?.merge(widget.defaultStyleOf(context)) ??
+                  widget.defaultStyleOf(context);
+
           return TextButton(
             key: _buttonKey,
-            style: widget.style ?? MenuButtonTheme.of(context).style ?? _MenuButtonDefaultsM3(context),
+            style: mergedStyle,
             focusNode: _buttonFocusNode,
             onHover: _enabled ? (bool hovering) => _handleHover(hovering, context) : null,
             onPressed: _enabled ? () => _toggleShowMenu(context) : null,
@@ -2239,7 +2247,7 @@ class MenuHandle extends _MenuHandleBase {
       renderBox.localToGlobal(Offset.zero),
       renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
     );
-
+    final BuildContext outerContext = context;
     final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
 
     _overlayEntry = OverlayEntry(
@@ -2248,8 +2256,9 @@ class MenuHandle extends _MenuHandleBase {
         final Widget child = _MenuHandleMarker(
           handle: this,
           child: InheritedTheme.captureAll(
-            // Copy all the themes from the menu bar to the overlay.
-            context,
+            // Copy all the themes from the supplied outer context to the
+            // overlay.
+            outerContext,
             const _Submenu(),
             to: overlay.context,
           ),

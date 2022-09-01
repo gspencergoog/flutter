@@ -296,7 +296,7 @@ class _ControlsState extends State<_Controls> {
                 ),
                 _ControlSlider(
                   label: 'Vertical Density: ${widget.density.vertical.toStringAsFixed(1)}',
-                  value: widget.density.horizontal,
+                  value: widget.density.vertical,
                   max: 4,
                   min: -4,
                   divisions: 12,
