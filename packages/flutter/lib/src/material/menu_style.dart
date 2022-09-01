@@ -241,7 +241,7 @@ class MenuStyle with Diagnosticable {
   ///
   /// For instance, if you want to have a [MenuStyle] that is the same as
   /// another style, but reset the `backgroundColor` to null so that it uses the
-  /// default color, you can call:
+  /// default `backgroundColor`, you can call:
   ///
   /// ```dart
   /// MenuStyle newStyle = style.copyWithout(backgroundColor: true);

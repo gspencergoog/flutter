@@ -38,6 +38,9 @@ class MenuThemeData with Diagnosticable {
   });
 
   /// The [MenuStyle] of a [MenuButton] menu.
+  ///
+  /// Any values not set in the [MenuStyle] will use the menu default for that
+  /// property.
   final MenuStyle? style;
 
   /// Linearly interpolate between two menu button themes.

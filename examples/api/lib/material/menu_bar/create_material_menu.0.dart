@@ -59,16 +59,6 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   final GlobalKey _buttonKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-    _menuHandle = createMaterialMenu(
-      buttonFocusNode: _buttonFocusNode,
-      controller: _controller,
-    );
-    _updateMenuEntry();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Dispose of any previously registered shortcuts, since they are about to
@@ -98,56 +88,12 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     super.dispose();
   }
 
-  void _updateMenuEntry() {
-    _menuHandle.widgetChildren = <Widget>[
-      MenuItemButton(
-        child: Text(MenuSelection.about.label),
-        onPressed: () => _activate(MenuSelection.about),
-      ),
-      // Toggles the message.
-      MenuItemButton(
-        onPressed: () => _activate(MenuSelection.showMessage),
-        shortcut: MenuSelection.showMessage.shortcut,
-        child: Text(
-          showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label,
-        ),
-      ),
-      // Hides the message, but is only enabled if the message isn't already hidden.
-      MenuItemButton(
-        onPressed: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
-        shortcut: MenuSelection.resetMessage.shortcut,
-        child: Text(MenuSelection.resetMessage.label),
-      ),
-      MenuButton(
-        menuChildren: <Widget>[
-          MenuItemButton(
-            onPressed: () => _activate(MenuSelection.colorRed),
-            shortcut: MenuSelection.colorRed.shortcut,
-            child: Text(MenuSelection.colorRed.label),
-          ),
-          MenuItemButton(
-            onPressed: () => _activate(MenuSelection.colorGreen),
-            shortcut: MenuSelection.colorGreen.shortcut,
-            child: Text(MenuSelection.colorGreen.label),
-          ),
-          MenuItemButton(
-            onPressed: () => _activate(MenuSelection.colorBlue),
-            shortcut: MenuSelection.colorBlue.shortcut,
-            child: Text(MenuSelection.colorBlue.label),
-          ),
-        ],
-        child: const Text('Background Color'),
-      ),
-    ];
-  }
-
   bool get showingMessage => _showingMessage;
   bool _showingMessage = false;
   set showingMessage(bool value) {
     if (_showingMessage != value) {
       setState(() {
         _showingMessage = value;
-        _updateMenuEntry();
       });
     }
   }
@@ -197,6 +143,51 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
 
   @override
   Widget build(BuildContext context) {
+    _menuHandle = createMaterialMenu(
+      buttonFocusNode: _buttonFocusNode,
+      controller: _controller,
+      children: <Widget>[
+        MenuItemButton(
+          child: Text(MenuSelection.about.label),
+          onPressed: () => _activate(MenuSelection.about),
+        ),
+        // Toggles the message.
+        MenuItemButton(
+          onPressed: () => _activate(MenuSelection.showMessage),
+          shortcut: MenuSelection.showMessage.shortcut,
+          child: Text(
+            showingMessage ? MenuSelection.hideMessage.label : MenuSelection.showMessage.label,
+          ),
+        ),
+        // Hides the message, but is only enabled if the message isn't already hidden.
+        MenuItemButton(
+          onPressed: showingMessage ? () => _activate(MenuSelection.resetMessage) : null,
+          shortcut: MenuSelection.resetMessage.shortcut,
+          child: Text(MenuSelection.resetMessage.label),
+        ),
+        MenuButton(
+          menuChildren: <Widget>[
+            MenuItemButton(
+              onPressed: () => _activate(MenuSelection.colorRed),
+              shortcut: MenuSelection.colorRed.shortcut,
+              child: Text(MenuSelection.colorRed.label),
+            ),
+            MenuItemButton(
+              onPressed: () => _activate(MenuSelection.colorGreen),
+              shortcut: MenuSelection.colorGreen.shortcut,
+              child: Text(MenuSelection.colorGreen.label),
+            ),
+            MenuItemButton(
+              onPressed: () => _activate(MenuSelection.colorBlue),
+              shortcut: MenuSelection.colorBlue.shortcut,
+              child: Text(MenuSelection.colorBlue.label),
+            ),
+          ],
+          child: const Text('Background Color'),
+        ),
+      ],
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
