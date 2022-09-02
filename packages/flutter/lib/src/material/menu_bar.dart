@@ -1137,10 +1137,20 @@ class _MenuButtonState extends State<MenuButton> {
 ///
 class MenuAnchor extends StatefulWidget {
   ///
-  const MenuAnchor({super.key, required this.builder});
+  const MenuAnchor({
+    super.key,
+    required this.builder,
+    this.controller,
+  });
 
   ///
   final WidgetBuilder builder;
+
+  /// The supplied controller is owned by the caller, and must be disposed by
+  /// the owner when it is no longer in use. If a `controller` is supplied,
+  /// calling [MenuController.closeAll] on the controller will close all
+  /// associated menus.
+  final MenuController? controller;
 
   @override
   State<MenuAnchor> createState() => _MenuAnchorState();
@@ -1152,15 +1162,25 @@ class _MenuAnchorState extends State<MenuAnchor> {
 
   @override
   Widget build(BuildContext context) {
+    Widget child = Builder(
+      key: _anchorKey,
+      builder: widget.builder,
+    );
+
+    if (widget.controller != null) {
+      child = TapRegion(
+        groupId: widget.controller,
+        child: child,
+      );
+    }
+
     return CompositedTransformTarget(
       link: _link,
       child: _MenuAnchorMarker(
         link: _link,
         anchorKey: _anchorKey,
-        child: Builder(
-          key: _anchorKey,
-          builder: widget.builder,
-        ),
+        controller: widget.controller,
+        child: child,
       ),
     );
   }
@@ -1171,10 +1191,12 @@ class _MenuAnchorMarker extends InheritedWidget {
     required super.child,
     required this.link,
     required this.anchorKey,
+    this.controller,
   });
 
   final LayerLink link;
   final GlobalKey anchorKey;
+  final MenuController? controller;
 
   static _MenuAnchorMarker? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<_MenuAnchorMarker>();
@@ -1221,9 +1243,9 @@ class _MenuAnchorMarker extends InheritedWidget {
 /// {@endtemplate}
 ///
 /// The returned [MenuHandle] allows control of menu visibility, and
-/// reconfiguration of the menu. Setting values on the returned [MenuHandle] will
-/// update the menu with those changes in the next frame. The [MenuHandle] can be
-/// listened to for state changes.
+/// reconfiguration of the menu. Setting values on the returned [MenuHandle]
+/// will update the menu with those changes in the next frame. The [MenuHandle]
+/// can be listened to for state changes.
 ///
 /// The `buttonFocusNode` argument supplies the optional [FocusNode] of the
 /// widget that opens the menu.  If not supplied, then keyboard traversal from
@@ -1236,10 +1258,12 @@ class _MenuAnchorMarker extends InheritedWidget {
 /// the controller will close all associated menus.
 ///
 /// An optional [MenuController] may be supplied to allow this menu to be
-/// coordinated with other related menus. The supplied controller is owned by
-/// the caller, and must be disposed by the owner when it is no longer in use.
-/// If a `controller` is supplied, calling [MenuController.closeAll] on the
-/// controller will close all associated menus.
+/// coordinated with other related menus. If you supplied a controller to
+/// [MenuAnchor.controller] to the anchor for this menu, you should supply the
+/// same one for the `controller` argument here. The supplied controller is
+/// owned by the caller, and must be disposed by the owner when it is no longer
+/// in use. If a `controller` is supplied, calling [MenuController.closeAll] on
+/// the controller will close all associated menus.
 ///
 /// The `style` attribute is the [MenuStyle] object that describes the stylistic
 /// attributes of the menu. Any null style attribute will defer to the ambient
@@ -1256,19 +1280,22 @@ class _MenuAnchorMarker extends InheritedWidget {
 /// is closed.
 ///
 /// The `alignmentOffset` argument describes a directional offset from either
-/// the [MenuStyle.alignment] origin, or from the `globalMenuPosition`, if set.
-/// It depends on the ambient [Directionality], so increases in
-/// `alignmentOffset.dx` will result in moving towards the "end", and decreases
-/// will move towards "start".
+/// the [MenuStyle.alignment] origin calculated from the ambient [MenuAnchor] in
+/// the `context` given to [MenuHandle.open], or from the `globalMenuPosition`
+/// argument, if set. The offset depends on the ambient [Directionality], so
+/// that increases in `alignmentOffset.dx` will result in moving towards the
+/// "end", and decreases will move towards "start".
 ///
 /// The `globalMenuPosition` argument describes the global coordinate where the
 /// menu should appear. If unset, then the [MenuStyle.alignment] is used to
 /// determine the location instead. The `alignmentOffset` is applied to this
-/// position to find the final position that is used.
+/// position to find the final position that is used. The `globalMenuPosition`
+/// argument takes precedence over the ambient [MenuAnchor] and
+/// [MenuStyle.alignment].
 ///
 /// The `children` attribute is a list of child menu items to place in the menu.
 /// These are typically a tree made up of [MenuButton]s and [MenuItemButton]s,
-/// but can be any Widget.
+/// but can be any [Widget].
 ///
 /// {@tool dartpad} This example shows a menu created with `createMaterialMenu`
 /// that contains a single top level menu, containing three items: one for
@@ -1316,7 +1343,7 @@ MenuHandle createMaterialMenu({
 
 RelativeRect _getMenuButtonRect(BuildContext context) {
   final RenderBox button = context.findRenderObject()! as RenderBox;
-  final RenderBox overlay = Overlay.of(context)!.context.findRenderObject()! as RenderBox;
+  final RenderBox overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
   final Offset upperLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
   final Offset lowerRight = button.localToGlobal(button.paintBounds.bottomRight, ancestor: overlay);
   return RelativeRect.fromRect(Rect.fromPoints(upperLeft, lowerRight), overlay.paintBounds);
@@ -2249,18 +2276,26 @@ class MenuHandle extends _MenuHandleBase {
     );
     final BuildContext outerContext = context;
     final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
+    assert(
+        anchor != null || _globalMenuPosition != null,
+        'Unable to determine menu position. Menus either need to have a '
+        'globalMenuPosition, or there needs to be a MenuAnchor widget ancestor '
+        'in the given context: $context');
 
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
-        final OverlayState overlay = Overlay.of(context)!;
-        final Widget child = _MenuHandleMarker(
-          handle: this,
-          child: InheritedTheme.captureAll(
-            // Copy all the themes from the supplied outer context to the
-            // overlay.
-            outerContext,
-            const _Submenu(),
-            to: overlay.context,
+        final OverlayState overlay = Overlay.of(outerContext);
+        final Widget child = Directionality(
+          textDirection: Directionality.of(outerContext),
+          child: _MenuHandleMarker(
+            handle: this,
+            child: InheritedTheme.captureAll(
+              // Copy all the themes from the supplied outer context to the
+              // overlay.
+              outerContext,
+              const _Submenu(),
+              to: overlay.context,
+            ),
           ),
         );
         if (anchor != null) {
@@ -2274,7 +2309,7 @@ class MenuHandle extends _MenuHandleBase {
       },
     );
 
-    Overlay.of(context)!.insert(_overlayEntry!);
+    Overlay.of(context).insert(_overlayEntry!);
     root._menuOpened(this, wasOpen: somethingWasOpen);
     _onOpen?.call();
   }

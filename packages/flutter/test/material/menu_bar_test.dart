@@ -268,7 +268,7 @@ void main() {
           ],
         );
       }
-      MenuHandle menuEntry = updateMenu();
+      MenuHandle menuHandle = updateMenu();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -279,10 +279,10 @@ void main() {
                   key: buttonKey,
                   focusNode: focusNode,
                   onPressed: () {
-                    if (menuEntry.isOpen) {
-                      menuEntry.close();
+                    if (menuHandle.isOpen) {
+                      menuHandle.close();
                     } else {
-                      menuEntry.open(context);
+                      menuHandle.open(context);
                     }
                   },
                   child: const Text('Press Me'),
@@ -304,33 +304,33 @@ void main() {
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.topStart);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 276.0, 618.0, 380.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.center);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.center);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(400.0, 300.0, 690.0, 404.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.bottomEnd);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.bottomEnd);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(472.0, 324.0, 762.0, 428.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.topStart);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignmentOffset: const Offset(10, 20));
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignmentOffset: const Offset(10, 20));
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(
         tester.getRect(findMenuScope).topLeft - menuRect.topLeft,
@@ -367,7 +367,7 @@ void main() {
           ],
         );
       }
-      MenuHandle menuEntry = updateMenu();
+      MenuHandle menuHandle = updateMenu();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -380,10 +380,10 @@ void main() {
                     key: buttonKey,
                     focusNode: focusNode,
                     onPressed: () {
-                      if (menuEntry.isOpen) {
-                        menuEntry.close();
+                      if (menuHandle.isOpen) {
+                        menuHandle.close();
                       } else {
-                        menuEntry.open(context);
+                        menuHandle.open(context);
                       }
                     },
                     child: const Text('Press Me'),
@@ -406,33 +406,33 @@ void main() {
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.topStart);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 276.0, 472.0, 380.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.center);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.center);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 300.0, 400.0, 404.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.bottomEnd);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.bottomEnd);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(38.0, 324.0, 328.0, 428.0)));
 
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignment: AlignmentDirectional.topStart);
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart);
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
 
       final Rect menuRect = tester.getRect(findMenuScope);
-      menuEntry.dispose();
-      menuEntry = updateMenu(alignmentOffset: const Offset(10, 20));
-      menuEntry.open(buttonKey.currentContext!);
+      menuHandle.dispose();
+      menuHandle = updateMenu(alignmentOffset: const Offset(10, 20));
+      menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(-10, 20)));
     });
@@ -440,7 +440,7 @@ void main() {
     testWidgets('menu position in LTR', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuHandle menuEntry = createMaterialMenu(
+      final MenuHandle menuHandle = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -470,10 +470,10 @@ void main() {
                   key: buttonKey,
                   focusNode: focusNode,
                   onPressed: () {
-                    if (menuEntry.isOpen) {
-                      menuEntry.close();
+                    if (menuHandle.isOpen) {
+                      menuHandle.close();
                     } else {
-                      menuEntry.open(context);
+                      menuHandle.open(context);
                     }
                   },
                   child: const Text('Press Me'),
@@ -496,7 +496,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(328.0, 324.0, 618.0, 428.0)));
 
       // Now move the menu by calling open() again with a position.
-      menuEntry.open(testContext!, position: const Offset(200, 200));
+      menuHandle.open(testContext!, position: const Offset(200, 200));
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(200, 200, 490.0, 304.0)));
     });
@@ -504,7 +504,7 @@ void main() {
     testWidgets('menu position and offset in RTL', (WidgetTester tester) async {
       final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
-      final MenuHandle menuEntry = createMaterialMenu(
+      final MenuHandle menuHandle = createMaterialMenu(
         buttonFocusNode: focusNode,
         children: <Widget>[
           MenuItemButton(
@@ -537,10 +537,10 @@ void main() {
                     key: buttonKey,
                     focusNode: focusNode,
                     onPressed: () {
-                      if (menuEntry.isOpen) {
-                        menuEntry.close();
+                      if (menuHandle.isOpen) {
+                        menuHandle.close();
                       } else {
-                        menuEntry.open(context);
+                        menuHandle.open(context);
                       }
                     },
                     child: const Text('Press Me'),
@@ -564,7 +564,7 @@ void main() {
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(182.0, 324.0, 472.0, 428.0)));
 
       // Now move the menu by calling open() again with a position.
-      menuEntry.open(testContext!, position: const Offset(400, 200));
+      menuHandle.open(testContext!, position: const Offset(400, 200));
       await tester.pump();
       expect(tester.getRect(findMenuScope), equals(const Rect.fromLTRB(110.0, 200.0, 400.0, 304.0)));
     });
