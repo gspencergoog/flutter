@@ -209,7 +209,7 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
           children: <Widget>[
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: Text('Right-click anywhere to show menu.'),
+              child: Text('Right-click anywhere in the red to show the menu.'),
             ),
             Padding(
               padding: const EdgeInsets.all(12.0),

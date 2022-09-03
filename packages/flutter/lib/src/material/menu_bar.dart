@@ -1403,7 +1403,9 @@ class _SubmenuState extends State<_Submenu> {
         menuButtonTheme.style?.padding?.resolve(state) ??
         _MenuButtonDefaultsM3(context).padding!.resolve(state);
 
-    final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
+    final _MenuAnchorMarker? anchor = _handle._globalMenuPosition == null
+        ? _MenuAnchorMarker.maybeOf(context)
+        : null;
 
     Widget child = CustomSingleChildLayout(
       delegate: _MenuLayout(
@@ -1451,7 +1453,7 @@ class _SubmenuState extends State<_Submenu> {
     if (anchor != null) {
       child = CompositedTransformFollower(
         link: anchor.link,
-        offset: _handle._alignmentOffset - (_handle._buttonRect?.topLeft ?? Offset.zero),
+        offset: -(_handle._buttonRect?.topLeft ?? Offset.zero),
         child: child,
       );
     }
@@ -1796,9 +1798,11 @@ class _MenuLayout extends SingleChildLayoutDelegate {
     // childSize: The size of the menu, when fully open, as determined by
     // getConstraintsForChild.
     final Rect overlayRect = Offset.zero & size;
-    final Rect absoluteButtonRect = buttonRect?.toRect(overlayRect) ?? Rect.zero;
+    final Rect absoluteButtonRect = globalMenuPosition != null
+        ? Rect.fromCenter(center: globalMenuPosition!, width: 0, height: 0)
+        : (buttonRect?.toRect(overlayRect) ?? Rect.zero);
     final Alignment alignment = this.alignment.resolve(textDirection);
-    final Offset desiredPosition = globalMenuPosition ?? alignment.withinRect(absoluteButtonRect);
+    final Offset desiredPosition = alignment.withinRect(absoluteButtonRect);
     final Offset originCenter = absoluteButtonRect.center;
     final Iterable<Rect> subScreens = DisplayFeatureSubScreen.subScreensInBounds(overlayRect, avoidBounds);
     final Rect screen = _closestScreen(subScreens, originCenter);
@@ -1806,13 +1810,6 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
     double x = desiredPosition.dx;
     double y = desiredPosition.dy + alignmentOffset.dy;
-    final Rect allowedRect = Rect.fromLTRB(
-      screen.left + resolvedButtonPadding.left,
-      screen.top + resolvedButtonPadding.top,
-      screen.right - resolvedButtonPadding.right,
-      screen.bottom - resolvedButtonPadding.bottom,
-    );
-
     switch (textDirection) {
       case TextDirection.rtl:
         x -= childSize.width + alignmentOffset.dx;
@@ -1822,6 +1819,12 @@ class _MenuLayout extends SingleChildLayoutDelegate {
         break;
     }
 
+    final Rect allowedRect = Rect.fromLTRB(
+      screen.left + resolvedButtonPadding.left,
+      screen.top + resolvedButtonPadding.top,
+      screen.right - resolvedButtonPadding.right,
+      screen.bottom - resolvedButtonPadding.bottom,
+    );
     bool offLeftSide(double x) => x < allowedRect.left;
     bool offRightSide(double x) => x + childSize.width > allowedRect.right;
     bool offTop(double y) => y < allowedRect.top;
@@ -2260,28 +2263,34 @@ class MenuHandle extends _MenuHandleBase {
   /// If `position` is not given and a `globalMenuPosition` was given to
   /// [createMaterialMenu], then it will appear at that position.
   void open(BuildContext context, {Offset? position}) {
-    _globalMenuPosition = position;
-    if (isOpen) {
+    if (isOpen && position == _globalMenuPosition) {
       assert(_debugMenuInfo("Not opening $this because it's already open"));
       return;
     }
-    assert(_debugMenuInfo('Opening $this'));
-    _parent?.closeChildren(); // Close all siblings.
+    assert(_debugMenuInfo('Opening ${this}${_globalMenuPosition != null ? ' at ${position ?? _globalMenuPosition}' : ''}'));
     final bool somethingWasOpen = root.descendantIsOpen;
+    _parent?.closeChildren(); // Close all siblings.
     assert(_overlayEntry == null);
-    final RenderBox renderBox = context.findRenderObject()! as RenderBox;
-    _buttonRect = Rect.fromPoints(
-      renderBox.localToGlobal(Offset.zero),
-      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
-    );
-    final BuildContext outerContext = context;
+
+    _globalMenuPosition = position ?? _globalMenuPosition;
     final _MenuAnchorMarker? anchor = _MenuAnchorMarker.maybeOf(context);
     assert(
         anchor != null || _globalMenuPosition != null,
-        'Unable to determine menu position. Menus either need to have a '
-        'globalMenuPosition, or there needs to be a MenuAnchor widget ancestor '
-        'in the given context: $context');
+        'Unable to determine menu position.\n'
+        'Menus either need to have a globalMenuPosition set, or there needs to '
+        'be a MenuAnchor widget ancestor in the given context: $context');
+    // The globalMenuPosition should take precedence over the anchor.
+    if (anchor != null && _globalMenuPosition == null) {
+      final RenderBox renderBox = anchor.anchorKey.currentContext!.findRenderObject()! as RenderBox;
+      _buttonRect = Rect.fromPoints(
+        renderBox.localToGlobal(Offset.zero),
+        renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
+      );
+    } else {
+      _buttonRect = null;
+    }
 
+    final BuildContext outerContext = context;
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         final OverlayState overlay = Overlay.of(outerContext);
@@ -2298,7 +2307,9 @@ class MenuHandle extends _MenuHandleBase {
             ),
           ),
         );
-        if (anchor != null) {
+        if (anchor != null && _globalMenuPosition == null) {
+          // Copy any information from the anchor (which might not be in the
+          // overlay) into a new marker in the overlay.
           return _MenuAnchorMarker(
             anchorKey: anchor.anchorKey,
             link: anchor.link,

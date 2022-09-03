@@ -329,7 +329,7 @@ void main() {
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuHandle.dispose();
-      menuHandle = updateMenu(alignmentOffset: const Offset(10, 20));
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart, alignmentOffset: const Offset(10, 20));
       menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(
@@ -431,14 +431,13 @@ void main() {
 
       final Rect menuRect = tester.getRect(findMenuScope);
       menuHandle.dispose();
-      menuHandle = updateMenu(alignmentOffset: const Offset(10, 20));
+      menuHandle = updateMenu(alignment: AlignmentDirectional.topStart, alignmentOffset: const Offset(10, 20));
       menuHandle.open(buttonKey.currentContext!);
       await tester.pump();
       expect(tester.getRect(findMenuScope).topLeft - menuRect.topLeft, equals(const Offset(-10, 20)));
     });
 
     testWidgets('menu position in LTR', (WidgetTester tester) async {
-      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuHandle menuHandle = createMaterialMenu(
         buttonFocusNode: focusNode,
@@ -467,7 +466,6 @@ void main() {
               child: MenuAnchor(builder: (BuildContext context) {
                 testContext = context;
                 return ElevatedButton(
-                  key: buttonKey,
                   focusNode: focusNode,
                   onPressed: () {
                     if (menuHandle.isOpen) {
@@ -502,7 +500,6 @@ void main() {
     });
 
     testWidgets('menu position and offset in RTL', (WidgetTester tester) async {
-      final GlobalKey buttonKey = GlobalKey(debugLabel: 'buttonKey');
       final FocusNode focusNode = FocusNode(debugLabel: 'Test');
       final MenuHandle menuHandle = createMaterialMenu(
         buttonFocusNode: focusNode,
@@ -534,7 +531,6 @@ void main() {
                 child: MenuAnchor(builder: (BuildContext context) {
                   testContext = context;
                   return ElevatedButton(
-                    key: buttonKey,
                     focusNode: focusNode,
                     onPressed: () {
                       if (menuHandle.isOpen) {
@@ -607,11 +603,11 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(134.0, 91.0, 288.0, 105.0)),
+        equals(const Rect.fromLTRB(124.0, 81.0, 278.0, 95.0)),
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(126.0, 70.0, 356.0, 222.0)),
+        equals(const Rect.fromLTRB(116.0, 60.0, 346.0, 212.0)),
       );
 
       // Close and make sure it goes back where it was.
@@ -662,11 +658,11 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
       expect(
         tester.getRect(find.text(TestMenu.subMenu10.label)),
-        equals(const Rect.fromLTRB(512.0, 91.0, 666.0, 105.0)),
+        equals(const Rect.fromLTRB(502.0, 81.0, 656.0, 95.0)),
       );
       expect(
         tester.getRect(find.ancestor(of: find.text(TestMenu.subMenu10.label), matching: find.byType(Material)).at(1)),
-        equals(const Rect.fromLTRB(444.0, 70.0, 674.0, 222.0)),
+        equals(const Rect.fromLTRB(434.0, 60.0, 664.0, 212.0)),
       );
 
       // Close and make sure it goes back where it was.
@@ -817,9 +813,9 @@ void main() {
       expect(
         description.join('\n'),
         equalsIgnoringHashCodes(
-          'controller: MenuController#00000(open: [], previousFocus: null)\n'
+          'controller: MenuController#00000\n'
           'style: MenuStyle#00000(backgroundColor: MaterialStatePropertyAll(MaterialColor(primary value: Color(0xfff44336))), elevation: MaterialStatePropertyAll(10.0))\n'
-          'clipBehavior: Clip.none',
+          'clipBehavior: Clip.none'
         ),
       );
     });
