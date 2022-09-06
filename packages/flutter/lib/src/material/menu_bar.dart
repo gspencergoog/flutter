@@ -221,29 +221,27 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasOverlay(context));
-    return ExcludeFocus(
-      excluding: !_controller.menuIsOpen,
-      child: _MenuHandleMarker(
-        handle: _controller,
-        child: FocusScope(
-          node: _controller._menuScopeNode,
-          child: Actions(
-            actions: <Type, Action<Intent>>{
-              DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
-              DismissIntent: _MenuDismissAction(controller: _controller),
-            },
-            child: Shortcuts(
-              shortcuts: _kMenuTraversalShortcuts,
-              child: MenuAnchor(
-                builder: (BuildContext context) {
-                  return _MenuPanel(
-                    menuStyle: widget.style,
-                    clipBehavior: widget.clipBehavior,
-                    orientation: Axis.horizontal,
-                    children: widget.children,
-                  );
-                },
-              ),
+    return _MenuHandleMarker(
+      handle: _controller,
+      child: FocusScope(
+        node: _controller._menuScopeNode,
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
+            DismissIntent: _MenuDismissAction(controller: _controller),
+          },
+          child: Shortcuts(
+            shortcuts: _kMenuTraversalShortcuts,
+            child: MenuAnchor(
+              controller: _controller,
+              builder: (BuildContext context) {
+                return _MenuPanel(
+                  menuStyle: widget.style,
+                  clipBehavior: widget.clipBehavior,
+                  orientation: Axis.horizontal,
+                  children: widget.children,
+                );
+              },
             ),
           ),
         ),
@@ -1161,6 +1159,33 @@ class _MenuAnchorState extends State<MenuAnchor> {
   final GlobalKey _anchorKey = GlobalKey(debugLabel: kReleaseMode ? null : 'MenuAnchor');
 
   @override
+  void initState() {
+    super.initState();
+    widget.controller?.addListener(_handleControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller?.removeListener(_handleControllerChanged);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant MenuAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?.removeListener(_handleControllerChanged);
+      widget.controller?.addListener(_handleControllerChanged);
+    }
+  }
+
+  void _handleControllerChanged() {
+    setState(() {
+      // Controller changed state, so update the anchor's state.
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     Widget child = Builder(
       key: _anchorKey,
@@ -1168,9 +1193,16 @@ class _MenuAnchorState extends State<MenuAnchor> {
     );
 
     if (widget.controller != null) {
-      child = TapRegion(
-        groupId: widget.controller,
-        child: child,
+      child = ExcludeFocus(
+        excluding: !widget.controller!.menuIsOpen,
+        child: TapRegion(
+          groupId: widget.controller,
+          onTapOutside: (PointerDownEvent event) {
+            assert(_debugMenuInfo('Tapped Outside'));
+            widget.controller!.closeAll();
+          },
+          child: child,
+        ),
       );
     }
 
@@ -1204,7 +1236,7 @@ class _MenuAnchorMarker extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_MenuAnchorMarker oldWidget) {
-    return link != oldWidget.link || anchorKey != oldWidget.anchorKey;
+    return link != oldWidget.link || anchorKey != oldWidget.anchorKey || controller != oldWidget.controller;
   }
 }
 
@@ -1601,39 +1633,31 @@ class _MenuPanelState extends State<_MenuPanel> {
     final EdgeInsetsGeometry resolvedPadding = padding
         .add(EdgeInsets.fromLTRB(dx, dy, dx, dy))
         .clamp(EdgeInsets.zero, EdgeInsetsGeometry.infinity); // ignore_clamp_double_lint
-    final MenuController controller = MenuController.of(context);
     return ConstrainedBox(
       constraints: effectiveConstraints,
-      child: TapRegion(
-        groupId: controller,
-        onTapOutside: (PointerDownEvent event) {
-          assert(_debugMenuInfo('Tapped Outside'));
-          MenuController.of(context).closeAll();
-        },
-        child: UnconstrainedBox(
-          constrainedAxis: widget.orientation,
-          clipBehavior: Clip.hardEdge,
-          alignment: AlignmentDirectional.centerStart,
-          child: _intrinsicCrossSize(
-            child: Material(
-              elevation: elevation,
-              shape: shape,
-              color: backgroundColor,
-              shadowColor: shadowColor,
-              surfaceTintColor: surfaceTintColor,
-              type: backgroundColor == null ? MaterialType.transparency : MaterialType.canvas,
-              clipBehavior: widget.clipBehavior,
-              child: Padding(
-                padding: resolvedPadding,
-                child: SingleChildScrollView(
-                  scrollDirection: widget.orientation,
-                  child: Flex(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    textDirection: Directionality.of(context),
-                    direction: widget.orientation,
-                    mainAxisSize: MainAxisSize.min,
-                    children: widget.children,
-                  ),
+      child: UnconstrainedBox(
+        constrainedAxis: widget.orientation,
+        clipBehavior: Clip.hardEdge,
+        alignment: AlignmentDirectional.centerStart,
+        child: _intrinsicCrossSize(
+          child: Material(
+            elevation: elevation,
+            shape: shape,
+            color: backgroundColor,
+            shadowColor: shadowColor,
+            surfaceTintColor: surfaceTintColor,
+            type: backgroundColor == null ? MaterialType.transparency : MaterialType.canvas,
+            clipBehavior: widget.clipBehavior,
+            child: Padding(
+              padding: resolvedPadding,
+              child: SingleChildScrollView(
+                scrollDirection: widget.orientation,
+                child: Flex(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  textDirection: Directionality.of(context),
+                  direction: widget.orientation,
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.children,
                 ),
               ),
             ),
@@ -1913,7 +1937,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 
 // Base class for all menu nodes that make up the menu tree, to allow walking of
 // the tree for navigation.
-abstract class _MenuHandleBase with DiagnosticableTreeMixin {
+abstract class _MenuHandleBase with DiagnosticableTreeMixin, ChangeNotifier {
   _MenuHandleBase? get _parent;
   bool get isOpen;
   bool get isRoot => _parent == null;
@@ -1943,13 +1967,6 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin {
       child.close(inDispose: inDispose);
     }
   }
-
-  /// The [dispose] method must be called on this object when it is no longer
-  /// needed.
-  ///
-  /// Do not use the object after dispose has been called.
-  @mustCallSuper
-  void dispose() {}
 
   MenuController get root {
     _MenuHandleBase handle = this;
@@ -2127,12 +2144,13 @@ class MenuController extends _MenuHandleBase {
       // when the menu closes, or it will never close.
       if (FocusManager.instance.primaryFocus?.context != null &&
           MenuController.maybeOf(FocusManager.instance.primaryFocus!.context!) == null) {
-        assert(_debugMenuInfo('Setting previous focus to $primaryFocus'));
+        assert(_debugMenuInfo('Storing previous focus as $primaryFocus'));
         _previousFocus = FocusManager.instance.primaryFocus;
       } else {
         _previousFocus = null;
       }
     }
+    notifyListeners();
     assert(_debugMenuInfo('Menu opened: $open'));
   }
 
@@ -2151,6 +2169,7 @@ class MenuController extends _MenuHandleBase {
         _previousFocus = null;
       });
     }
+    notifyListeners();
     assert(_debugMenuInfo('Menu closed $close'));
   }
 
@@ -2323,6 +2342,7 @@ class MenuHandle extends _MenuHandleBase {
     Overlay.of(context).insert(_overlayEntry!);
     root._menuOpened(this, wasOpen: somethingWasOpen);
     _onOpen?.call();
+    notifyListeners();
   }
 
   /// Close the menu.
@@ -2341,6 +2361,7 @@ class MenuHandle extends _MenuHandleBase {
     _globalMenuPosition = null;
     root._menuClosed(this, inDispose: inDispose);
     _onClose?.call();
+    notifyListeners();
   }
 
   /// Dispose of the menu.
