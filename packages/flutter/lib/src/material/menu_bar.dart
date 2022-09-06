@@ -197,7 +197,7 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   void initState() {
     super.initState();
     assert(() {
-      _controller.root._menuScopeNode.debugLabel = 'MenuBar';
+      _controller._root._menuScopeNode.debugLabel = 'MenuBar';
       return true;
     }());
   }
@@ -221,28 +221,25 @@ class _MenuBarState extends State<MenuBar> with DiagnosticableTreeMixin {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasOverlay(context));
-    return _MenuHandleMarker(
-      handle: _controller,
-      child: FocusScope(
-        node: _controller._menuScopeNode,
-        child: Actions(
-          actions: <Type, Action<Intent>>{
-            DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
-            DismissIntent: _MenuDismissAction(controller: _controller),
-          },
-          child: Shortcuts(
-            shortcuts: _kMenuTraversalShortcuts,
-            child: MenuAnchor(
-              controller: _controller,
-              builder: (BuildContext context) {
-                return _MenuPanel(
-                  menuStyle: widget.style,
-                  clipBehavior: widget.clipBehavior,
-                  orientation: Axis.horizontal,
-                  children: widget.children,
-                );
-              },
-            ),
+    return FocusScope(
+      node: _controller._menuScopeNode,
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _controller),
+          DismissIntent: _MenuDismissAction(controller: _controller),
+        },
+        child: Shortcuts(
+          shortcuts: _kMenuTraversalShortcuts,
+          child: MenuAnchor(
+            controller: _controller,
+            builder: (BuildContext context) {
+              return _MenuPanel(
+                menuStyle: widget.style,
+                clipBehavior: widget.clipBehavior,
+                orientation: Axis.horizontal,
+                children: widget.children,
+              );
+            },
           ),
         ),
       ),
@@ -578,7 +575,7 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   void _handleFocusChange() {
     if (!_focusNode.hasPrimaryFocus) {
       // Close any child menus of this menu.
-      _MenuHandleBase.maybeOf(context)?.closeChildren();
+      _MenuHandleBase.maybeOf(context)?._closeChildren();
     }
   }
 
@@ -968,12 +965,6 @@ class _MenuButtonState extends State<MenuButton> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _updateChildMenu();
-  }
-
-  @override
   void didUpdateWidget(MenuButton oldWidget) {
     if (widget.focusNode != oldWidget.focusNode) {
       if (oldWidget.focusNode == null) {
@@ -994,13 +985,12 @@ class _MenuButtonState extends State<MenuButton> {
       }
       _buttonFocusNode.addListener(_handleFocusChange);
     }
-    _updateChildMenu();
     super.didUpdateWidget(oldWidget);
   }
 
-  void _updateChildMenu() {
+  void _updateChildMenu(BuildContext context) {
     final MenuController controller = MenuController.maybeOf(context) ?? (_internalMenuController ??= MenuController());
-    final _MenuHandleBase parent = _MenuHandleBase.maybeOf(context) ?? controller.root;
+    final _MenuHandleBase parent = _MenuHandleBase.maybeOf(context) ?? controller._root;
     final MenuStyle? themeStyle = MenuTheme.of(context).style;
     final MenuStyle defaultStyle = _MenuDefaultsM3(context);
 
@@ -1052,6 +1042,7 @@ class _MenuButtonState extends State<MenuButton> {
 
   @override
   Widget build(BuildContext context) {
+    _updateChildMenu(context);
     return _MenuHandleMarker(
       handle: _handle!,
       child: MenuAnchor(
@@ -1074,7 +1065,7 @@ class _MenuButtonState extends State<MenuButton> {
               leadingIcon: widget.leadingIcon,
               trailingIcon: widget.trailingIcon,
               hasSubmenu: true,
-              showDecoration: !_handle!.isTopLevel,
+              showDecoration: !_handle!._isTopLevel,
               child: widget.child!,
             ),
           );
@@ -1108,7 +1099,7 @@ class _MenuButtonState extends State<MenuButton> {
     // Don't open the root menu bar menus on hover unless something else
     // is already open. This means that the user has to first click to open a
     // menu on the menu bar before hovering allows them to traverse it.
-    if (_handle!.isTopLevel && !_handle!.root.descendantIsOpen) {
+    if (_handle!._isTopLevel && !_handle!._root._descendantIsOpen) {
       return;
     }
 
@@ -1157,6 +1148,8 @@ class MenuAnchor extends StatefulWidget {
 class _MenuAnchorState extends State<MenuAnchor> {
   final LayerLink _link = LayerLink();
   final GlobalKey _anchorKey = GlobalKey(debugLabel: kReleaseMode ? null : 'MenuAnchor');
+  bool _controllerChangeScheduled = false;
+  bool _disposed = false;
 
   @override
   void initState() {
@@ -1168,6 +1161,7 @@ class _MenuAnchorState extends State<MenuAnchor> {
   void dispose() {
     widget.controller?.removeListener(_handleControllerChanged);
     super.dispose();
+    _disposed = true;
   }
 
   @override
@@ -1180,9 +1174,35 @@ class _MenuAnchorState extends State<MenuAnchor> {
   }
 
   void _handleControllerChanged() {
-    setState(() {
-      // Controller changed state, so update the anchor's state.
-    });
+    if (!mounted || _disposed) {
+      return;
+    }
+    final SchedulerPhase phase = SchedulerBinding.instance.schedulerPhase;
+    switch (phase) {
+      case SchedulerPhase.idle:
+      case SchedulerPhase.postFrameCallbacks:
+      case SchedulerPhase.transientCallbacks:
+        setState(() {
+          // Controller changed state, so update the anchor's state.
+        });
+        break;
+      case SchedulerPhase.midFrameMicrotasks:
+      case SchedulerPhase.persistentCallbacks:
+        if (_controllerChangeScheduled) {
+          return;
+        }
+        _controllerChangeScheduled = true;
+        SchedulerBinding.instance.addPostFrameCallback((Duration timeStamp) {
+          _controllerChangeScheduled = false;
+          if (!mounted || _disposed) {
+            return;
+          }
+          setState(() {
+            // Controller changed state, so update the anchor's state.
+          });
+        });
+        break;
+    }
   }
 
   @override
@@ -1198,10 +1218,13 @@ class _MenuAnchorState extends State<MenuAnchor> {
         child: TapRegion(
           groupId: widget.controller,
           onTapOutside: (PointerDownEvent event) {
-            assert(_debugMenuInfo('Tapped Outside'));
+            assert(_debugMenuInfo('Tapped Outside ${widget.controller}'));
             widget.controller!.closeAll();
           },
-          child: child,
+          child: _MenuHandleMarker(
+            handle: widget.controller!,
+            child: child,
+          ),
         ),
       );
     }
@@ -1211,7 +1234,6 @@ class _MenuAnchorState extends State<MenuAnchor> {
       child: _MenuAnchorMarker(
         link: _link,
         anchorKey: _anchorKey,
-        controller: widget.controller,
         child: child,
       ),
     );
@@ -1223,12 +1245,10 @@ class _MenuAnchorMarker extends InheritedWidget {
     required super.child,
     required this.link,
     required this.anchorKey,
-    this.controller,
   });
 
   final LayerLink link;
   final GlobalKey anchorKey;
-  final MenuController? controller;
 
   static _MenuAnchorMarker? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<_MenuAnchorMarker>();
@@ -1236,7 +1256,7 @@ class _MenuAnchorMarker extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_MenuAnchorMarker oldWidget) {
-    return link != oldWidget.link || anchorKey != oldWidget.anchorKey || controller != oldWidget.controller;
+    return link != oldWidget.link || anchorKey != oldWidget.anchorKey;
   }
 }
 
@@ -1435,9 +1455,7 @@ class _SubmenuState extends State<_Submenu> {
         menuButtonTheme.style?.padding?.resolve(state) ??
         _MenuButtonDefaultsM3(context).padding!.resolve(state);
 
-    final _MenuAnchorMarker? anchor = _handle._globalMenuPosition == null
-        ? _MenuAnchorMarker.maybeOf(context)
-        : null;
+    final _MenuAnchorMarker? anchor = _handle._globalMenuPosition == null ? _MenuAnchorMarker.maybeOf(context) : null;
 
     Widget child = CustomSingleChildLayout(
       delegate: _MenuLayout(
@@ -1458,8 +1476,8 @@ class _SubmenuState extends State<_Submenu> {
           node: _handle._menuScopeNode,
           child: Actions(
             actions: <Type, Action<Intent>>{
-              DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle.root),
-              DismissIntent: _MenuDismissAction(controller: _handle.root),
+              DirectionalFocusIntent: _MenuDirectionalFocusAction(controller: _handle._root),
+              DismissIntent: _MenuDismissAction(controller: _handle._root),
             },
             child: Shortcuts(
               shortcuts: _kMenuTraversalShortcuts,
@@ -1940,35 +1958,47 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 abstract class _MenuHandleBase with DiagnosticableTreeMixin, ChangeNotifier {
   _MenuHandleBase? get _parent;
   bool get isOpen;
-  bool get isRoot => _parent == null;
-  bool get isTopLevel => _parent?.isRoot ?? false;
+  bool get _isRoot => _parent == null;
+  bool get _isTopLevel => _parent?._isRoot ?? false;
   Axis get _orientation;
 
   @protected
   final List<_MenuHandleBase> _children = <_MenuHandleBase>[];
 
-  void addChild(_MenuHandleBase child) {
-    assert(isRoot || _debugMenuInfo('Added root child: $child'));
+  void _notifyListenersSafely() {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    notifyListeners();
+  }
+
+  @protected
+  void _addChild(_MenuHandleBase child) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    assert(_isRoot || _debugMenuInfo('Added root child: $child'));
     assert(!_children.contains(child));
     _children.add(child);
     assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
-  void removeChild(_MenuHandleBase child) {
-    assert(isRoot || _debugMenuInfo('Removed root child: $child'));
+  @protected
+  void _removeChild(_MenuHandleBase child) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    assert(_isRoot || _debugMenuInfo('Removed root child: $child'));
     assert(_children.contains(child));
     _children.remove(child);
     assert(_debugMenuInfo('Tree:\n${toStringDeep()}'));
   }
 
-  void closeChildren({bool inDispose = false}) {
+  @protected
+  void _closeChildren({bool inDispose = false}) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_debugMenuInfo('Closing children of ${this}${inDispose ? ' (dispose)' : ''}'));
     for (final MenuHandle child in List<MenuHandle>.from(_children)) {
       child.close(inDispose: inDispose);
     }
   }
 
-  MenuController get root {
+  MenuController get _root {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     _MenuHandleBase handle = this;
     while (handle._parent != null) {
       handle = handle._parent!;
@@ -1976,24 +2006,30 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin, ChangeNotifier {
     return handle as MenuController;
   }
 
-  _MenuHandleBase get topLevel {
+  @protected
+  _MenuHandleBase get _topLevel {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     _MenuHandleBase handle = this;
-    while (handle._parent!.isTopLevel) {
+    while (handle._parent!._isTopLevel) {
       handle = handle._parent!;
     }
     return handle;
   }
 
-  bool get descendantIsOpen {
+  @protected
+  bool get _descendantIsOpen {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     for (final _MenuHandleBase child in _children) {
-      if (child.descendantIsOpen) {
+      if (child._descendantIsOpen) {
         return true;
       }
     }
     return isOpen;
   }
 
-  _MenuHandleBase? get previousSibling {
+  @protected
+  _MenuHandleBase? get _previousSibling {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     final int index = _parent!._children.indexOf(this);
     assert(index != -1, 'Unable to find this widget $this in parent $_parent');
     if (index > 0) {
@@ -2002,7 +2038,9 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin, ChangeNotifier {
     return null;
   }
 
-  _MenuHandleBase? get nextSibling {
+  @protected
+  _MenuHandleBase? get _nextSibling {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     final int index = _parent!._children.indexOf(this);
     assert(index != -1, 'Unable to find this widget $this in parent $_parent');
     if (index < _parent!._children.length - 1) {
@@ -2029,8 +2067,8 @@ abstract class _MenuHandleBase with DiagnosticableTreeMixin, ChangeNotifier {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(FlagProperty('isRoot', value: isRoot, ifTrue: 'ROOT', defaultValue: false));
-    properties.add(DiagnosticsProperty<_MenuHandleBase?>('parent', isRoot ? null : _parent, defaultValue: null));
+    properties.add(FlagProperty('isRoot', value: _isRoot, ifTrue: 'ROOT', defaultValue: false));
+    properties.add(DiagnosticsProperty<_MenuHandleBase?>('parent', _isRoot ? null : _parent, defaultValue: null));
   }
 }
 
@@ -2064,7 +2102,7 @@ class MenuController extends _MenuHandleBase {
   FocusNode? _previousFocus;
 
   /// Returns true if any menu served by this controller is currently open.
-  bool get menuIsOpen => descendantIsOpen;
+  bool get menuIsOpen => _descendantIsOpen;
 
   final FocusScopeNode _menuScopeNode;
 
@@ -2079,7 +2117,7 @@ class MenuController extends _MenuHandleBase {
   bool get isOpen => false;
 
   @override
-  MenuController get root => this;
+  MenuController get _root => this;
 
   /// The [dispose] method must be called on the controller when it is no longer
   /// needed.
@@ -2093,9 +2131,10 @@ class MenuController extends _MenuHandleBase {
 
   /// Close any open menus controlled by this [MenuController].
   void closeAll() {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (menuIsOpen) {
       assert(_debugMenuInfo('Controller closing all open menus'));
-      closeChildren();
+      _closeChildren();
     }
   }
 
@@ -2131,12 +2170,13 @@ class MenuController extends _MenuHandleBase {
   /// * [of], which returns the active controller in the given context, and
   ///   throws if one is not found.
   static MenuController? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<_MenuHandleMarker>()?.handle.root;
+    return context.dependOnInheritedWidgetOfExactType<_MenuHandleMarker>()?.handle._root;
   }
 
   // Called by MenuHandle.open to notify the controller when a menu item has
   // been opened.
   void _menuOpened(MenuHandle open, {required bool wasOpen}) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (!wasOpen && !menuIsOpen) {
       // We're opening the first menu, so cache the primary focus so that we can
       // try to return to it when the menu is dismissed. Skips any focus nodes
@@ -2150,13 +2190,14 @@ class MenuController extends _MenuHandleBase {
         _previousFocus = null;
       }
     }
-    notifyListeners();
+    _notifyListenersSafely();
     assert(_debugMenuInfo('Menu opened: $open'));
   }
 
   // Called by the _MenuNode.close to notify the controller when a menu item has
   // been closed.
   void _menuClosed(_MenuHandleBase close, {bool inDispose = false}) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (!menuIsOpen && _previousFocus != null) {
       // This needs to happen in the next frame so that in cases where we're
       // closing everything, and the _previousFocus is a focus scope that
@@ -2169,7 +2210,7 @@ class MenuController extends _MenuHandleBase {
         _previousFocus = null;
       });
     }
-    notifyListeners();
+    _notifyListenersSafely();
     assert(_debugMenuInfo('Menu closed $close'));
   }
 
@@ -2230,7 +2271,7 @@ class MenuHandle extends _MenuHandleBase {
       _menuScopeNode.debugLabel = 'Menu Scope';
       return true;
     }());
-    _parent?.addChild(this);
+    _parent?._addChild(this);
   }
 
   @override
@@ -2259,6 +2300,7 @@ class MenuHandle extends _MenuHandleBase {
   OverlayEntry? _overlayEntry;
 
   FocusNode? get _firstItemFocusNode {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (_menuScopeNode.context == null) {
       return null;
     }
@@ -2282,13 +2324,15 @@ class MenuHandle extends _MenuHandleBase {
   /// If `position` is not given and a `globalMenuPosition` was given to
   /// [createMaterialMenu], then it will appear at that position.
   void open(BuildContext context, {Offset? position}) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (isOpen && position == _globalMenuPosition) {
       assert(_debugMenuInfo("Not opening $this because it's already open"));
       return;
     }
-    assert(_debugMenuInfo('Opening ${this}${_globalMenuPosition != null ? ' at ${position ?? _globalMenuPosition}' : ''}'));
-    final bool somethingWasOpen = root.descendantIsOpen;
-    _parent?.closeChildren(); // Close all siblings.
+    assert(_debugMenuInfo(
+        'Opening ${this}${_globalMenuPosition != null ? ' at ${position ?? _globalMenuPosition}' : ''}'));
+    final bool somethingWasOpen = _root._descendantIsOpen;
+    _parent?._closeChildren(); // Close all siblings.
     assert(_overlayEntry == null);
 
     _globalMenuPosition = position ?? _globalMenuPosition;
@@ -2321,7 +2365,10 @@ class MenuHandle extends _MenuHandleBase {
               // Copy all the themes from the supplied outer context to the
               // overlay.
               outerContext,
-              const _Submenu(),
+              TapRegion(
+                groupId: _root,
+                child: const _Submenu(),
+              ),
               to: overlay.context,
             ),
           ),
@@ -2340,9 +2387,9 @@ class MenuHandle extends _MenuHandleBase {
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-    root._menuOpened(this, wasOpen: somethingWasOpen);
+    _root._menuOpened(this, wasOpen: somethingWasOpen);
     _onOpen?.call();
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   /// Close the menu.
@@ -2350,18 +2397,19 @@ class MenuHandle extends _MenuHandleBase {
   /// Call this when the menu should be closed. Has no effect if the menu is
   /// already closed.
   void close({bool inDispose = false}) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (!isOpen) {
       assert(_debugMenuInfo("Not closing $this because it's already closed"));
       return;
     }
     assert(_debugMenuInfo('Closing $this'));
-    closeChildren();
+    _closeChildren();
     _overlayEntry?.remove();
     _overlayEntry = null;
     _globalMenuPosition = null;
-    root._menuClosed(this, inDispose: inDispose);
+    _root._menuClosed(this, inDispose: inDispose);
     _onClose?.call();
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   /// Dispose of the menu.
@@ -2370,15 +2418,16 @@ class MenuHandle extends _MenuHandleBase {
   /// controlling widget is disposed.
   @override
   void dispose() {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_debugMenuInfo('Disposing of $this'));
     if (!isOpen) {
       _children.clear();
       return;
     }
-    closeChildren(inDispose: true);
+    _closeChildren(inDispose: true);
     _overlayEntry?.remove();
     _overlayEntry = null;
-    _parent?.removeChild(this);
+    _parent?._removeChild(this);
     _children.clear();
     if (_ownsParent) {
       _parent?.dispose();
@@ -2387,6 +2436,7 @@ class MenuHandle extends _MenuHandleBase {
   }
 
   void _focusButton() {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
     assert(_debugMenuInfo('Requesting focus for $_buttonFocusNode'));
     _buttonFocusNode?.requestFocus();
   }
@@ -2402,7 +2452,7 @@ class MenuHandle extends _MenuHandleBase {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(FlagProperty('isRoot', value: isRoot, ifTrue: 'ROOT', defaultValue: false));
+    properties.add(FlagProperty('isRoot', value: _isRoot, ifTrue: 'ROOT', defaultValue: false));
     properties.add(DiagnosticsProperty<_MenuHandleBase?>('parent', _parent, defaultValue: null));
     properties.add(FlagProperty('isOpen', value: isOpen, ifTrue: 'OPEN', defaultValue: false));
     properties.add(DiagnosticsProperty<FocusNode>('buttonFocusNode', _buttonFocusNode));
@@ -2705,10 +2755,10 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 
   bool _moveToNextTopLevel(MenuHandle currentMenu) {
-    final MenuHandle? sibling = currentMenu.topLevel.nextSibling as MenuHandle?;
+    final MenuHandle? sibling = currentMenu._topLevel._nextSibling as MenuHandle?;
     if (sibling == null) {
       // Wrap around to the first top level.
-      (currentMenu.topLevel._parent!._children.first as MenuHandle)._focusButton();
+      (currentMenu._topLevel._parent!._children.first as MenuHandle)._focusButton();
     } else {
       sibling._focusButton();
     }
@@ -2716,10 +2766,10 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
   }
 
   bool _moveToPreviousTopLevel(MenuHandle currentMenu) {
-    final MenuHandle? sibling = currentMenu.topLevel.previousSibling as MenuHandle?;
+    final MenuHandle? sibling = currentMenu._topLevel._previousSibling as MenuHandle?;
     if (sibling == null) {
       // Already on the first one, wrap around to the last one.
-      (currentMenu.topLevel._parent!._children.last as MenuHandle)._focusButton();
+      (currentMenu._topLevel._parent!._children.last as MenuHandle)._focusButton();
     } else {
       sibling._focusButton();
     }
@@ -2736,7 +2786,7 @@ class _MenuDirectionalFocusAction extends DirectionalFocusAction {
     }
     final _MenuHandleBase? menu =
         primaryFocus?.context == null ? null : _MenuHandleBase.maybeOf(primaryFocus!.context!);
-    if (menu == null || !menu.root.descendantIsOpen || menu.isRoot || menu is! MenuHandle) {
+    if (menu == null || !menu._root._descendantIsOpen || menu._isRoot || menu is! MenuHandle) {
       super.invoke(intent);
       return;
     }

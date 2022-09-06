@@ -382,7 +382,7 @@ class SelectionEdgeUpdateEvent extends SelectionEvent {
 /// it will receive [SelectionEvent]s in
 /// [SelectionHandler.dispatchSelectionEvent].
 ///
-/// Use [SelectionContainer._maybeOf] to get the immediate [SelectionRegistrar]
+/// Use [SelectionContainer.maybeOf] to get the immediate [SelectionRegistrar]
 /// in the ancestor chain above the build context.
 ///
 /// See also:

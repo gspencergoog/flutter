@@ -20,7 +20,7 @@ void main() {
   Finder findMenuPanels(Axis orientation) {
     return find.byWidgetPredicate((Widget widget) {
       // ignore: avoid_dynamic_calls
-      return widget.runtimeType.toString() == '_MenuPanel' && (widget as dynamic)._orientation == orientation;
+      return widget.runtimeType.toString() == '_MenuPanel' && (widget as dynamic).orientation == orientation;
     });
   }
 
@@ -102,7 +102,7 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.red));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(350.0, 58.0, 580.0, 226.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(350.0, 58.0, 580.0, 210.0)));
     expect(subMenuMaterial.elevation, equals(20));
     expect(subMenuMaterial.color, equals(Colors.green));
   });
@@ -175,7 +175,7 @@ void main() {
     expect(menuBarMaterial.color, equals(Colors.blue));
 
     final Material subMenuMaterial = getSubmenuPanelMaterial(tester);
-    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 60.0, 594.0, 248.0)));
+    expect(tester.getRect(findSubmenuPanel()), equals(const Rect.fromLTRB(336.0, 60.0, 594.0, 232.0)));
     expect(subMenuMaterial.elevation, equals(18));
     expect(subMenuMaterial.color, equals(Colors.cyan));
     expect(subMenuMaterial.shape, equals(const BeveledRectangleBorder()));

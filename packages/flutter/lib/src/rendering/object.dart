@@ -4162,7 +4162,7 @@ class _RootSemanticsFragment extends _InterestingSemanticsFragment {
 ///
 /// If [markAsExplicit] was not called before this fragment is added to
 /// another fragment it will merge [config] into the parent's [SemanticsNode]
-/// and add its [_children] to it.
+/// and add its [children] to it.
 ///
 /// If [markAsExplicit] was called before adding this fragment to another
 /// fragment it will create a new [SemanticsNode]. The newly created node will

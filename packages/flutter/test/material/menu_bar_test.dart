@@ -1119,11 +1119,7 @@ void main() {
             child: MenuBar(
               key: UniqueKey(),
               controller: controller,
-              children: createTestMenus(
-                shortcuts: <TestMenu, MenuSerializableShortcut>{
-                  TestMenu.subSubMenu100: const SingleActivator(LogicalKeyboardKey.keyA, control: true),
-                },
-              ),
+              children: createTestMenus(),
             ),
           ),
         ),
@@ -1146,9 +1142,6 @@ void main() {
               controller: controller,
               children: createTestMenus(
                 includeExtraGroups: true,
-                shortcuts: <TestMenu, MenuSerializableShortcut>{
-                  TestMenu.subSubMenu100: const SingleActivator(LogicalKeyboardKey.arrowRight),
-                },
               ),
             ),
           ),
@@ -1287,6 +1280,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Open the menu again, since it will have been closed when the structure
+      // changed.
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
 
       mnemonic0 = tester.widget(findMnemonic(TestMenu.subSubMenu100.label));
       expect(mnemonic0.data, equals('→'));
@@ -1315,6 +1315,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      // Open the menu again, since it will have been closed when the structure
+      // changed.
+      await tester.tap(find.text(TestMenu.mainMenu1.label));
+      await tester.pump();
+
+      await tester.tap(find.text(TestMenu.subMenu11.label));
+      await tester.pump();
+
 
       mnemonic0 = tester.widget(findMnemonic(TestMenu.subSubMenu100.label));
       expect(mnemonic0.data, equals('Esc'));
