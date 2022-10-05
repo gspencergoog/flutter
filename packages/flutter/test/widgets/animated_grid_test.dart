@@ -261,7 +261,8 @@ void main() {
         ),
       );
 
-      double itemScale(int index) => tester.widget<ScaleTransition>(find.byKey(ValueKey<int>(index), skipOffstage: false)).scale.value;
+      double itemScale(int index) =>
+          tester.widget<ScaleTransition>(find.byKey(ValueKey<int>(index), skipOffstage: false)).scale.value;
       double itemLeft(int index) => tester.getTopLeft(find.byKey(ValueKey<int>(index), skipOffstage: false)).dx;
       double itemRight(int index) => tester.getTopRight(find.byKey(ValueKey<int>(index), skipOffstage: false)).dx;
 
