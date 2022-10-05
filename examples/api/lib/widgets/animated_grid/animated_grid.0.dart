@@ -28,7 +28,7 @@ class _AnimatedGridSampleState extends State<AnimatedGridSample> {
     super.initState();
     _list = ListModel<int>(
       listKey: _gridKey,
-      initialItems: <int>[0, 1, 2],
+      initialItems: <int>[0, 1, 2, 3, 4, 5],
       removedItemBuilder: _buildRemovedItem,
     );
     _nextItem = 3;
