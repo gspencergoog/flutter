@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flutter code sample for [SliverAnimatedGrid].
+/// Flutter code sample for [SliverAnimatedGrid].
 
 import 'package:flutter/material.dart';
 
@@ -84,7 +84,6 @@ class _SliverAnimatedGridSampleState extends State<SliverAnimatedGridSample> {
   Widget build(BuildContext context) {
     return MaterialApp(
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      debugShowCheckedModeBanner: false,
       home: Scaffold(
         key: _scaffoldKey,
         body: CustomScrollView(

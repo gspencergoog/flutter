@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flutter code sample for [AnimatedGrid].
+/// Flutter code sample for [AnimatedGrid].
 
 import 'package:flutter/material.dart';
 
@@ -28,10 +28,10 @@ class _AnimatedGridSampleState extends State<AnimatedGridSample> {
     super.initState();
     _list = ListModel<int>(
       listKey: _gridKey,
-      initialItems: <int>[0, 1, 2, 3, 4, 5],
+      initialItems: <int>[0, 1, 2],
       removedItemBuilder: _buildRemovedItem,
     );
-    _nextItem = 6;
+    _nextItem = 3;
   }
 
   // Used to build list items that haven't been removed.
@@ -87,7 +87,6 @@ class _AnimatedGridSampleState extends State<AnimatedGridSample> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
           title: const Text(
