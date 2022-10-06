@@ -39,27 +39,29 @@ class _FullOfStarsState extends State<FullOfStars> {
             padding: const EdgeInsets.all(8.0),
             child: FloatingActionButton(
               child: const Icon(Icons.add),
-              onPressed: () => setState(() {
-                gridKey.currentState!.insertItem(starCount);
-                starCount += 1;
-              }),
+              onPressed: () {
+                setState(() {
+                  gridKey.currentState!.insertItem(starCount);
+                  starCount += 1;
+                });
+              },
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: FloatingActionButton(
               onPressed: starCount > 0
-                  ? () => setState(
-                        () {
-                          starCount -= 1;
-                          gridKey.currentState!.removeItem(
-                            starCount,
-                            (BuildContext context, Animation<double> animation) =>
-                                StarTile(starCount, animation: animation),
-                            duration: const Duration(milliseconds: 200),
-                          );
-                        },
-                      )
+                  ? () {
+                      setState(() {
+                        starCount -= 1;
+                        gridKey.currentState!.removeItem(
+                          starCount,
+                          (BuildContext context, Animation<double> animation) =>
+                              StarTile(starCount, animation),
+                          duration: const Duration(milliseconds: 200),
+                        );
+                      });
+                    }
                   : null,
               child: const Icon(Icons.remove),
             ),
@@ -79,7 +81,7 @@ class _FullOfStarsState extends State<FullOfStars> {
                 crossAxisSpacing: 20.0,
               ),
               itemBuilder: (BuildContext context, int index, Animation<double> animation) =>
-                  StarTile(index, animation: animation),
+                  StarTile(index, animation),
             ),
           ),
         ],
@@ -90,25 +92,25 @@ class _FullOfStarsState extends State<FullOfStars> {
 
 class StarTile extends StatelessWidget {
   const StarTile(
-    this.index, {
-    this.animation,
+    this.index,
+    this.animation, {
     super.key,
   });
 
   final int index;
-  final Animation<double>? animation;
+  final Animation<double> animation;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: animation ?? const AlwaysStoppedAnimation<double>(1.0),
+      animation: animation,
       builder: (BuildContext context, Widget? child) {
         return Container(
           key: UniqueKey(),
           alignment: Alignment.center,
           decoration: ShapeDecoration(
             shape: StarBorder(
-              points: 2 + index * animation!.value,
+              points: 2 + index * animation.value,
               innerRadiusRatio: 0.5 + math.atan((index - 1) / 10) / math.pi,
               valleyRounding: .2,
               pointRounding: .2,
@@ -120,7 +122,7 @@ class StarTile extends StatelessWidget {
             color: HSLColor.fromAHSL(1, index * 10 % 360.0, 1.0, 0.4).toColor(),
           ),
           child: Text(
-            '${(index * animation!.value).round() + 2}',
+            '${(index * animation.value).round() + 2}',
             style: TextStyle(fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 30),
           ),
         );
