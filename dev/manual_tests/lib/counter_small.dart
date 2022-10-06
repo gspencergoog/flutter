@@ -12,19 +12,19 @@ void main() {
         colorSchemeSeed: Colors.deepPurple,
         useMaterial3: true,
       ),
-      home: const FullOfStars(),
+      home: const FullOfPolygons(),
     ),
   );
 }
 
-class FullOfStars extends StatefulWidget {
-  const FullOfStars({super.key});
+class FullOfPolygons extends StatefulWidget {
+  const FullOfPolygons({super.key});
 
   @override
-  State<FullOfStars> createState() => _FullOfStarsState();
+  State<FullOfPolygons> createState() => _FullOfPolygonsState();
 }
 
-class _FullOfStarsState extends State<FullOfStars> {
+class _FullOfPolygonsState extends State<FullOfPolygons> {
   GlobalKey<SliverAnimatedGridState> gridKey = GlobalKey<SliverAnimatedGridState>();
   int starCount = 0;
 
@@ -53,7 +53,7 @@ class _FullOfStarsState extends State<FullOfStars> {
                 crossAxisSpacing: 20.0,
               ),
               itemBuilder: (BuildContext context, int index, Animation<double> animation) {
-                return _StarTile(index, animation: animation);
+                return _PolygonTile(index, animation: animation);
               },
             ),
           ),
@@ -63,8 +63,8 @@ class _FullOfStarsState extends State<FullOfStars> {
   }
 }
 
-class _StarTile extends StatelessWidget {
-  const _StarTile(this.index, {required this.animation});
+class _PolygonTile extends StatelessWidget {
+  const _PolygonTile(this.index, {required this.animation});
 
   final int index;
   final Animation<double> animation;

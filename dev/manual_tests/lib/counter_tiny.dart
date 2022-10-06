@@ -1,19 +1,23 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(
-    MaterialApp(theme: ThemeData(useMaterial3: true), home: const FullOfStars()),
+    MaterialApp(theme: ThemeData(useMaterial3: true), home: const FullOfPolygons()),
   );
 }
 
-class FullOfStars extends StatefulWidget {
-  const FullOfStars({super.key});
+class FullOfPolygons extends StatefulWidget {
+  const FullOfPolygons({super.key});
 
   @override
-  State<FullOfStars> createState() => _FullOfStarsState();
+  State<FullOfPolygons> createState() => _FullOfPolygonsState();
 }
 
-class _FullOfStarsState extends State<FullOfStars> {
+class _FullOfPolygonsState extends State<FullOfPolygons> {
   GlobalKey<SliverAnimatedGridState> gridKey = GlobalKey<SliverAnimatedGridState>();
   int starCount = 0;
 
