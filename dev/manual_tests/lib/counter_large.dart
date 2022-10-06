@@ -43,10 +43,7 @@ class _FullOfStarsState extends State<FullOfStars> {
           }
         },
       ),
-      body: _StarView(
-        gridKey: gridKey,
-        starCount: starCount,
-      ),
+      body: _StarView(gridKey: gridKey, starCount: starCount),
     );
   }
 }
@@ -161,3 +158,21 @@ class _StarTile extends StatelessWidget {
     );
   }
 }
+
+/// Demonstrates how to use/create:
+/// - MaterialApp w/Material 3
+/// - Theming (at least at the app level), with color themes
+/// - MediaQuery for adaptive apps
+/// - Containers
+/// - Padding
+/// - Builders, including AnimatedBuilder
+/// - Text, with style
+/// - Scaffold
+/// - Decorations
+/// - Building your own stateless widgets
+/// - Building your own stateful widgets, including how to use setState.
+/// - Slivers
+/// - Scrolling (with slivers)
+/// - GlobalKeys
+/// - How reactive programming works
+/// - Private widget classes
