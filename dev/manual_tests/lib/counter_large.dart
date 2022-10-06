@@ -73,29 +73,11 @@ class _StarControls extends StatelessWidget {
     onCountChanged(newCount);
   }
 
-  void _resetStars() {
-    for (int i = starCount - 1; i >= 0; i -= 1) {
-      gridKey.currentState!.removeItem(
-        i,
-        (BuildContext context, Animation<double> animation) => _StarTile(i, animation),
-        duration: const Duration(milliseconds: 200),
-      );
-    }
-    onCountChanged(0);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FloatingActionButton(
-            onPressed: starCount > 0 ? _resetStars : null,
-            child: const Icon(Icons.delete_rounded),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton(
