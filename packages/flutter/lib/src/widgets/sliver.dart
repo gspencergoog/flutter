@@ -421,7 +421,7 @@ abstract class _SliverChildHandlingBuilderDelegate<T extends Function> extends _
   int? get estimatedChildCount => childCount;
 
   @override
-  bool shouldRebuild(covariant SliverChildBuilderDelegate oldDelegate) => true;
+  bool shouldRebuild(covariant _SliverChildHandlingBuilderDelegate<T> oldDelegate) => true;
 }
 
 /// A delegate that supplies children for slivers using a builder callback.
@@ -528,7 +528,7 @@ abstract class _SliverChildHandlingBuilderDelegate<T extends Function> extends _
 ///    of children.
 ///  * [IndexedSemantics], for an example of manually annotating child nodes
 ///    with semantic indexes.
-class SliverChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<NullableIndexedWidgetBuilder> {
+class SliverChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<NullableIndexedWidgetBuilder> implements SliverChildDelegate {
   /// Creates a delegate that supplies children for slivers using the given
   /// builder callback.
   ///
@@ -692,7 +692,7 @@ class SliverChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<Nul
 ///   of children.
 /// * [IndexedSemantics], for an example of manually annotating child nodes with
 ///   semantic indexes.
-class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<NullableAnimatedIndexedWidgetBuilder> {
+class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<NullableAnimatedIndexedWidgetBuilder> implements SliverAnimatedChildDelegate {
   /// Creates a delegate that supplies children for slivers using the given
   /// builder callback.
   ///
@@ -719,6 +719,7 @@ class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDele
        assert(addSemanticIndexes != null),
        assert(semanticIndexCallback != null);
 
+  @override
   @pragma('vm:notify-debugger-on-exception')
   Widget? build(BuildContext context, int index, Animation<double> animation) {
     assert(builder != null);
