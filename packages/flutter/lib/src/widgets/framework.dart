@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
 
+import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
@@ -4864,7 +4865,7 @@ class ErrorWidget extends LeafRenderObjectWidget {
 ///  * [ValueWidgetBuilder], which is similar but takes a value and a child.
 typedef WidgetBuilder = Widget Function(BuildContext context);
 
-/// Signature for a function that creates a widget for a given index, e.g., in a
+/// Signature for a function that creates a widget for a given index, e.g. in a
 /// list.
 ///
 /// Used by [ListView.builder] and other APIs that use lazily-generated widgets.
@@ -4876,17 +4877,16 @@ typedef WidgetBuilder = Widget Function(BuildContext context);
 ///  * [NullableIndexedWidgetBuilder], which is similar but may return null.
 typedef IndexedWidgetBuilder = Widget Function(BuildContext context, int index);
 
-/// Signature for a function that creates a widget for a given index, e.g., in a
+/// Signature for a function that creates a widget for a given index, e.g. in a
 /// list, but may return null.
 ///
-/// Used by [SliverChildBuilderDelegate.builder] and other APIs that
-/// use lazily-generated widgets where the child count is not known
-/// ahead of time.
+/// Used by [SliverChildBuilderDelegate.builder] and other APIs that use
+/// lazily-generated widgets where the child count is not known ahead of time.
 ///
-/// Unlike most builders, this callback can return null, indicating the index
-/// is out of range. Whether and when this is valid depends on the semantics
-/// of the builder. For example, [SliverChildBuilderDelegate.builder] returns
-/// null when the index is out of range, where the range is defined by the
+/// Unlike most builders, this callback can return null, indicating the index is
+/// out of range. Whether and when this is valid depends on the semantics of the
+/// builder. For example, [SliverChildBuilderDelegate.builder] returns null when
+/// the index is out of range, where the range is defined by the
 /// [SliverChildBuilderDelegate.childCount]; so in that case the `index`
 /// parameter's value may determine whether returning null is valid or not.
 ///
@@ -4896,6 +4896,26 @@ typedef IndexedWidgetBuilder = Widget Function(BuildContext context, int index);
 ///  * [TransitionBuilder], which is similar but also takes a child.
 ///  * [IndexedWidgetBuilder], which is similar but not nullable.
 typedef NullableIndexedWidgetBuilder = Widget? Function(BuildContext context, int index);
+
+/// Signature for a function that creates an animated widget for a given index,
+/// e.g. in a list or grid, but may return null.
+///
+/// Used by [SliverAnimatedChildBuilderDelegate.builder] and other APIs that use
+/// lazily-generated widgets where the child count is not known ahead of time.
+///
+/// Unlike most builders, this callback can return null, indicating the index is
+/// out of range. Whether and when this is valid depends on the semantics of the
+/// builder. For example, [SliverAnimatedChildBuilderDelegate.builder] returns
+/// null when the index is out of range, where the range is defined by the
+/// [SliverAnimatedChildBuilderDelegate.childCount]; so in that case the `index`
+/// parameter's value may determine whether returning null is valid or not.
+///
+/// See also:
+///
+///  * [WidgetBuilder], which is similar but only takes a [BuildContext].
+///  * [TransitionBuilder], which is similar but also takes a child.
+///  * [IndexedWidgetBuilder], which is similar but not nullable.
+typedef NullableAnimatedIndexedWidgetBuilder = Widget? Function(BuildContext context, int index, Animation<double> animation);
 
 /// A builder that builds a widget given a child.
 ///
