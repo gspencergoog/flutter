@@ -79,7 +79,7 @@ class _ActiveItem implements Comparable<_ActiveItem> {
 class AnimatedList extends StatefulWidget {
   /// Creates a scrolling container that animates items when they are inserted
   /// or removed.
-  const AnimatedList({
+  AnimatedList({
     super.key,
     required this.itemBuilder,
     this.initialItemCount = 0,
@@ -91,8 +91,35 @@ class AnimatedList extends StatefulWidget {
     this.shrinkWrap = false,
     this.padding,
     this.clipBehavior = Clip.hardEdge,
+    ChildIndexGetter? findChildIndexCallback,
+    bool addAutomaticKeepAlives = true,
+    bool addRepaintBoundaries = true,
+    bool addSemanticIndexes = true,
   }) : assert(itemBuilder != null),
-       assert(initialItemCount != null && initialItemCount >= 0);
+       assert(initialItemCount != null && initialItemCount >= 0),
+       childrenDelegate = SliverAnimatedChildBuilderDelegate(
+         itemBuilder,
+         findChildIndexCallback: findChildIndexCallback,
+         childCount: initialItemCount,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+       );
+
+  AnimatedList.custom({
+    super.key,
+    required this.childrenDelegate,
+    this.initialItemCount = 0,
+    this.scrollDirection = Axis.vertical,
+    this.reverse = false,
+    this.controller,
+    this.primary,
+    this.physics,
+    this.shrinkWrap = false,
+    this.padding,
+    this.clipBehavior = Clip.hardEdge,
+  }) : assert(initialItemCount >= 0),
+       itemBuilder = childrenDelegate.builder;
 
   /// Called, as needed, to build list item widgets.
   ///
@@ -107,6 +134,14 @@ class AnimatedList extends StatefulWidget {
   /// Implementations of this callback should assume that
   /// [AnimatedListState.removeItem] removes an item immediately.
   final AnimatedItemBuilder itemBuilder;
+
+  /// A delegate that provides the children for the [AnimatedList].
+  ///
+  /// The [AnimatedList.custom] constructor lets you specify this delegate
+  /// explicitly. The [ListView] and [AnimatedList.builder] constructors create a
+  /// [childrenDelegate] that wraps the given [List] and [IndexedWidgetBuilder],
+  /// respectively.
+  final SliverAnimatedChildBuilderDelegate childrenDelegate;
 
   /// {@template flutter.widgets.animatedList.initialItemCount}
   /// The number of items the list will start with.

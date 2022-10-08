@@ -38,6 +38,7 @@ typedef SemanticIndexCallback = int? Function(Widget widget, int localIndex);
 
 int _kDefaultSemanticIndexCallback(Widget _, int localIndex) => localIndex;
 
+// A base class for delegates that supply children for slivers.
 abstract class _SliverChildHandlingDelegate {
   /// Abstract const constructor. This constructor enables subclasses to provide
   /// const constructors so that they can be used in const expressions.
@@ -79,6 +80,7 @@ abstract class _SliverChildHandlingDelegate {
   /// the underlying render tree.
   void didFinishLayout(int firstIndex, int lastIndex) { }
 
+  /// {@template flutter.widgets.sliver.SliverChildHandlingDelegate.shouldRebuild}
   /// Called whenever a new instance of the child delegate class is
   /// provided to the sliver.
   ///
@@ -88,6 +90,7 @@ abstract class _SliverChildHandlingDelegate {
   ///
   /// If the method returns false, then the [build] call might be optimized
   /// away.
+  /// {@endtemplate}
   bool shouldRebuild(covariant _SliverChildHandlingDelegate oldDelegate);
 
   /// Find index of child element with associated key.
@@ -229,6 +232,9 @@ abstract class SliverChildDelegate extends _SliverChildHandlingDelegate {
   /// widgets have changed, a new delegate must be provided, and the new
   /// delegate's [shouldRebuild] method must return true.
   Widget? build(BuildContext context, int index);
+
+  @override
+  bool shouldRebuild(covariant SliverChildDelegate oldDelegate);
 }
 
 /// A delegate that supplies animated children for slivers.
@@ -270,6 +276,9 @@ abstract class SliverAnimatedChildDelegate extends _SliverChildHandlingDelegate 
   /// widgets have changed, a new delegate must be provided, and the new
   /// delegate's [shouldRebuild] method must return true.
   Widget? build(BuildContext context, int index, Animation<double> animation);
+
+  @override
+  bool shouldRebuild(covariant SliverAnimatedChildDelegate oldDelegate);
 }
 
 class _SaltedValueKey extends ValueKey<Key> {
@@ -586,6 +595,10 @@ class SliverChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<Nul
     }
     return KeyedSubtree(key: key, child: child);
   }
+
+  /// {@macro flutter.widgets.sliver.SliverChildHandlingDelegate.shouldRebuild}
+  @override
+  bool shouldRebuild(covariant SliverChildBuilderDelegate oldDelegate);
 }
 
 /// A delegate that supplies animated children for slivers using a builder
@@ -750,6 +763,10 @@ class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDele
     }
     return KeyedSubtree(key: key, child: child);
   }
+
+  /// {@macro flutter.widgets.sliver.SliverChildHandlingDelegate.shouldRebuild}
+  @override
+  bool shouldRebuild(covariant SliverAnimatedChildBuilderDelegate oldDelegate);
 }
 
 /// A delegate that supplies children for slivers using an explicit list.
