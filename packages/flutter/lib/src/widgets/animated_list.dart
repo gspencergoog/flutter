@@ -106,6 +106,99 @@ class AnimatedList extends StatefulWidget {
          addSemanticIndexes: addSemanticIndexes,
        );
 
+  /// Creates a scrollable, linear array of widgets with a custom child model.
+  ///
+  /// For example, a custom child model can control the algorithm used to
+  /// estimate the size of children that are not actually visible.
+  ///
+  /// {@tool snippet}
+  ///
+  /// This [AnimatedList] uses a custom [SliverAnimatedChildBuilderDelegate] to
+  /// support child reordering.
+  ///
+  /// ```dart
+  /// class MyListView extends StatefulWidget {
+  ///   const MyListView({super.key});
+  ///
+  ///   @override
+  ///   State<MyListView> createState() => _MyListViewState();
+  /// }
+  ///
+  /// class _MyListViewState extends State<MyListView> {
+  ///   List<String> items = <String>['1', '2', '3', '4', '5'];
+  ///
+  ///   void _reverse() {
+  ///     setState(() {
+  ///       items = items.reversed.toList();
+  ///     });
+  ///   }
+  ///
+  ///   @override
+  ///   Widget build(BuildContext context) {
+  ///     return Scaffold(
+  ///       body: SafeArea(
+  ///         child: AnimatedList.custom(
+  ///           childrenDelegate: SliverAnimatedChildBuilderDelegate(
+  ///             (BuildContext context, int index, Animation<double> animation) {
+  ///               return KeepAlive(
+  ///                 data: items[index],
+  ///                 animation: animation,
+  ///                 key: ValueKey<String>(items[index]),
+  ///               );
+  ///             },
+  ///             childCount: items.length,
+  ///             findChildIndexCallback: (Key key) {
+  ///               final ValueKey<String> valueKey = key as ValueKey<String>;
+  ///               final String data = valueKey.value;
+  ///               return items.indexOf(data);
+  ///             }
+  ///           ),
+  ///         ),
+  ///       ),
+  ///       bottomNavigationBar: BottomAppBar(
+  ///         child: Row(
+  ///           mainAxisAlignment: MainAxisAlignment.center,
+  ///           children: <Widget>[
+  ///             TextButton(
+  ///               onPressed: () => _reverse(),
+  ///               child: const Text('Reverse items'),
+  ///             ),
+  ///           ],
+  ///         ),
+  ///       ),
+  ///     );
+  ///   }
+  /// }
+  ///
+  /// class KeepAlive extends StatefulWidget {
+  ///   const KeepAlive({
+  ///     required Key key,
+  ///     required this.data,
+  ///     required this.animation,
+  ///   }) : super(key: key);
+  ///
+  ///   final String data;
+  ///   final Animation<double> animation;
+  ///
+  ///   @override
+  ///   State<KeepAlive> createState() => _KeepAliveState();
+  /// }
+  ///
+  /// class _KeepAliveState extends State<KeepAlive> with AutomaticKeepAliveClientMixin{
+  ///   @override
+  ///   bool get wantKeepAlive => true;
+  ///
+  ///   @override
+  ///   Widget build(BuildContext context) {
+  ///     super.build(context);
+  ///     return FadeTransition(
+  ///       opacity: widget.animation.value,
+  ///       child: Text(widget.data),
+  ///     );
+  ///   }
+  /// }
+  /// ```
+  /// {@end-tool}
   AnimatedList.custom({
     super.key,
     required this.childrenDelegate,
@@ -138,7 +231,7 @@ class AnimatedList extends StatefulWidget {
   /// A delegate that provides the children for the [AnimatedList].
   ///
   /// The [AnimatedList.custom] constructor lets you specify this delegate
-  /// explicitly. The [ListView] and [AnimatedList.builder] constructors create a
+  /// explicitly. The [AnimatedList] and [AnimatedList] constructors create a
   /// [childrenDelegate] that wraps the given [List] and [IndexedWidgetBuilder],
   /// respectively.
   final SliverAnimatedChildBuilderDelegate childrenDelegate;

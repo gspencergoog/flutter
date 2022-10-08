@@ -15,16 +15,25 @@ import 'ticker_provider.dart';
 /// Signature for the builder callback used by widgets like [AnimatedGrid] to
 /// build their animated children.
 ///
-/// The `context` argument is the build context where the widget will be
-/// created, the `index` is the index of the item to be built, and the
-/// `animation` is an [Animation] that should be used to animate an entry
-/// transition for the widget that is built.
+/// The function creates an animated widget for a given index, e.g. in a list or
+/// grid, but may return null.
+///
+/// Used by [AnimatedGrid], [AnimatedList], and other APIs that use
+/// lazily-generated widgets where the animated child count is not known ahead
+/// of time.
+///
+/// Unlike most builders, this callback can return null, indicating the index is
+/// out of range. Whether and when this is valid depends on the semantics of the
+/// builder. For example, [SliverAnimatedChildBuilderDelegate.builder] returns
+/// null when the index is out of range, where the range is defined by the
+/// [SliverAnimatedChildBuilderDelegate.childCount]; so in that case the `index`
+/// parameter's value may determine whether returning null is valid or not.
 ///
 /// See also:
 ///
-/// * [AnimatedRemovedItemBuilder], a builder that is for removing items with
-///   animations instead of adding them.
-typedef AnimatedItemBuilder = Widget Function(BuildContext context, int index, Animation<double> animation);
+/// * [AnimatedRemovedItemBuilder], a builder that is for animating items after
+///   they have been removed.
+typedef AnimatedItemBuilder = Widget? Function(BuildContext context, int index, Animation<double> animation);
 
 /// Signature for the builder callback used by widgets like [AnimatedGrid] (in
 /// [AnimatedGridState.removeItem]) to animated their children after they have
@@ -695,7 +704,7 @@ class SliverAnimatedGridState extends State<SliverAnimatedGrid> with TickerProvi
     });
   }
 
-  Widget _itemBuilder(BuildContext context, int itemIndex) {
+  Widget? _itemBuilder(BuildContext context, int itemIndex) {
     final _ActiveItem? outgoingItem = _activeItemAt(_outgoingItems, itemIndex);
     if (outgoingItem != null) {
       return outgoingItem.removedItemBuilder!(

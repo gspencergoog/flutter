@@ -7,6 +7,7 @@ import 'dart:collection' show HashMap, SplayTreeMap;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import 'animated_grid.dart';
 import 'automatic_keep_alive.dart';
 import 'basic.dart';
 import 'framework.dart';
@@ -705,7 +706,7 @@ class SliverChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<Nul
 ///   of children.
 /// * [IndexedSemantics], for an example of manually annotating child nodes with
 ///   semantic indexes.
-class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<NullableAnimatedIndexedWidgetBuilder> implements SliverAnimatedChildDelegate {
+class SliverAnimatedChildBuilderDelegate extends _SliverChildHandlingBuilderDelegate<AnimatedItemBuilder> implements SliverAnimatedChildDelegate {
   /// Creates a delegate that supplies children for slivers using the given
   /// builder callback.
   ///
