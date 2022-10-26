@@ -578,7 +578,7 @@ class _FocusState extends State<Focus> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _focusAttachment?.reparent();
+    _focusAttachment?.reparent(parent: widget.parentNode);
     _handleAutofocus();
   }
 
@@ -592,13 +592,13 @@ class _FocusState extends State<Focus> {
   @override
   void deactivate() {
     super.deactivate();
-    // The focus node's location in the tree is no longer valid here. But
+    // The focus node's location in the focus tree is no longer valid here. But
     // we can't unfocus or remove the node from the tree because if the widget
     // is moved to a different part of the tree (via global key) it should
-    // retain its focus state. That's why we temporarily park it on the root
-    // focus node (via reparent) until it either gets moved to a different part
-    // of the tree (via didChangeDependencies) or until it is disposed.
-    _focusAttachment?.reparent();
+    // retain its focus state. It will stay in the focus tree until it either
+    // gets moved to a different part of the focus tree (via
+    // didChangeDependencies) or it is disposed.
+    _focusAttachment?.reparent(parent: widget.parentNode);
     _didAutofocus = false;
   }
 
