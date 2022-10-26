@@ -135,6 +135,83 @@ void main() {
       expect(find.text('B FOCUSED'), findsOneWidget);
     });
 
+
+    testWidgets('Autofocus works on scopes when changing the state of autofocus between builds', (WidgetTester tester) async {
+      final FocusScopeNode nodeA = FocusScopeNode(debugLabel: 'a');
+      final FocusScopeNode nodeB = FocusScopeNode(debugLabel: 'b');
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeA,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeB,
+              autofocus: true,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      expect(nodeB.hasPrimaryFocus, isTrue);
+      expect(nodeA.hasFocus, isFalse);
+
+      primaryFocus!.unfocus();
+
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeA,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeB,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      expect(nodeB.hasPrimaryFocus, isFalse);
+      expect(nodeA.hasFocus, isFalse);
+
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeA,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+            FocusScope.withExternalFocusNode(
+              focusScopeNode: nodeB,
+              autofocus: true,
+              child: const Focus(
+                child: SizedBox(width: 100, height: 100),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      expect(nodeB.hasPrimaryFocus, isTrue);
+      expect(nodeA.hasFocus, isFalse);
+    });
+
     testWidgets('Can have multiple focused children and they update accordingly', (WidgetTester tester) async {
       final GlobalKey<TestFocusState> keyA = GlobalKey();
       final GlobalKey<TestFocusState> keyB = GlobalKey();

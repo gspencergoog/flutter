@@ -575,15 +575,25 @@ class _FocusState extends State<Focus> {
     super.dispose();
   }
 
+  void _reparent() {
+    _focusAttachment!.reparent(parent: widget.parentNode);
+    if (!_didAutofocus && widget.autofocus) {
+      focusNode.enclosingScope!.autofocus(focusNode);
+      _didAutofocus = true;
+    }
+  }
+
   @override
   void deactivate() {
     super.deactivate();
     // The focus node's location in the focus tree is no longer valid here. But
     // we can't unfocus or remove the node from the tree because if the widget
-    // is moved to a different part of the tree (via global key) it should
-    // retain its focus state. It will stay in the focus tree until it either
-    // gets moved to a different part of the focus tree (via
-    // didChangeDependencies) or it is disposed.
+    // is moved to a different part of the widget tree (via global key) it
+    // should retain its focus state. Its focus node will stay in the focus tree
+    // until it either gets moved to a different part of the focus tree by
+    // reparenting (in build) or is disposed. If there's no explicit parentNode,
+    // then it will temporarily get reparented to the root scope as a parking
+    // location.
     _focusAttachment?.reparent(parent: widget.parentNode);
     _didAutofocus = false;
   }
@@ -656,14 +666,6 @@ class _FocusState extends State<Focus> {
       setState(() {
         _descendantsWereTraversable = descendantsAreTraversable;
       });
-    }
-  }
-
-  void _reparent() {
-    _focusAttachment!.reparent(parent: widget.parentNode);
-    if (!_didAutofocus && widget.autofocus) {
-      focusNode.enclosingScope!.autofocus(focusNode);
-      _didAutofocus = true;
     }
   }
 
