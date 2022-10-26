@@ -82,6 +82,59 @@ void main() {
       expect(find.text('B FOCUSED'), findsOneWidget);
     });
 
+    testWidgets('Autofocus works when changing the state of autofocus between builds', (WidgetTester tester) async {
+      final GlobalKey<TestFocusState> keyA = GlobalKey();
+      final GlobalKey<TestFocusState> keyB = GlobalKey();
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            TestFocus(key: keyA),
+            TestFocus(key: keyB, name: 'b', autofocus: true),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      expect(keyA.currentState!.focusNode.hasFocus, isFalse);
+      expect(find.text('a'), findsOneWidget);
+      expect(keyB.currentState!.focusNode.hasFocus, isTrue);
+      expect(find.text('B FOCUSED'), findsOneWidget);
+
+      primaryFocus!.unfocus();
+
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            TestFocus(key: keyA),
+            TestFocus(key: keyB, name: 'b'),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      expect(keyA.currentState!.focusNode.hasFocus, isFalse);
+      expect(find.text('a'), findsOneWidget);
+      expect(keyB.currentState!.focusNode.hasFocus, isFalse);
+
+      await tester.pumpWidget(
+        Column(
+          children: <Widget>[
+            TestFocus(key: keyA),
+            TestFocus(key: keyB, name: 'b', autofocus: true),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      expect(keyA.currentState!.focusNode.hasFocus, isFalse);
+      expect(find.text('a'), findsOneWidget);
+      expect(keyB.currentState!.focusNode.hasFocus, isTrue);
+      expect(find.text('B FOCUSED'), findsOneWidget);
+    });
+
     testWidgets('Can have multiple focused children and they update accordingly', (WidgetTester tester) async {
       final GlobalKey<TestFocusState> keyA = GlobalKey();
       final GlobalKey<TestFocusState> keyB = GlobalKey();
@@ -530,6 +583,67 @@ void main() {
       expect(parentNode.hasFocus, isTrue);
       expect(topNode.hasFocus, isTrue);
       expect(insertedNode.hasFocus, isFalse);
+    });
+
+    testWidgets('Updating dependencies with parentNode set keeps the right parent.', (WidgetTester tester) async {
+      final FocusNode topNode = FocusNode(debugLabel: 'Top');
+      final FocusNode parentNode = FocusNode(debugLabel: 'Parent');
+      final FocusNode parentNode1 = FocusNode(debugLabel: 'Parent1');
+      final FocusNode childNode = FocusNode(debugLabel: 'Child');
+
+      await tester.pumpWidget(
+        FocusScope(
+          child: Focus.withExternalFocusNode(
+            focusNode: topNode,
+            child: Column(
+              children: <Widget>[
+                Focus.withExternalFocusNode(
+                  focusNode: parentNode,
+                  child: const SizedBox(),
+                ),
+                Focus.withExternalFocusNode(
+                  focusNode: childNode,
+                  parentNode: parentNode,
+                  autofocus: true,
+                  child: const SizedBox(),
+                )
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(childNode.hasPrimaryFocus, isTrue);
+      expect(parentNode.hasFocus, isTrue);
+      expect(topNode.hasFocus, isTrue);
+
+      await tester.pumpWidget(
+        FocusScope(
+          child: Focus.withExternalFocusNode(
+            focusNode: topNode,
+            child: Column(
+              children: <Widget>[
+                Focus.withExternalFocusNode(
+                  focusNode: parentNode1,
+                  child: const SizedBox(),
+                ),
+                Focus.withExternalFocusNode(
+                  focusNode: childNode,
+                  parentNode: parentNode1,
+                  autofocus: true,
+                  child: const SizedBox(),
+                )
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(childNode.hasPrimaryFocus, isTrue);
+      expect(parentNode.hasFocus, isFalse);
+      expect(topNode.hasFocus, isTrue);
     });
 
     testWidgets('Setting parentNode determines focus scope tree hierarchy.', (WidgetTester tester) async {

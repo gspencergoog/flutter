@@ -576,20 +576,6 @@ class _FocusState extends State<Focus> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _focusAttachment?.reparent(parent: widget.parentNode);
-    _handleAutofocus();
-  }
-
-  void _handleAutofocus() {
-    if (!_didAutofocus && widget.autofocus) {
-      focusNode.enclosingScope!.autofocus(focusNode);
-      _didAutofocus = true;
-    }
-  }
-
-  @override
   void deactivate() {
     super.deactivate();
     // The focus node's location in the focus tree is no longer valid here. But
@@ -639,7 +625,7 @@ class _FocusState extends State<Focus> {
     }
 
     if (oldWidget.autofocus != widget.autofocus) {
-      _handleAutofocus();
+      _didAutofocus = false;
     }
   }
 
@@ -673,9 +659,17 @@ class _FocusState extends State<Focus> {
     }
   }
 
+  void _reparent() {
+    _focusAttachment!.reparent(parent: widget.parentNode);
+    if (!_didAutofocus && widget.autofocus) {
+      focusNode.enclosingScope!.autofocus(focusNode);
+      _didAutofocus = true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    _focusAttachment!.reparent(parent: widget.parentNode);
+    _reparent();
     Widget child = widget.child;
     if (widget.includeSemantics) {
       child = Semantics(
@@ -848,7 +842,7 @@ class _FocusScopeState extends _FocusState {
 
   @override
   Widget build(BuildContext context) {
-    _focusAttachment!.reparent(parent: widget.parentNode);
+    _reparent();
     return Semantics(
       explicitChildNodes: true,
       child: _FocusMarker(
