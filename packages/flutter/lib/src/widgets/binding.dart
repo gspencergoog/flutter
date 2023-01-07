@@ -24,6 +24,15 @@ import 'widget_inspector.dart';
 
 export 'dart:ui' show AppLifecycleState, Locale;
 
+/// The allowed responses from an
+/// [ApplicationLifecycleState.applicationTerminationRequested] request.
+enum ApplicationTerminationResponse {
+  /// Terminating the application is allowed.
+  terminate,
+  /// Do not terminate the application.
+  cancel,
+}
+
 /// Interface for classes that register with the Widgets layer binding.
 ///
 /// When used as a mixin, provides no-op method implementations.
@@ -227,6 +236,16 @@ abstract class WidgetsBindingObserver {
   ///
   /// This method exposes notifications from [SystemChannels.lifecycle].
   void didChangeAppLifecycleState(AppLifecycleState state) { }
+
+  /// Receives any requests for application termination that may be received on
+  /// the [SystemChannels.lifecycle] method channel.
+  ///
+  /// Returning [ApplicationTerminationResponse.cancel] will deny the request
+  /// for termination, and returning [ApplicationTerminationResponse.terminate]
+  /// will allow the termination.
+  Future<ApplicationTerminationResponse> didRequestApplicationTermination() async {
+    return ApplicationTerminationResponse.terminate;
+  }
 
   /// Called when the system is running low on memory.
   ///
