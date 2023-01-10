@@ -24,12 +24,11 @@ import 'widget_inspector.dart';
 
 export 'dart:ui' show AppLifecycleState, Locale;
 
-/// The allowed responses from an
-/// [ApplicationLifecycleState.applicationTerminationRequested] request.
-enum ApplicationTerminationResponse {
-  /// Terminating the application is allowed.
-  terminate,
-  /// Do not terminate the application.
+/// The allowed responses from an `exitRequested` method call.
+enum ExitResponse {
+  /// Exiting the application is allowed.
+  exit,
+  /// Do not exit the application.
   cancel,
 }
 
@@ -50,7 +49,6 @@ enum ApplicationTerminationResponse {
 /// lifecycle messages. See [didChangeAppLifecycleState].
 ///
 /// ** See code in examples/api/lib/widgets/binding/widget_binding_observer.0.dart **
-///
 /// {@end-tool}
 ///
 /// To respond to other notifications, replace the [didChangeAppLifecycleState]
@@ -240,11 +238,11 @@ abstract class WidgetsBindingObserver {
   /// Receives any requests for application termination that may be received on
   /// the [SystemChannels.lifecycle] method channel.
   ///
-  /// Returning [ApplicationTerminationResponse.cancel] will deny the request
-  /// for termination, and returning [ApplicationTerminationResponse.terminate]
-  /// will allow the termination.
-  Future<ApplicationTerminationResponse> didRequestApplicationTermination() async {
-    return ApplicationTerminationResponse.terminate;
+  /// If any observer returns [ExitResponse.cancel] it will deny the request for
+  /// termination. Only if all observers return [ExitResponse.exit] will the
+  /// exit begin.
+  Future<ExitResponse> didRequestExit() async {
+    return ExitResponse.exit;
   }
 
   /// Called when the system is running low on memory.

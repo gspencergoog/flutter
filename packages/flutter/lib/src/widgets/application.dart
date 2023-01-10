@@ -1,54 +1,61 @@
 import 'package:flutter/widgets.dart';
 
-/// A callback type that is used by [LifecycleListener.onShouldApplicationTerminate]
-/// to ask the application if it wants to cancel application termination or not.
-typedef ApplicationShouldTerminateCallback = Future<ApplicationTerminationResponse> Function();
+/// A callback type that is used by
+/// [ApplicationLifecycleListener.onExitRequested] to ask the application if it
+/// wants to cancel application termination or not.
+typedef ExitRequestCallback = Future<ExitResponse> Function();
 
-/// An application class that can be used to configure callbacks that will be
+/// A listener that can be used to configure callbacks that will be
 /// called at various points in the application lifecycle.
-///
-/// This class is meant to replace calling of [runApp] directly. Instead, you
-/// can create one of these and call [run], which will call [runApp] for you.
-class LifecycleListener with WidgetsBindingObserver {
-  /// Creates an [LifecycleListener].
-  LifecycleListener({
-    this.onInitiated,
-    this.onTerminating,
+class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
+  /// Creates an [ApplicationLifecycleListener].
+  ApplicationLifecycleListener({
+    this.onInitialize,
+    this.onExit,
     this.onActive,
     this.onInactive,
-    this.onShouldApplicationTerminate,
-    this.onHidden,
-    this.onShown,
-    this.onPaused,
-    this.onResumed,
+    this.onHide,
+    this.onShow,
+    this.onPause,
+    this.onResume,
+    this.onExitRequested,
+    this.onStateChange,
   }) {
     WidgetsFlutterBinding.ensureInitialized().addObserver(this);
+    lifecycleState = WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.exiting;
   }
+
+  /// Contains the current lifecycle state that the application is in.
+  late AppLifecycleState lifecycleState;
 
   /// Disposes of the application object.
   ///
-  /// The object should not be used after calling [dispose]. It is called
-  /// automatically if the application receives an
-  /// [AppLifecycleState.terminating] event.
+  /// This should be called when this object is no longer needed.
+  ///
+  /// The object should not be used after calling [dispose].
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
-  /// A callback that is called when [runApp] is called and the first
-  /// frame is requested.
-  final VoidCallback? onInitiated;
+  /// Called anytime the state changes, passing the new state.
+  final void Function(AppLifecycleState state)? onStateChange;
 
-  /// A callback used to ask the application if it will allow terminating of the
-  /// application in the case where termination is cancelable.
+  /// A callback that is called when [runApp] has been called and the embedding
+  /// is initialized.
+  final VoidCallback? onInitialize;
+
+  /// A callback used to ask the application if it will allow exiting the
+  /// application for cases where the exit is cancelable.
   ///
   /// Terminating the application isn't always cancelable, but when it is, this
-  /// function will be called before termination occurs.
+  /// function will be called before exit occurs.
   ///
-  /// Responding [ApplicationTerminationResponse.terminate] will continue
-  /// termination, and responding [ApplicationTerminationResponse.cancel] will
-  /// cancel it. If termination is not canceled, it will be immediately followed
-  /// by a call to [onTerminating].
-  final ApplicationShouldTerminateCallback? onShouldApplicationTerminate;
+  /// Responding [ExitResponse.exit] will continue termination, and responding
+  /// [ExitResponse.cancel] will cancel it. If termination is not canceled, it
+  /// will be immediately followed by a call to [onExit].
+  final ExitRequestCallback? onExitRequested;
 
   /// A callback that is called when an application is about the be terminated
   /// in an orderly fashion.
@@ -59,11 +66,11 @@ class LifecycleListener with WidgetsBindingObserver {
   /// The application has an undefined short amount of time (think milliseconds)
   /// to save any unsaved state or close any resources before the application
   /// terminates. The application will eventually terminate in the middle of
-  /// these operations if they take too long, so the anything executed here
-  /// should be as fast and robust to interruption as possible.
-  final VoidCallback? onTerminating;
+  /// these operations if they take too long, so anything executed here should
+  /// be as fast and robust to interruption as possible.
+  final VoidCallback? onExit;
 
-  /// A callback that is called just before the application loses input focus.
+  /// A callback that is called when the application loses input focus.
   ///
   /// On mobile platforms, this can be during a phone call or when a system
   /// dialog is visible.
@@ -72,67 +79,139 @@ class LifecycleListener with WidgetsBindingObserver {
   /// input focus.
   final VoidCallback? onInactive;
 
-  /// A callback that is called just before the application gains input focus.
+  /// A callback that is called when a view in the application gains
+  /// input focus.
   final VoidCallback? onActive;
 
-  /// A callback that is called just before the application is hidden.
+  /// A callback that is called when the application is hidden.
   ///
   /// On mobile platforms, this is usually just before the application is
   /// replaced by another application in the foreground.
   ///
   /// On desktop platforms, this is just before focus is lost by the focused
   /// view to another view that is not part of the application.
-  final VoidCallback? onHidden;
+  final VoidCallback? onHide;
 
-  /// A callback that is called just before the application is shown, either
-  /// after being hidden, or at startup.
-  final VoidCallback? onShown;
+  /// A callback that is called when the application is shown.
+  final VoidCallback? onShow;
 
-  /// A callback that is called just before the application is paused.
+  /// A callback that is called when the application is paused.
   ///
-  /// On mobile platforms, this happens right before the application is replaced by another application.
+  /// On mobile platforms, this happens right before the application is replaced
+  /// by another application.
   ///
-  /// On desktop applications, this state isn't ever entered.
-  final VoidCallback? onPaused;
+  /// On desktop platforms, this function is only called during shutdown.
+  final VoidCallback? onPause;
 
-  /// A callback that is called just before the application is resumed after
+  /// A callback that is called when the application is resumed after
   /// being paused.
   ///
   /// On mobile platforms, this happens just before this application takes over
   /// as the active application.
   ///
-  /// This doesn't happen on desktop platforms.
-  final VoidCallback? onResumed;
+  /// On desktop platforms, this function is only called during startup.
+  final VoidCallback? onResume;
 
   @override
-  Future<ApplicationTerminationResponse> didRequestApplicationTermination() async {
-    if (onShouldApplicationTerminate == null) {
-          return ApplicationTerminationResponse.terminate;
+  Future<ExitResponse> didRequestExit() async {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    if (onExitRequested == null) {
+      return ExitResponse.exit;
     }
-    return onShouldApplicationTerminate!();
+    return onExitRequested!();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    if (state == lifecycleState) {
+      return;
+    }
+    final AppLifecycleState previousState = lifecycleState;
+    lifecycleState = state;
     switch (state) {
-      case AppLifecycleState.initiated:
-        onInitiated?.call();
+      case AppLifecycleState.initializing:
+        onInitialize?.call();
         break;
-      case AppLifecycleState.paused:
-        onHidden?.call();
-        break;
-      case AppLifecycleState.inactive:
-        onInactive?.call();
-        break;
-      case AppLifecycleState.detached:
-        break;
+      case AppLifecycleState.active:
       case AppLifecycleState.resumed:
         onActive?.call();
         break;
-      case AppLifecycleState.terminating:
-        onTerminating?.call();
-        dispose();
+      case AppLifecycleState.inactive:
+        if (previousState == AppLifecycleState.hidden) {
+          onShow?.call();
+        } else if (previousState == AppLifecycleState.active) {
+          onInactive?.call();
+        }
+        break;
+      case AppLifecycleState.hidden:
+        if (previousState == AppLifecycleState.paused) {
+          onResume?.call();
+        } else if (previousState == AppLifecycleState.inactive) {
+          onHide?.call();
+        }
+        break;
+      case AppLifecycleState.paused:
+        onPause?.call();
+        break;
+      case AppLifecycleState.exiting:
+        onExit?.call();
+        break;
+      case AppLifecycleState.detached:
         break;
     }
+    notifyListeners();
+    onStateChange?.call(lifecycleState);
+  }
+}
+
+void main() {
+  final DataModel model = DataModel();
+  runApp(const MyApp(model));
+  model.dispose();
+}
+
+///
+class DataModel {
+  ///
+  DataModel()  {
+    _lifecycleListener = ApplicationLifecycleListener(
+      onStateChange: didChangeAppLifecycleState,
+      onExitRequested: didRequestExit,
+    );
+  }
+
+  late ApplicationLifecycleListener _lifecycleListener;
+  bool _hasUnsavedDocuments = false;
+  bool _stateSaved = false;
+
+  void _saveState() {
+    if (_stateSaved) {
+      return;
+    }
+    // TODO: Commit any unsaved application state.
+    _stateSaved = true;
+  }
+
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _saveState();
+    }
+  }
+
+  Future<ExitResponse> didRequestExit() async {
+    if (_hasUnsavedDocuments) {
+      if (await showSaveDialog() == SaveDocuments.cancel) {
+        // The user canceled when asked to save documents, so cancel the exit.
+        return ExitResponse.cancel;
+      }
+      _hasUnsavedDocuments = false;
+    }
+    return ExitResponse.exit;
+  }
+
+  @mustCallSuper
+  void dispose() {
+    _lifecycleListener.dispose();
   }
 }
