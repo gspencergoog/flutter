@@ -7,10 +7,12 @@ typedef ExitRequestCallback = Future<ExitResponse> Function();
 
 /// A listener that can be used to configure callbacks that will be
 /// called at various points in the application lifecycle.
-class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
+class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with WidgetsBindingObserver  {
   /// Creates an [ApplicationLifecycleListener].
   ApplicationLifecycleListener({
+    required this.binding,
     this.onInitialize,
+    this.onStart,
     this.onExit,
     this.onActive,
     this.onInactive,
@@ -20,10 +22,15 @@ class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
     this.onResume,
     this.onExitRequested,
     this.onStateChange,
-  }) {
-    WidgetsFlutterBinding.ensureInitialized().addObserver(this);
-    lifecycleState = WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.exiting;
+  }) : super(binding.lifecycleState ?? AppLifecycleState.exiting) {
+    binding.addObserver(this);
   }
+
+  /// The [WidgetsBinding] to listen to for application lifecycle events.
+  ///
+  /// Typically, this is set to [WidgetsBinding.instance], but may be
+  /// substituted for testing or other specialized bindings.
+  final WidgetsBinding binding;
 
   /// Contains the current lifecycle state that the application is in.
   late AppLifecycleState lifecycleState;
@@ -46,10 +53,13 @@ class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
   /// is initialized.
   final VoidCallback? onInitialize;
 
+  /// A callback that is called when the app scheduled the first frame.
+  final VoidCallback? onStart;
+
   /// A callback used to ask the application if it will allow exiting the
   /// application for cases where the exit is cancelable.
   ///
-  /// Terminating the application isn't always cancelable, but when it is, this
+  /// Exiting the application isn't always cancelable, but when it is, this
   /// function will be called before exit occurs.
   ///
   /// Responding [ExitResponse.exit] will continue termination, and responding
@@ -60,14 +70,20 @@ class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
   /// A callback that is called when an application is about the be terminated
   /// in an orderly fashion.
   ///
-  /// Not all terminations are orderly (e.g. being killed by a task manager),
-  /// but when they are, this function will be called.
+  /// Not all terminations are orderly (e.g. being killed by a task manager or
+  /// sent a SIGKILL, power being unplugged, rapid unplanned disassembly,
+  /// supernovae, etc.), but when they are, this function will be called.
   ///
   /// The application has an undefined short amount of time (think milliseconds)
   /// to save any unsaved state or close any resources before the application
   /// terminates. The application will eventually terminate in the middle of
   /// these operations if they take too long, so anything executed here should
   /// be as fast and robust to interruption as possible.
+  ///
+  /// Also, not all exits are requests, but for times when they are, consider
+  /// supplying [onExitRequested], which is called in the event of a *requested*
+  /// exit that can be canceled, and where you have more time to save unsaved
+  /// documents, ask the user questions, etc.
   final VoidCallback? onExit;
 
   /// A callback that is called when the application loses input focus.
@@ -152,7 +168,11 @@ class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
         }
         break;
       case AppLifecycleState.paused:
-        onPause?.call();
+        if (previousState == AppLifecycleState.initializing) {
+          onStart?.call();
+        } else if (previousState == AppLifecycleState.hidden) {
+          onPause?.call();
+        }
         break;
       case AppLifecycleState.exiting:
         onExit?.call();
@@ -166,16 +186,16 @@ class ApplicationLifecycleListener with WidgetsBindingObserver, ChangeNotifier {
 }
 
 void main() {
-  final DataModel model = DataModel();
+  WidgetsFlutterBinding.ensureInitialized();
+  final DataModel model = DataModel(WidgetsBinding.instance);
   runApp(const MyApp(model));
   model.dispose();
 }
 
-///
 class DataModel {
-  ///
-  DataModel()  {
+  DataModel(WidgetsBinding binding)  {
     _lifecycleListener = ApplicationLifecycleListener(
+      binding: binding,
       onStateChange: didChangeAppLifecycleState,
       onExitRequested: didRequestExit,
     );
