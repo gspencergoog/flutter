@@ -4,7 +4,7 @@
 
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'dart:ui' show AccessibilityFeatures, AppLifecycleState, FrameTiming, Locale, PlatformDispatcher, TimingsCallback;
+import 'dart:ui' show AccessibilityFeatures, AppLifecycleState, LifecycleState, FrameTiming, Locale, PlatformDispatcher, TimingsCallback;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -22,7 +22,7 @@ import 'service_extensions.dart';
 import 'view.dart';
 import 'widget_inspector.dart';
 
-export 'dart:ui' show AppLifecycleState, Locale;
+export 'dart:ui' show AppLifecycleState, LifecycleState, Locale;
 
 /// The allowed responses from an `exitRequested` method call.
 enum ExitResponse {
@@ -234,6 +234,14 @@ abstract class WidgetsBindingObserver {
   ///
   /// This method exposes notifications from [SystemChannels.lifecycle].
   void didChangeAppLifecycleState(AppLifecycleState state) { }
+
+  /// Called when the application's lifecycle state changes.
+  ///
+  /// An example of implementing this method is provided in the class-level
+  /// documentation for the [WidgetsBindingObserver] class.
+  ///
+  /// This method exposes notifications from [SystemChannels.lifecycle].
+  void didChangeLifecycleState(LifecycleState state) { }
 
   /// Receives any requests for application termination that may be received on
   /// the [SystemChannels.lifecycle] method channel.

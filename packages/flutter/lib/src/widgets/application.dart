@@ -1,15 +1,16 @@
+
 import 'package:flutter/widgets.dart';
 
 /// A callback type that is used by
-/// [ApplicationLifecycleListener.onExitRequested] to ask the application if it
+/// [LifecycleListener.onExitRequested] to ask the application if it
 /// wants to cancel application termination or not.
 typedef ExitRequestCallback = Future<ExitResponse> Function();
 
 /// A listener that can be used to configure callbacks that will be
 /// called at various points in the application lifecycle.
-class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with WidgetsBindingObserver  {
-  /// Creates an [ApplicationLifecycleListener].
-  ApplicationLifecycleListener({
+class LifecycleListener extends ValueNotifier<LifecycleState> with WidgetsBindingObserver  {
+  /// Creates an [LifecycleListener].
+  LifecycleListener({
     required this.binding,
     this.onInitialize,
     this.onStart,
@@ -18,11 +19,11 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
     this.onInactive,
     this.onHide,
     this.onShow,
-    this.onPause,
-    this.onResume,
+    this.onStop,
+    this.onRestart,
     this.onExitRequested,
     this.onStateChange,
-  }) : super(binding.lifecycleState ?? AppLifecycleState.exiting) {
+  }) : super(binding.applicationState ?? LifecycleState.exiting) {
     binding.addObserver(this);
   }
 
@@ -33,7 +34,7 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
   final WidgetsBinding binding;
 
   /// Contains the current lifecycle state that the application is in.
-  late AppLifecycleState lifecycleState;
+  late LifecycleState lifecycleState;
 
   /// Disposes of the application object.
   ///
@@ -47,7 +48,7 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
   }
 
   /// Called anytime the state changes, passing the new state.
-  final void Function(AppLifecycleState state)? onStateChange;
+  final ValueChanged<LifecycleState>? onStateChange;
 
   /// A callback that is called when [runApp] has been called and the embedding
   /// is initialized.
@@ -111,13 +112,13 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
   /// A callback that is called when the application is shown.
   final VoidCallback? onShow;
 
-  /// A callback that is called when the application is paused.
+  /// A callback that is called when the application is stopped.
   ///
   /// On mobile platforms, this happens right before the application is replaced
   /// by another application.
   ///
   /// On desktop platforms, this function is only called during shutdown.
-  final VoidCallback? onPause;
+  final VoidCallback? onStop;
 
   /// A callback that is called when the application is resumed after
   /// being paused.
@@ -126,7 +127,7 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
   /// as the active application.
   ///
   /// On desktop platforms, this function is only called during startup.
-  final VoidCallback? onResume;
+  final VoidCallback? onRestart;
 
   @override
   Future<ExitResponse> didRequestExit() async {
@@ -138,46 +139,43 @@ class ApplicationLifecycleListener extends ValueNotifier<AppLifecycleState> with
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeLifecycleState(LifecycleState state) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
     if (state == lifecycleState) {
       return;
     }
-    final AppLifecycleState previousState = lifecycleState;
+    final LifecycleState previousState = lifecycleState;
     lifecycleState = state;
     switch (state) {
-      case AppLifecycleState.initializing:
+      case LifecycleState.initializing:
         onInitialize?.call();
         break;
-      case AppLifecycleState.active:
-      case AppLifecycleState.resumed:
+      case LifecycleState.active:
         onActive?.call();
         break;
-      case AppLifecycleState.inactive:
-        if (previousState == AppLifecycleState.hidden) {
+      case LifecycleState.inactive:
+        if (previousState == LifecycleState.hidden) {
           onShow?.call();
-        } else if (previousState == AppLifecycleState.active) {
+        } else if (previousState == LifecycleState.active) {
           onInactive?.call();
         }
         break;
-      case AppLifecycleState.hidden:
-        if (previousState == AppLifecycleState.paused) {
-          onResume?.call();
-        } else if (previousState == AppLifecycleState.inactive) {
+      case LifecycleState.hidden:
+        if (previousState == LifecycleState.stopped) {
+          onRestart?.call();
+        } else if (previousState == LifecycleState.inactive) {
           onHide?.call();
         }
         break;
-      case AppLifecycleState.paused:
-        if (previousState == AppLifecycleState.initializing) {
+      case LifecycleState.stopped:
+        if (previousState == LifecycleState.initializing) {
           onStart?.call();
-        } else if (previousState == AppLifecycleState.hidden) {
-          onPause?.call();
+        } else if (previousState == LifecycleState.hidden) {
+          onStop?.call();
         }
         break;
-      case AppLifecycleState.exiting:
+      case LifecycleState.exiting:
         onExit?.call();
-        break;
-      case AppLifecycleState.detached:
         break;
     }
     notifyListeners();
@@ -194,14 +192,14 @@ void main() {
 
 class DataModel {
   DataModel(WidgetsBinding binding)  {
-    _lifecycleListener = ApplicationLifecycleListener(
+    _lifecycleListener = LifecycleListener(
       binding: binding,
-      onStateChange: didChangeAppLifecycleState,
+      onExit: willExit,
       onExitRequested: didRequestExit,
     );
   }
 
-  late ApplicationLifecycleListener _lifecycleListener;
+  late LifecycleListener _lifecycleListener;
   bool _hasUnsavedDocuments = false;
   bool _stateSaved = false;
 
@@ -213,11 +211,7 @@ class DataModel {
     _stateSaved = true;
   }
 
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _saveState();
-    }
-  }
+  void willExit() => _saveState();
 
   Future<ExitResponse> didRequestExit() async {
     if (_hasUnsavedDocuments) {
