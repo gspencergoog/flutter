@@ -22,11 +22,12 @@ import 'service_extensions.dart';
 import 'view.dart';
 import 'widget_inspector.dart';
 
-export 'dart:ui' show AppLifecycleState, LifecycleState, Locale;
+export 'dart:ui' show AppLifecycleState, Locale;
 
-/// The allowed responses from an `exitRequested` method call.
-enum ExitResponse {
-  /// Exiting the application is allowed.
+/// The allowed responses from an `exitRequested` method call on the
+/// [SystemChannels.lifecycle] channel.
+enum AppExitResponse {
+  /// Exiting the application can proceed.
   exit,
   /// Do not exit the application.
   cancel,
@@ -235,22 +236,13 @@ abstract class WidgetsBindingObserver {
   /// This method exposes notifications from [SystemChannels.lifecycle].
   void didChangeAppLifecycleState(AppLifecycleState state) { }
 
-  /// Called when the application's lifecycle state changes.
+  /// Receives any requests for application exit that may be received on the
+  /// [SystemChannels.lifecycle] method channel.
   ///
-  /// An example of implementing this method is provided in the class-level
-  /// documentation for the [WidgetsBindingObserver] class.
-  ///
-  /// This method exposes notifications from [SystemChannels.lifecycle].
-  void didChangeLifecycleState(LifecycleState state) { }
-
-  /// Receives any requests for application termination that may be received on
-  /// the [SystemChannels.lifecycle] method channel.
-  ///
-  /// If any observer returns [ExitResponse.cancel] it will deny the request for
-  /// termination. Only if all observers return [ExitResponse.exit] will the
-  /// exit begin.
-  Future<ExitResponse> didRequestExit() async {
-    return ExitResponse.exit;
+  /// If any observer returns [AppExitResponse.cancel] it will deny the request
+  /// for exit.
+  Future<AppExitResponse> didRequestAppExit() async {
+    return AppExitResponse.exit;
   }
 
   /// Called when the system is running low on memory.

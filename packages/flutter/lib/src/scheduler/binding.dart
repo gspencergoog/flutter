@@ -365,16 +365,6 @@ mixin SchedulerBinding on BindingBase {
     }
   }
 
-  /// What the current state of the application lifecycle is.
-  ///
-  /// This is set by [handleLifecycleStateChanged] when the
-  /// [SystemChannels.lifecycle] notification is dispatched.
-  ///
-  /// The preferred way to watch for changes to this value is using
-  /// [WidgetsBindingObserver.didChangeApplicationState].
-  LifecycleState? get applicationState => _applicationState;
-  LifecycleState? _applicationState;
-
   /// Whether the application is visible, and if so, whether it is currently
   /// interactive.
   ///
@@ -406,19 +396,6 @@ mixin SchedulerBinding on BindingBase {
         _setFramesEnabledState(false);
         break;
     }
-  }
-
-  /// Called when the application lifecycle state changes.
-  ///
-  /// Notifies all the observers using
-  /// [WidgetsBindingObserver.didChangeApplicationState].
-  ///
-  /// This method exposes notifications from [SystemChannels.lifecycle].
-  @protected
-  @mustCallSuper
-  void handleLifecycleStateChanged(LifecycleState state) {
-    assert(state != null);
-    _applicationState = state;
   }
 
   /// The strategy to use when deciding whether to run a task or not.
