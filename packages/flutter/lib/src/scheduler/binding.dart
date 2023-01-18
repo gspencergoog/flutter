@@ -9,6 +9,7 @@ import 'dart:ui' show AppLifecycleState, LifecycleState, DartPerformanceMode, Fr
 
 import 'package:collection/collection.dart' show HeapPriorityQueue, PriorityQueue;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'debug.dart';
 import 'priority.dart';
@@ -212,6 +213,30 @@ class PerformanceModeRequestHandle {
   }
 }
 
+/// The type of application exit to perform when calling
+/// [PlatformDispatcher.exitApplication].
+enum AppExitType {
+  /// Requests that the application start an orderly exit, sending a request
+  /// back to the framework through the [SchedulerBinding.requestAppExit], and
+  /// if that responds with [ExitResponse.exit], then proceed with the same
+  /// steps as a [required] exit.
+  cancelable,
+  /// A non-cancelable orderly exit request. The application will enter the
+  /// [AppLifecycleState.exiting] state, and the native UI toolkit's exit API
+  /// will be invoked.
+  required,
+  /// An immediate, disorderly exit. This will cause the embedding to skip the
+  /// state change, and go straight to calling the native UI toolkit's exit API.
+  ///
+  /// The Dart isolate will be shut down, and any unsaved state will be lost.
+  /// This is only intended to be used for cases where an immediate exit is
+  /// required, but the native UI toolkit's API should still be called.
+  ///
+  /// If you need an even faster, looser exit, then just call `dart:io`'s `exit`
+  /// directly, and even the native toolkit's exit API won't be called.
+  immediateDisorderly,
+}
+
 /// Scheduler for running the following:
 ///
 /// * _Transient callbacks_, triggered by the system's
@@ -396,6 +421,12 @@ mixin SchedulerBinding on BindingBase {
         _setFramesEnabledState(false);
         break;
     }
+  }
+
+  @protected
+  @mustCallSuper
+  void exitApplication(AppExitType exitType) {
+    platformDispatcher.exitApplication(exitType);
   }
 
   /// The strategy to use when deciding whether to run a task or not.
