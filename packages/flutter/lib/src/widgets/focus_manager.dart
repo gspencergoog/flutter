@@ -1382,6 +1382,15 @@ enum FocusHighlightStrategy {
   alwaysTraditional,
 }
 
+@immutable
+class _FocusState {
+  const _FocusState({this.primaryFocus, this.markedForFocus, this.pendingAutofocuses = const <_Autofocus>[]});
+
+  final FocusNode? primaryFocus;
+  final FocusNode? markedForFocus;
+  final List<_Autofocus> pendingAutofocuses;
+}
+
 /// Manages the focus tree.
 ///
 /// The focus tree is a separate, sparser, tree from the widget tree that
@@ -1531,6 +1540,33 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   FocusNode? get primaryFocus => _primaryFocus;
   FocusNode? _primaryFocus;
 
+  List<_FocusState> _focusStack = <_FocusState>[];
+  void pushFocus() {
+    _focusStack.add(
+      _FocusState(
+        primaryFocus: _primaryFocus,
+        markedForFocus: _markedForFocus,
+        pendingAutofocuses: _pendingAutofocuses,
+      ),
+    );
+    _pendingAutofocuses.clear();
+    _markedForFocus = null;
+    _primaryFocus?.unfocus();
+  }
+
+  void popFocus() {
+    if (_focusStack.isEmpty) {
+      return;
+    }
+    final _FocusState popped = _focusStack.removeAt(0);
+    if (popped.markedForFocus != null) {
+      popped.markedForFocus!.requestFocus();
+    } else {
+      popped.primaryFocus?.requestFocus();
+    }
+    _pendingAutofocuses..clear()..addAll(_pendingAutofocuses);
+  }
+
   // The set of nodes that need to notify their listeners of changes at the next
   // update.
   final Set<FocusNode> _dirtyNodes = <FocusNode>{};
@@ -1546,7 +1582,12 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     if (_primaryFocus == node) {
       _primaryFocus = null;
     }
+    if (_markedForFocus == node) {
+      _markedForFocus = null;
+    }
     _dirtyNodes.remove(node);
+    _pendingAutofocuses.removeWhere((_Autofocus autofocus) => autofocus.autofocusNode == node || autofocus.scope == node);
+    _focusStack.removeWhere((_FocusState state) => state.primaryFocus == node);
   }
 
   void _markPropertiesChanged(FocusNode node) {
