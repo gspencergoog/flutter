@@ -14,6 +14,7 @@ void main() => runApp(const MenuApp());
 /// Using an enum for menu definition is not required, but this illustrates how
 /// they could be used for simple menu systems.
 enum MenuEntry {
+  file('&File'),
   newDocument('&New', SingleActivator(LogicalKeyboardKey.keyN, control: true)),
   newWindow('New &window', SingleActivator(LogicalKeyboardKey.keyN, shift: true, control: true)),
   open('&Open', SingleActivator(LogicalKeyboardKey.keyO, control: true)),
@@ -22,14 +23,18 @@ enum MenuEntry {
   pageSetup('Page s&etup'),
   print('&Print', SingleActivator(LogicalKeyboardKey.keyP, control: true)),
   exit('E&xit', SingleActivator(LogicalKeyboardKey.keyQ, control: true)),
-  view('&View'),
   edit('&Edit'),
-  file('&File');
+  undo('&Undo', SingleActivator(LogicalKeyboardKey.keyZ, control: true)),
+  cut('&Cut', SingleActivator(LogicalKeyboardKey.keyX, control: true)),
+  copy('C&opy', SingleActivator(LogicalKeyboardKey.keyC, control: true)),
+  paste('&Paste', SingleActivator(LogicalKeyboardKey.keyV, control: true)),
+  view('&View'),
+  fullScreen('&Full screen', SingleActivator(LogicalKeyboardKey.f10));
 
   const MenuEntry(this.label, [this.shortcut]);
   final String label;
   final MenuSerializableShortcut? shortcut;
-  Widget getButton(VoidCallback? onPressed) {
+  Widget getButton([VoidCallback? onPressed]) {
     return MenuItemButton(
       shortcut: shortcut,
       onPressed: onPressed,
@@ -86,23 +91,38 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        MenuBar(
-          children: <Widget>[
-            MenuEntry.file.getSubmenu(
-              <Widget>[
-                MenuEntry.newDocument.getButton(() => _activate(MenuEntry.newDocument)),
-                MenuEntry.newWindow.getButton(() => _activate(MenuEntry.newWindow)),
-                MenuEntry.open.getButton(() => _activate(MenuEntry.open)),
-                MenuEntry.save.getButton(() => _activate(MenuEntry.save)),
-                MenuEntry.saveAs.getButton(() => _activate(MenuEntry.saveAs)),
-                const Divider(),
-                MenuEntry.pageSetup.getButton(() => _activate(MenuEntry.pageSetup)),
-                MenuEntry.print.getButton(() => _activate(MenuEntry.print)),
-                const Divider(),
-              ],
+        Row(
+          children: [
+            Expanded(
+              child: MenuBar(
+                children: <Widget>[
+                  MenuEntry.file.getSubmenu(
+                    <Widget>[
+                      MenuEntry.newDocument.getButton(() => _activate(MenuEntry.newDocument)),
+                      MenuEntry.newWindow.getButton(() => _activate(MenuEntry.newWindow)),
+                      MenuEntry.open.getButton(() => _activate(MenuEntry.open)),
+                      MenuEntry.save.getButton(() => _activate(MenuEntry.save)),
+                      MenuEntry.saveAs.getButton(() => _activate(MenuEntry.saveAs)),
+                      const Divider(),
+                      MenuEntry.pageSetup.getButton(() => _activate(MenuEntry.pageSetup)),
+                      MenuEntry.print.getButton(() => _activate(MenuEntry.print)),
+                      const Divider(),
+                      MenuEntry.exit.getButton(() => _activate(MenuEntry.exit)),
+                    ],
+                  ),
+                  MenuEntry.edit.getSubmenu(<Widget>[
+                    MenuEntry.undo.getButton(() => _activate(MenuEntry.undo)),
+                    const Divider(),
+                    MenuEntry.cut.getButton(),
+                    MenuEntry.copy.getButton(),
+                    MenuEntry.paste.getButton(),
+                  ]),
+                  MenuEntry.view.getSubmenu(<Widget>[
+                    MenuEntry.fullScreen.getButton(() => _activate(MenuEntry.fullScreen)),
+                  ]),
+                ],
+              ),
             ),
-            MenuEntry.edit.getSubmenu(<Widget>[]),
-            MenuEntry.view.getSubmenu(<Widget>[]),
           ],
         ),
         const SizedBox(),
@@ -122,8 +142,14 @@ class MenuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(body: MyCascadingMenu(message: kMessage)),
+    return MaterialApp(
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
+        visualDensity: const VisualDensity(
+          horizontal: -2,
+          vertical: -4,
+        ),
+      ),
+      home: const Scaffold(body: MyCascadingMenu(message: kMessage)),
     );
   }
 }
