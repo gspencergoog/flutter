@@ -14,17 +14,35 @@ void main() => runApp(const MenuApp());
 /// Using an enum for menu definition is not required, but this illustrates how
 /// they could be used for simple menu systems.
 enum MenuEntry {
-  about('About'),
-  showMessage('Show Message', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
-  hideMessage('Hide Message', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
-  colorMenu('Color Menu'),
-  colorRed('Red Background', SingleActivator(LogicalKeyboardKey.keyR, control: true)),
-  colorGreen('Green Background', SingleActivator(LogicalKeyboardKey.keyG, control: true)),
-  colorBlue('Blue Background', SingleActivator(LogicalKeyboardKey.keyB, control: true));
+  newDocument('&New', SingleActivator(LogicalKeyboardKey.keyN, control: true)),
+  newWindow('New &window', SingleActivator(LogicalKeyboardKey.keyN, shift: true, control: true)),
+  open('&Open', SingleActivator(LogicalKeyboardKey.keyO, control: true)),
+  save('&Save', SingleActivator(LogicalKeyboardKey.keyS, control: true)),
+  saveAs('Save &as...', SingleActivator(LogicalKeyboardKey.keyS, shift: true, control: true)),
+  pageSetup('Page s&etup'),
+  print('&Print', SingleActivator(LogicalKeyboardKey.keyP, control: true)),
+  exit('E&xit', SingleActivator(LogicalKeyboardKey.keyQ, control: true)),
+  view('&View'),
+  edit('&Edit'),
+  file('&File');
 
   const MenuEntry(this.label, [this.shortcut]);
   final String label;
   final MenuSerializableShortcut? shortcut;
+  Widget getButton(VoidCallback? onPressed) {
+    return MenuItemButton(
+      shortcut: shortcut,
+      onPressed: onPressed,
+      child: MenuAcceleratorLabel(label),
+    );
+  }
+
+  Widget getSubmenu(List<Widget> menuChildren) {
+    return SubmenuButton(
+      menuChildren: menuChildren,
+      child: MenuAcceleratorLabel(label),
+    );
+  }
 }
 
 class MyCascadingMenu extends StatefulWidget {
@@ -37,29 +55,7 @@ class MyCascadingMenu extends StatefulWidget {
 }
 
 class _MyCascadingMenuState extends State<MyCascadingMenu> {
-  MenuEntry? _lastSelection;
-  final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
   ShortcutRegistryEntry? _shortcutsEntry;
-
-  Color get backgroundColor => _backgroundColor;
-  Color _backgroundColor = Colors.red;
-  set backgroundColor(Color value) {
-    if (_backgroundColor != value) {
-      setState(() {
-        _backgroundColor = value;
-      });
-    }
-  }
-
-  bool get showingMessage => _showingMessage;
-  bool _showingMessage = false;
-  set showingMessage(bool value) {
-    if (_showingMessage != value) {
-      setState(() {
-        _showingMessage = value;
-      });
-    }
-  }
 
   @override
   void didChangeDependencies() {
@@ -82,7 +78,6 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
   @override
   void dispose() {
     _shortcutsEntry?.dispose();
-    _buttonFocusNode.dispose();
     super.dispose();
   }
 
@@ -91,110 +86,32 @@ class _MyCascadingMenuState extends State<MyCascadingMenu> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        MenuAnchor(
-          childFocusNode: _buttonFocusNode,
-          menuChildren: <Widget>[
-            MenuItemButton(
-              child: Text(MenuEntry.about.label),
-              onPressed: () => _activate(MenuEntry.about),
-            ),
-            if (_showingMessage) MenuItemButton(
-              onPressed: () => _activate(MenuEntry.hideMessage),
-              shortcut: MenuEntry.hideMessage.shortcut,
-              child: Text(MenuEntry.hideMessage.label),
-            ),
-            if (!_showingMessage) MenuItemButton(
-              onPressed: () => _activate(MenuEntry.showMessage),
-              shortcut: MenuEntry.showMessage.shortcut,
-              child: Text(MenuEntry.showMessage.label),
-            ),
-            SubmenuButton(
-              menuChildren: <Widget>[
-                MenuItemButton(
-                  onPressed: () => _activate(MenuEntry.colorRed),
-                  shortcut: MenuEntry.colorRed.shortcut,
-                  child: Text(MenuEntry.colorRed.label),
-                ),
-                MenuItemButton(
-                  onPressed: () => _activate(MenuEntry.colorGreen),
-                  shortcut: MenuEntry.colorGreen.shortcut,
-                  child: Text(MenuEntry.colorGreen.label),
-                ),
-                MenuItemButton(
-                  onPressed: () => _activate(MenuEntry.colorBlue),
-                  shortcut: MenuEntry.colorBlue.shortcut,
-                  child: Text(MenuEntry.colorBlue.label),
-                ),
+        MenuBar(
+          children: <Widget>[
+            MenuEntry.file.getSubmenu(
+              <Widget>[
+                MenuEntry.newDocument.getButton(() => _activate(MenuEntry.newDocument)),
+                MenuEntry.newWindow.getButton(() => _activate(MenuEntry.newWindow)),
+                MenuEntry.open.getButton(() => _activate(MenuEntry.open)),
+                MenuEntry.save.getButton(() => _activate(MenuEntry.save)),
+                MenuEntry.saveAs.getButton(() => _activate(MenuEntry.saveAs)),
+                const Divider(),
+                MenuEntry.pageSetup.getButton(() => _activate(MenuEntry.pageSetup)),
+                MenuEntry.print.getButton(() => _activate(MenuEntry.print)),
+                const Divider(),
               ],
-              child: const Text('Background Color'),
             ),
+            MenuEntry.edit.getSubmenu(<Widget>[]),
+            MenuEntry.view.getSubmenu(<Widget>[]),
           ],
-          builder: (BuildContext context, MenuController controller, Widget? child) {
-            return TextButton(
-              focusNode: _buttonFocusNode,
-              onPressed: () {
-                if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
-                }
-              },
-              child: const Text('OPEN MENU'),
-            );
-          },
         ),
-        Expanded(
-          child: Container(
-            alignment: Alignment.center,
-            color: backgroundColor,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    showingMessage ? widget.message : '',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                Text(_lastSelection != null ? 'Last Selected: ${_lastSelection!.label}' : ''),
-              ],
-            ),
-          ),
-        ),
+        const SizedBox(),
       ],
     );
   }
 
   void _activate(MenuEntry selection) {
-    setState(() {
-      _lastSelection = selection;
-    });
-
-    switch (selection) {
-      case MenuEntry.about:
-        showAboutDialog(
-          context: context,
-          applicationName: 'MenuBar Sample',
-          applicationVersion: '1.0.0',
-        );
-        break;
-      case MenuEntry.hideMessage:
-      case MenuEntry.showMessage:
-        showingMessage = !showingMessage;
-        break;
-      case MenuEntry.colorMenu:
-        break;
-      case MenuEntry.colorRed:
-        backgroundColor = Colors.red;
-        break;
-      case MenuEntry.colorGreen:
-        backgroundColor = Colors.green;
-        break;
-      case MenuEntry.colorBlue:
-        backgroundColor = Colors.blue;
-        break;
-    }
+    debugPrint('Activated ${selection.name}');
   }
 }
 
