@@ -64,11 +64,19 @@ enum ButtonBarLayoutBehavior {
 ///
 ///  * [RawMaterialButton], which can be used to configure a button that doesn't
 ///    depend on any inherited themes.
+@Deprecated(
+    'Use individualized ButtonStyle-based themes instead, such as ElevatedButtonTheme, TextButtonTheme, etc. '
+  'This feature was deprecated after v3.7.0.'
+)
 class ButtonTheme extends InheritedTheme {
   /// Creates a button theme.
   ///
   /// The [textTheme], [minWidth], [height], and [colorScheme] arguments
   /// must not be null.
+  @Deprecated(
+    'Use individualized ButtonStyle-based themes instead, such as ElevatedButtonTheme, TextButtonTheme, etc. '
+    'This feature was deprecated after v3.7.0.'
+  )
   ButtonTheme({
     super.key,
     ButtonTextTheme textTheme = ButtonTextTheme.normal,
@@ -113,6 +121,10 @@ class ButtonTheme extends InheritedTheme {
   /// Creates a button theme from [data].
   ///
   /// The [data] argument must not be null.
+  @Deprecated(
+    'Use individualized ButtonStyle-based themes instead, such as ElevatedButtonTheme, TextButtonTheme, etc. '
+    'This feature was deprecated after v3.7.0.'
+  )
   const ButtonTheme.fromButtonThemeData({
     super.key,
     required this.data,

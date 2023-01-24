@@ -15,20 +15,21 @@ import 'material.dart';
 import 'theme.dart';
 import 'theme_data.dart';
 
-/// A utility class for building Material buttons that depend on the
-/// ambient [ButtonTheme] and [Theme].
+/// A utility class for building Material buttons that depend on the ambient
+/// [ButtonTheme] and [Theme].
 ///
-/// This class is planned to be deprecated in a future release.
-/// Please use one or more of these buttons and associated themes instead:
+/// This class is deprecated. Please use one or more of these buttons and
+/// associated themes instead:
 ///
-///  * [TextButton], [TextButtonTheme], [TextButtonThemeData],
-///  * [ElevatedButton], [ElevatedButtonTheme], [ElevatedButtonThemeData],
-///  * [OutlinedButton], [OutlinedButtonTheme], [OutlinedButtonThemeData]
+/// * [TextButton], [TextButtonTheme], [TextButtonThemeData],
+/// * [ElevatedButton], [ElevatedButtonTheme], [ElevatedButtonThemeData],
+/// * [OutlinedButton], [OutlinedButtonTheme], [OutlinedButtonThemeData]
 ///
 /// The button's size will expand to fit the child widget, if necessary.
 ///
-/// MaterialButtons whose [onPressed] and [onLongPress] callbacks are null will be disabled. To have
-/// an enabled button, make sure to pass a non-null value for [onPressed] or [onLongPress].
+/// MaterialButtons whose [onPressed] and [onLongPress] callbacks are null will
+/// be disabled. To have an enabled button, make sure to pass a non-null value
+/// for [onPressed] or [onLongPress].
 ///
 /// To create a button directly, without inheriting theme defaults, use
 /// [RawMaterialButton].
@@ -38,7 +39,11 @@ import 'theme_data.dart';
 ///
 /// See also:
 ///
-///  * [IconButton], to create buttons that contain icons rather than text.
+/// * [IconButton], to create buttons that contain icons rather than text.
+@Deprecated(
+  'Use an appropriate ButtonStyleButton subclass instead. '
+  'This feature was deprecated after v3.7.0.'
+)
 class MaterialButton extends StatelessWidget {
   /// Creates a Material Design button.
   ///
@@ -49,6 +54,10 @@ class MaterialButton extends StatelessWidget {
   /// Additionally,  [elevation], [hoverElevation], [focusElevation],
   /// [highlightElevation], and [disabledElevation] must be non-negative, if
   /// specified.
+  @Deprecated(
+    'Use an appropriate ButtonStyleButton subclass instead. '
+    'This feature was deprecated after v3.7.0.'
+  )
   const MaterialButton({
     super.key,
     required this.onPressed,

@@ -36,6 +36,10 @@ import 'theme_data.dart';
 ///  * [FilledButton.tonal], a filled button variant that uses a secondary fill color.
 ///  * [OutlinedButton], a button with an outlined border and no fill color.
 ///  * [TextButton], a button with no outline or fill color.
+@Deprecated(
+  'Use an appropriate ButtonStyleButton subclass instead. '
+  'This feature was deprecated after v3.7.0.'
+)
 @Category(<String>['Material', 'Button'])
 class RawMaterialButton extends StatefulWidget {
   /// Create a button based on [Semantics], [Material], and [InkWell] widgets.
@@ -45,6 +49,10 @@ class RawMaterialButton extends StatefulWidget {
   /// [autofocus], and [clipBehavior] arguments must not be null. Additionally,
   /// [elevation], [focusElevation], [hoverElevation], [highlightElevation], and
   /// [disabledElevation] must be non-negative.
+  @Deprecated(
+    'Use an appropriate ButtonStyleButton subclass instead. '
+    'This feature was deprecated after v3.7.0.'
+  )
   const RawMaterialButton({
     super.key,
     required this.onPressed,
