@@ -54,12 +54,14 @@ class _ColorPickerSwatch extends StatelessWidget {
       width: 60.0,
       height: 60.0,
       padding: const EdgeInsets.fromLTRB(2.0, 0.0, 2.0, 0.0),
-      child: RawMaterialButton(
-        fillColor: color,
+      child: TextButton(
+        style: ButtonStyle(
+          backgroundColor: MaterialStatePropertyAll<Color>(color),
+        ),
         onPressed: () {
           onTap?.call();
         },
-        child: !selected ? null : const Icon(
+        child: !selected ? const SizedBox() : const Icon(
           Icons.check,
           color: Colors.white,
         ),

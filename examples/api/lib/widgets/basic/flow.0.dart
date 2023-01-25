@@ -63,10 +63,12 @@ class _FlowMenuState extends State<FlowMenu>
         MediaQuery.of(context).size.width / menuItems.length;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: RawMaterialButton(
-        fillColor: lastTapped == icon ? Colors.amber[700] : Colors.blue,
-        splashColor: Colors.amber[100],
-        shape: const CircleBorder(),
+      child: TextButton(
+        style: ButtonStyle(
+          splashFactory: InkSplash.splashFactory(color: Colors.amber[100]),
+        backgroundColor: MaterialStatePropertyAll<Color?>(lastTapped == icon ? Colors.amber[700] : Colors.blue),
+        shape: const MaterialStatePropertyAll<OutlinedBorder>(CircleBorder()),
+        ),
         constraints: BoxConstraints.tight(Size(buttonDiameter, buttonDiameter)),
         onPressed: () {
           _updateMenu(icon);

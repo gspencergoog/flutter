@@ -41,7 +41,7 @@ import 'theme_data.dart';
 ///
 /// * [IconButton], to create buttons that contain icons rather than text.
 @Deprecated(
-  'Use an appropriate ButtonStyleButton subclass instead. '
+  'Use an appropriate ButtonStyleButton subclass (e.g. TextButton) instead. '
   'This feature was deprecated after v3.7.0.'
 )
 class MaterialButton extends StatelessWidget {
@@ -55,7 +55,7 @@ class MaterialButton extends StatelessWidget {
   /// [highlightElevation], and [disabledElevation] must be non-negative, if
   /// specified.
   @Deprecated(
-    'Use an appropriate ButtonStyleButton subclass instead. '
+    'Use an appropriate ButtonStyleButton subclass (e.g. TextButton) instead. '
     'This feature was deprecated after v3.7.0.'
   )
   const MaterialButton({
