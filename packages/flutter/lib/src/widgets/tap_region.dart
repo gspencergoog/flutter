@@ -10,7 +10,7 @@ import 'editable_text.dart';
 import 'framework.dart';
 
 // Enable if you want verbose logging about tap region changes.
-const bool _kDebugTapRegion = false;
+const bool _kDebugTapRegion = true;
 
 bool _tapRegionDebug(String message, [Iterable<String>? details]) {
   if (_kDebugTapRegion) {
@@ -265,16 +265,14 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior with TapR
       // single region.
       insideRegions.addAll(_groupIdToRegions[region.groupId]!);
     }
-    // If they're not inside, then they're outside.
-    final Set<RenderTapRegion> outsideRegions = _registeredRegions.difference(insideRegions);
-
-    for (final RenderTapRegion region in outsideRegions) {
-      assert(_tapRegionDebug('Calling onTapOutside for $region'));
-      region.onTapOutside?.call(event);
-    }
     for (final RenderTapRegion region in insideRegions) {
       assert(_tapRegionDebug('Calling onTapInside for $region'));
       region.onTapInside?.call(event);
+    }
+    // If they're not inside, then they're outside.
+    for (final RenderTapRegion region in _registeredRegions.difference(insideRegions)) {
+      assert(_tapRegionDebug('Calling onTapOutside for $region'));
+      region.onTapOutside?.call(event);
     }
   }
 

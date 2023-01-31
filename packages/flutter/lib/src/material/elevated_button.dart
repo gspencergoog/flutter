@@ -67,6 +67,7 @@ class ElevatedButton extends ButtonStyleButton {
   const ElevatedButton({
     super.key,
     required super.onPressed,
+    super.onTapDown,
     super.onLongPress,
     super.onHover,
     super.onFocusChange,

@@ -72,6 +72,7 @@ class OutlinedButton extends ButtonStyleButton {
   const OutlinedButton({
     super.key,
     required super.onPressed,
+    super.onTapDown,
     super.onLongPress,
     super.onHover,
     super.onFocusChange,

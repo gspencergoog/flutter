@@ -34,6 +34,7 @@ abstract class ButtonStyleButton extends StatefulWidget {
   const ButtonStyleButton({
     super.key,
     required this.onPressed,
+    required this.onTapDown,
     required this.onLongPress,
     required this.onHover,
     required this.onFocusChange,
@@ -54,13 +55,18 @@ abstract class ButtonStyleButton extends StatefulWidget {
   ///  * [enabled], which is true if the button is enabled.
   final VoidCallback? onPressed;
 
+  /// Called when the pointer is initially tapped or clicked down, before it is
+  /// considered a "tap", which typically occurs on the "up" event.
+  final VoidCallback? onTapDown;
+
   /// Called when the button is long-pressed.
   ///
-  /// If this callback and [onPressed] are null, then the button will be disabled.
+  /// If this callback, [onTapDown], and [onPressed] are null, then the button
+  /// will be disabled.
   ///
   /// See also:
   ///
-  ///  * [enabled], which is true if the button is enabled.
+  /// * [enabled], which is true if the button is enabled.
   final VoidCallback? onLongPress;
 
   /// Called when a pointer enters or exits the button response area.
@@ -140,8 +146,8 @@ abstract class ButtonStyleButton extends StatefulWidget {
 
   /// Whether the button is enabled or disabled.
   ///
-  /// Buttons are disabled by default. To enable a button, set its [onPressed]
-  /// or [onLongPress] properties to a non-null value.
+  /// Buttons are disabled by default. To enable a button, set its [onPressed],
+  /// [onTapDown], or [onLongPress] properties to a non-null value.
   bool get enabled => onPressed != null || onLongPress != null;
 
   @override
@@ -381,6 +387,7 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
         clipBehavior: widget.clipBehavior,
         child: InkWell(
           onTap: widget.onPressed,
+          onTapDown: (TapDownDetails _) => widget.onTapDown?.call(),
           onLongPress: widget.onLongPress,
           onHover: widget.onHover,
           mouseCursor: mouseCursor,

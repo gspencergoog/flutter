@@ -775,6 +775,8 @@ class _SelectableIconButtonState extends State<_SelectableIconButton> {
 class _IconButtonM3 extends ButtonStyleButton {
   const _IconButtonM3({
     required super.onPressed,
+    // ignore: unused_element
+    super.onTapDown,
     super.style,
     super.focusNode,
     super.autofocus = false,

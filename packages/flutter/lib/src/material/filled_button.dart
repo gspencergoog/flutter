@@ -69,6 +69,7 @@ class FilledButton extends ButtonStyleButton {
   const FilledButton({
     super.key,
     required super.onPressed,
+    super.onTapDown,
     super.onLongPress,
     super.onHover,
     super.onFocusChange,
@@ -112,6 +113,7 @@ class FilledButton extends ButtonStyleButton {
   const FilledButton.tonal({
     super.key,
     required super.onPressed,
+    super.onTapDown,
     super.onLongPress,
     super.onHover,
     super.onFocusChange,

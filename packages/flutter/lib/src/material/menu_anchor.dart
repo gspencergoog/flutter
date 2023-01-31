@@ -38,7 +38,7 @@ import 'theme_data.dart';
 // late StateSetter setState;
 
 // Enable if you want verbose logging about menu changes.
-const bool _kDebugMenus = false;
+const bool _kDebugMenus = true;
 
 // The default size of the arrow in _MenuItemLabel that indicates that a menu
 // has a submenu.
@@ -278,6 +278,7 @@ class _MenuAnchorState extends State<MenuAnchor> {
   ScrollPosition? _position;
   Size? _viewSize;
   OverlayEntry? _overlayEntry;
+  FocusNode? _previousFocus;
   Axis get _orientation => Axis.vertical;
   bool get _isOpen => _overlayEntry != null;
   bool get _isRoot => _parent == null;
@@ -300,6 +301,7 @@ class _MenuAnchorState extends State<MenuAnchor> {
       _close(inDispose: true);
       _parent?._removeChild(this);
     }
+    _previousFocus = null;
     _anchorChildren.clear();
     _menuController._detach(this);
     _internalMenuController = null;
@@ -490,6 +492,11 @@ class _MenuAnchorState extends State<MenuAnchor> {
       // close it first.
       _close();
     }
+    if (_isTopLevel) {
+      _previousFocus = FocusManager.instance.primaryFocus;
+      debugPrint('Previous focus is $_previousFocus');
+      FocusManager.instance.pushFocus();
+    }
     assert(_debugMenuInfo(
         'Opening $this at ${position ?? Offset.zero} with alignment offset ${widget.alignmentOffset ?? Offset.zero}'));
     _parent?._closeChildren(); // Close all siblings.
@@ -558,6 +565,10 @@ class _MenuAnchorState extends State<MenuAnchor> {
       _parent?._childChangedOpenState();
     }
     widget.onClose?.call();
+    if (_isTopLevel) {
+      FocusManager.instance.popFocus();
+      _previousFocus = null;
+    }
   }
 
   void _closeChildren({bool inDispose = false}) {
@@ -1089,7 +1100,9 @@ class _MenuItemButtonState extends State<MenuItemButton> {
   void _handleSelect() {
     assert(_debugMenuInfo('Selected ${widget.child} menu'));
     _MenuAnchorState._maybeOf(context)?._root._close();
-    widget.onPressed?.call();
+    SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+      widget.onPressed?.call();
+    });
   }
 
   void _createInternalFocusNodeIfNeeded() {
@@ -1877,6 +1890,7 @@ class _SubmenuButtonState extends State<SubmenuButton> {
           style: mergedStyle,
           focusNode: _buttonFocusNode,
           onHover: _enabled ? (bool hovering) => handleHover(hovering, context) : null,
+          onTapDown: _handleOnTapDown,
           onPressed: _enabled ? () => toggleShowMenu(context) : null,
           child: _MenuItemLabel(
             leadingIcon: widget.leadingIcon,
@@ -1899,6 +1913,10 @@ class _SubmenuButtonState extends State<SubmenuButton> {
       menuChildren: widget.menuChildren,
       child: widget.child,
     );
+  }
+
+  void _handleOnTapDown() {
+    debugPrint('ON TAP DOWN: $primaryFocus');
   }
 
   EdgeInsets _computeMenuPadding(BuildContext context) {

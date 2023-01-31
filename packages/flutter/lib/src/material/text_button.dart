@@ -79,6 +79,7 @@ class TextButton extends ButtonStyleButton {
   const TextButton({
     super.key,
     required super.onPressed,
+    super.onTapDown,
     super.onLongPress,
     super.onHover,
     super.onFocusChange,

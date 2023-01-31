@@ -7,7 +7,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-void main() => runApp(const MenuBarApp());
+void main() {
+  debugFocusChanges = true;
+  runApp(const MenuBarApp());
+}
 
 /// A class for consolidating the definition of menu entries.
 ///
@@ -69,7 +72,8 @@ class MyMenuBar extends StatefulWidget {
 
 class _MyMenuBarState extends State<MyMenuBar> {
   ShortcutRegistryEntry? _shortcutsEntry;
-  String? _lastSelection;
+  late String? _lastSelection;
+  final FocusNode _node = FocusNode(debugLabel: 'Text Field');
 
   Color get backgroundColor => _backgroundColor;
   Color _backgroundColor = Colors.red;
@@ -94,6 +98,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
   @override
   void dispose() {
     _shortcutsEntry?.dispose();
+    _node.dispose();
     super.dispose();
   }
 
@@ -125,7 +130,7 @@ class _MyMenuBarState extends State<MyMenuBar> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                const TextField(),
+                TextField(focusNode: _node),
               ],
             ),
           ),
@@ -241,8 +246,10 @@ class MenuBarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(body: MyMenuBar(message: kMessage)),
+    return MaterialApp(
+      home: TapRegion(onTapInside: (PointerDownEvent event) {
+        debugPrint('ON TAP DOWN1: $primaryFocus');
+      }, child: const Scaffold(body: MyMenuBar(message: kMessage))),
     );
   }
 }

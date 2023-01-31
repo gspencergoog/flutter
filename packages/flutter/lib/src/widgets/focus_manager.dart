@@ -1384,11 +1384,11 @@ enum FocusHighlightStrategy {
 
 @immutable
 class _FocusState {
-  const _FocusState({this.primaryFocus, this.markedForFocus, this.pendingAutofocuses = const <_Autofocus>[]});
+  const _FocusState({this.primaryFocus/*, this.markedForFocus, this.pendingAutofocuses = const <_Autofocus>[]*/});
 
   final FocusNode? primaryFocus;
-  final FocusNode? markedForFocus;
-  final List<_Autofocus> pendingAutofocuses;
+  //final FocusNode? markedForFocus;
+  //final List<_Autofocus> pendingAutofocuses;
 }
 
 /// Manages the focus tree.
@@ -1540,18 +1540,19 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   FocusNode? get primaryFocus => _primaryFocus;
   FocusNode? _primaryFocus;
 
-  List<_FocusState> _focusStack = <_FocusState>[];
+  final List<_FocusState> _focusStack = <_FocusState>[];
   void pushFocus() {
     _focusStack.add(
       _FocusState(
         primaryFocus: _primaryFocus,
-        markedForFocus: _markedForFocus,
-        pendingAutofocuses: _pendingAutofocuses,
+        // markedForFocus: _markedForFocus,
+        // pendingAutofocuses: _pendingAutofocuses,
       ),
     );
-    _pendingAutofocuses.clear();
-    _markedForFocus = null;
-    _primaryFocus?.unfocus();
+    assert(_focusDebug('Pushed $_primaryFocus onto focus stack. Stack has ${_focusStack.length} items now.'));
+    // _pendingAutofocuses.clear();
+    // _markedForFocus = null;
+    // _primaryFocus?.unfocus();
   }
 
   void popFocus() {
@@ -1559,12 +1560,20 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
       return;
     }
     final _FocusState popped = _focusStack.removeAt(0);
-    if (popped.markedForFocus != null) {
-      popped.markedForFocus!.requestFocus();
-    } else {
+    // if (popped.markedForFocus != null) {
+    //   popped.markedForFocus!.requestFocus();
+    // } else {
       popped.primaryFocus?.requestFocus();
+    assert(_focusDebug('Popped ${popped.primaryFocus} off focus stack. Stack has ${_focusStack.length} items now.'));
+    // }
+    // _pendingAutofocuses..clear()..addAll(_pendingAutofocuses);
+  }
+
+  FocusNode? peekFocus() {
+    if (_focusStack.isEmpty) {
+      return null;
     }
-    _pendingAutofocuses..clear()..addAll(_pendingAutofocuses);
+    return _focusStack.last.primaryFocus;
   }
 
   // The set of nodes that need to notify their listeners of changes at the next
