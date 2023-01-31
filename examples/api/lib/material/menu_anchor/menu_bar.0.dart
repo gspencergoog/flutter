@@ -246,10 +246,8 @@ class MenuBarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: TapRegion(onTapInside: (PointerDownEvent event) {
-        debugPrint('ON TAP DOWN1: $primaryFocus');
-      }, child: const Scaffold(body: MyMenuBar(message: kMessage))),
+    return const MaterialApp(
+      home: Scaffold(body: MyMenuBar(message: kMessage)),
     );
   }
 }

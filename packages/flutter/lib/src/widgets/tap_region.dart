@@ -42,6 +42,13 @@ abstract class TapRegionRegistry {
   /// Unregister the given [RenderTapRegion] with the registry.
   void unregisterTapRegion(RenderTapRegion region);
 
+  /// Registers a listener for all tap down events that are detected by the
+  /// region, regardless of which region they are inside/outside of.
+  void addTapDownListener(TapRegionCallback callback);
+
+  /// Unregisters a listener previous registered with [addTapDownListener].
+  void removeTapDownListener(TapRegionCallback callback);
+
   /// Allows finding of the nearest [TapRegionRegistry], such as a
   /// [RenderTapRegionSurface].
   ///
@@ -177,6 +184,7 @@ class TapRegionSurface extends SingleChildRenderObjectWidget {
 class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior with TapRegionRegistry {
   final Expando<BoxHitTestResult> _cachedResults = Expando<BoxHitTestResult>();
   final Set<RenderTapRegion> _registeredRegions = <RenderTapRegion>{};
+  final Set<TapRegionCallback> _regionListeners = <TapRegionCallback>{};
   final Map<Object?, Set<RenderTapRegion>> _groupIdToRegions = <Object?, Set<RenderTapRegion>>{};
 
   @override
@@ -202,6 +210,16 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior with TapR
         _groupIdToRegions.remove(region.groupId);
       }
     }
+  }
+
+  @override
+  void addTapDownListener(TapRegionCallback callback) {
+    _regionListeners.add(callback);
+  }
+
+  @override
+  void removeTapDownListener(TapRegionCallback callback) {
+    _regionListeners.remove(callback);
   }
 
   @override
@@ -255,6 +273,10 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior with TapR
         _getRegionsHit(_registeredRegions, result.path).cast<RenderTapRegion>().toSet();
     final Set<RenderTapRegion> insideRegions = <RenderTapRegion>{};
     assert(_tapRegionDebug('Tap event hit ${hitRegions.length} descendants.'));
+
+    for (final TapRegionCallback callback in _regionListeners) {
+      callback.call(event);
+    }
 
     for (final RenderTapRegion region in hitRegions) {
       if (region.groupId == null) {
