@@ -9,7 +9,6 @@ import 'dart:ui' show AppLifecycleState, DartPerformanceMode, FramePhase, FrameT
 
 import 'package:collection/collection.dart' show HeapPriorityQueue, PriorityQueue;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 import 'debug.dart';
 import 'priority.dart';
@@ -410,6 +409,8 @@ mixin SchedulerBinding on BindingBase {
       case AppLifecycleState.detached:
         _setFramesEnabledState(false);
         break;
+      // ignore: no_default_cases
+      default:
     }
   }
 
