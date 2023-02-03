@@ -1,12 +1,14 @@
 import 'package:flutter/widgets.dart';
 
+/// A listener that can be used to configure callbacks that will be called at
+/// various points in the application lifecycle.
 /// A callback type that is used by [AppLifecycleListener.onExitRequested] to
 /// ask the application if it wants to cancel application termination or not.
 typedef AppExitRequestCallback = Future<AppExitResponse> Function();
 
 /// A listener that can be used to configure callbacks that will be called at
 /// various points in the application lifecycle.
-class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with WidgetsBindingObserver  {
+class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
   /// Creates an [AppLifecycleListener].
   AppLifecycleListener({
     required this.binding,
@@ -18,33 +20,20 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
     this.onShow,
     this.onPause,
     this.onRestart,
-    this.onExit,
     this.onDetach,
     this.onExitRequested,
     this.onStateChange,
-  }) : super(binding.lifecycleState ?? AppLifecycleState.detached) {
+  }) : _lifecycleState = AppLifecycleState.detached {
     binding.addObserver(this);
   }
+
+  AppLifecycleState _lifecycleState;
 
   /// The [WidgetsBinding] to listen to for application lifecycle events.
   ///
   /// Typically, this is set to [WidgetsBinding.instance], but may be
   /// substituted for testing or other specialized bindings.
   final WidgetsBinding binding;
-
-  /// Contains the current lifecycle state that the application is in.
-  late AppLifecycleState lifecycleState;
-
-  /// Disposes of the application object.
-  ///
-  /// This should be called when this object is no longer needed.
-  ///
-  /// The object should not be used after calling [dispose].
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
 
   /// Called anytime the state changes, passing the new state.
   ///
@@ -57,7 +46,7 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   /// is initialized.
   final VoidCallback? onInitialize;
 
-  /// A callback that is called when the app scheduled the first frame.
+  /// A callback that is called when the app has scheduled the first frame.
   final VoidCallback? onStart;
 
   /// A callback that is called when the application loses input focus.
@@ -66,7 +55,9 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   /// dialog is visible.
   ///
   /// On desktop platforms, this is when all views in an application have lost
-  /// input focus.
+  /// input focus but at least one view of the application is still visible.
+  ///
+  /// On the web, this is when the window (or tab) has lost input focus.
   final VoidCallback? onInactive;
 
   /// A callback that is called when a view in the application gains input
@@ -81,11 +72,22 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   /// On mobile platforms, this is usually just before the application is
   /// replaced by another application in the foreground.
   ///
-  /// On desktop platforms, this is just before focus is lost by the focused
-  /// view to another view that is not part of the application.
+  /// On desktop platforms, this is just before the application is hidden by
+  /// being minimized or otherwise hiding all views of the application.
+  ///
+  /// On the web, this is just before a window (or tab) is hidden.
   final VoidCallback? onHide;
 
   /// A callback that is called when the application is shown.
+  ///
+  /// On mobile platforms, this is usually just before the application
+  /// replaces another application in the foreground.
+  ///
+  /// On desktop platforms, this is just before the application is shown after
+  /// being minimized or otherwise made to show at least one view of the
+  /// application.
+  ///
+  /// On the web, this is just before a window (or tab) is shown.
   final VoidCallback? onShow;
 
   /// A callback that is called when the application is paused.
@@ -93,7 +95,7 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   /// On mobile platforms, this happens right before the application is replaced
   /// by another application.
   ///
-  /// On desktop platforms, this function is not called.
+  /// On desktop platforms and the web, this function is not called.
   final VoidCallback? onPause;
 
   /// A callback that is called when the application is resumed after being
@@ -102,7 +104,7 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   /// On mobile platforms, this happens just before this application takes over
   /// as the active application.
   ///
-  /// On desktop platforms, this function is not called.
+  /// On desktop platforms and the web, this function is not called.
   final VoidCallback? onRestart;
 
   /// A callback used to ask the application if it will allow exiting the
@@ -113,33 +115,20 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   ///
   /// Responding [AppExitResponse.exit] will continue termination, and
   /// responding [AppExitResponse.cancel] will cancel it. If termination
-  /// is not canceled, it will be immediately followed by a call to [onExit].
+  /// is not canceled, the application will immediately exit.
   final AppExitRequestCallback? onExitRequested;
-
-  /// A callback that is called when an application is about the be terminated
-  /// in an orderly fashion.
-  ///
-  /// Not all terminations are orderly (e.g. being killed by a task manager or
-  /// sent a SIGKILL, power being unplugged, rapid unplanned disassembly,
-  /// supernovae, etc.), but when they are, this function will be called.
-  ///
-  /// The application has an undefined short amount of time (think milliseconds)
-  /// to save any unsaved state or close any resources before the application
-  /// terminates. The application will eventually terminate in the middle of
-  /// these operations if they take too long, so anything executed here should
-  /// be as fast and robust to interruption as possible.
-  ///
-  /// Also, not all exits are requests, but when they are, consider supplying
-  /// [onExitRequested], which is called in the event of a *requested* exit that
-  /// can be canceled, and where you have more time to save unsaved documents,
-  /// ask the user questions, etc.
-  final VoidCallback? onExit;
 
   /// A callback that is called when an application has exited, and detached all
   /// host views from the engine.
   ///
   /// This callback is only called on iOS and Android.
   final VoidCallback? onDetach;
+
+  @override
+  void dispose() {
+    binding.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Future<AppExitResponse> didRequestAppExit() async {
@@ -153,11 +142,11 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     assert(ChangeNotifier.debugAssertNotDisposed(this));
-    if (state == lifecycleState) {
+    if (state == _lifecycleState) {
       return;
     }
-    final AppLifecycleState previousState = lifecycleState;
-    lifecycleState = state;
+    final AppLifecycleState previousState = state;
+    _lifecycleState = state;
     switch (state) {
       case AppLifecycleState.initializing:
         onInitialize?.call();
@@ -186,17 +175,15 @@ class AppLifecycleListener extends ValueNotifier<AppLifecycleState> with Widgets
           onPause?.call();
         }
         break;
-      case AppLifecycleState.exiting:
-        onExit?.call();
-        break;
       case AppLifecycleState.detached:
         onDetach?.call();
         break;
     }
     notifyListeners();
-    onStateChange?.call(lifecycleState);
+    onStateChange?.call(_lifecycleState);
   }
 }
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

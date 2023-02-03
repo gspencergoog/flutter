@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer' show Flow, Timeline, TimelineTask;
-import 'dart:ui' show AppLifecycleState, LifecycleState, DartPerformanceMode, FramePhase, FrameTiming, PlatformDispatcher, TimingsCallback;
+import 'dart:ui' show AppLifecycleState, DartPerformanceMode, FramePhase, FrameTiming, PlatformDispatcher, TimingsCallback;
 
 import 'package:collection/collection.dart' show HeapPriorityQueue, PriorityQueue;
 import 'package:flutter/foundation.dart';
@@ -16,7 +16,7 @@ import 'priority.dart';
 import 'service_extensions.dart';
 
 export 'dart:developer' show Flow;
-export 'dart:ui' show AppLifecycleState, LifecycleState, FrameTiming, TimingsCallback;
+export 'dart:ui' show AppLifecycleState, FrameTiming, TimingsCallback;
 
 export 'priority.dart' show Priority;
 
@@ -225,16 +225,6 @@ enum AppExitType {
   /// [AppLifecycleState.exiting] state, and the native UI toolkit's exit API
   /// will be invoked.
   required,
-  /// An immediate, disorderly exit. This will cause the embedding to skip the
-  /// state change, and go straight to calling the native UI toolkit's exit API.
-  ///
-  /// The Dart isolate will be shut down, and any unsaved state will be lost.
-  /// This is only intended to be used for cases where an immediate exit is
-  /// required, but the native UI toolkit's API should still be called.
-  ///
-  /// If you need an even faster, looser exit, then just call `dart:io`'s `exit`
-  /// directly, and even the native toolkit's exit API won't be called.
-  immediateDisorderly,
 }
 
 /// Scheduler for running the following:
