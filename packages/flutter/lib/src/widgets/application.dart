@@ -8,7 +8,7 @@ typedef AppExitRequestCallback = Future<AppExitResponse> Function();
 
 /// A listener that can be used to configure callbacks that will be called at
 /// various points in the application lifecycle.
-class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
+class AppLifecycleListener with WidgetsBindingObserver  {
   /// Creates an [AppLifecycleListener].
   AppLifecycleListener({
     required this.binding,
@@ -124,15 +124,36 @@ class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
   /// This callback is only called on iOS and Android.
   final VoidCallback? onDetach;
 
-  @override
+  /// Call when the listener is no longer in use.
+  ///
+  /// Do not use the object after calling [dispose].
+  ///
+  /// Subclasses must call this method in their overridden [dispose], if any.
+  @mustCallSuper
   void dispose() {
     binding.removeObserver(this);
-    super.dispose();
+    _debugDisposed = true;
   }
+
+  bool _debugDisposed = false;
+
+  static bool _debugAssertNotDisposed(AppLifecycleListener listener) {
+  assert(() {
+    if (listener._debugDisposed) {
+      throw FlutterError(
+        'A ${listener.runtimeType} was used after being disposed.\n'
+        'Once you have called dispose() on a ${listener.runtimeType}, it '
+        'can no longer be used.',
+      );
+    }
+    return true;
+  }());
+  return true;
+}
 
   @override
   Future<AppExitResponse> didRequestAppExit() async {
-    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    assert(_debugAssertNotDisposed(this));
     if (onExitRequested == null) {
       return AppExitResponse.exit;
     }
@@ -141,7 +162,7 @@ class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    assert(ChangeNotifier.debugAssertNotDisposed(this));
+    assert(_debugAssertNotDisposed(this));
     if (state == _lifecycleState) {
       return;
     }
@@ -179,7 +200,6 @@ class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
         onDetach?.call();
         break;
     }
-    notifyListeners();
     onStateChange?.call(_lifecycleState);
   }
 }
@@ -188,15 +208,13 @@ class AppLifecycleListener with WidgetsBindingObserver, ChangeNotifier  {
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final DataModel model = DataModel(WidgetsBinding.instance);
-  runApp(const MyApp(model));
-  model.dispose();
+  runApp(MyApp(model));
 }
 
 class DataModel {
   DataModel(WidgetsBinding binding)  {
     _lifecycleListener = AppLifecycleListener(
       binding: binding,
-      onExit: willExit,
       onExitRequested: didRequestExit,
     );
   }
@@ -213,9 +231,8 @@ class DataModel {
     _stateSaved = true;
   }
 
-  void willExit() => _saveState();
-
   Future<AppExitResponse> didRequestExit() async {
+    _saveState();
     if (_hasUnsavedDocuments) {
       if (await showSaveDialog() == SaveDocuments.cancel) {
         // The user canceled when asked to save documents, so cancel the exit.
@@ -229,5 +246,16 @@ class DataModel {
   @mustCallSuper
   void dispose() {
     _lifecycleListener.dispose();
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp(this.model);
+
+  final DataModel model;
+
+  @override
+  Widget build(Object context) {
+    return SizedBox();
   }
 }
