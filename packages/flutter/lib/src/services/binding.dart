@@ -294,7 +294,7 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
         }
         break;
       case 'System.requestAppExit':
-        return handleRequestAppExit();
+        return <String, String>{'response': (await handleRequestAppExit()).toString()};
     }
   }
 
