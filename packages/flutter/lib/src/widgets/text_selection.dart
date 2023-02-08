@@ -3058,7 +3058,7 @@ class ClipboardStatusNotifier extends ValueNotifier<ClipboardStatus> with Widget
       // ignore: no_default_cases
       default:
         // TODO(gspencergoog): Remove this and replace with real cases once
-        // engine change rolls into framework.
+        // engine change rolls into framework that adds initializing and hidden.
         break;
     }
   }

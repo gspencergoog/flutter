@@ -212,20 +212,6 @@ class PerformanceModeRequestHandle {
   }
 }
 
-/// The type of application exit to perform when calling
-/// [PlatformDispatcher.exitApplication].
-enum AppExitType {
-  /// Requests that the application start an orderly exit, sending a request
-  /// back to the framework through the [SchedulerBinding.requestAppExit], and
-  /// if that responds with [ExitResponse.exit], then proceed with the same
-  /// steps as a [required] exit.
-  cancelable,
-  /// A non-cancelable orderly exit request. The application will enter the
-  /// [AppLifecycleState.exiting] state, and the native UI toolkit's exit API
-  /// will be invoked.
-  required,
-}
-
 /// Scheduler for running the following:
 ///
 /// * _Transient callbacks_, triggered by the system's
@@ -414,12 +400,6 @@ mixin SchedulerBinding on BindingBase {
     }
   }
 
-  @protected
-  @mustCallSuper
-  void exitApplication(AppExitType exitType) {
-    platformDispatcher.exitApplication(exitType);
-  }
-
   /// The strategy to use when deciding whether to run a task or not.
   ///
   /// Defaults to [defaultSchedulingStrategy].
@@ -432,10 +412,6 @@ mixin SchedulerBinding on BindingBase {
 
   /// Schedules the given `task` with the given `priority`.
   ///
-  /// If `task` returns a future, the future returned by [scheduleTask] will
-  /// complete after the former future has been scheduled to completion.
-  /// Otherwise, the returned future for [scheduleTask] will complete with the
-  /// same value returned by `task` after it has been scheduled.
   ///
   /// The `debugLabel` and `flow` are used to report the task to the [Timeline],
   /// for use when profiling.

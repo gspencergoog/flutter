@@ -4,7 +4,7 @@
 
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'dart:ui' show AccessibilityFeatures, AppLifecycleState, FrameTiming, Locale, PlatformDispatcher, TimingsCallback;
+import 'dart:ui' show AccessibilityFeatures, AppExitResponse, AppLifecycleState, FrameTiming, Locale, PlatformDispatcher, TimingsCallback;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -23,15 +23,6 @@ import 'view.dart';
 import 'widget_inspector.dart';
 
 export 'dart:ui' show AppLifecycleState, Locale;
-
-/// The allowed responses from an `exitRequested` method call on the
-/// [SystemChannels.lifecycle] channel.
-enum AppExitResponse {
-  /// Exiting the application can proceed.
-  exit,
-  /// Do not exit the application.
-  cancel,
-}
 
 /// Interface for classes that register with the Widgets layer binding.
 ///
@@ -236,11 +227,10 @@ abstract class WidgetsBindingObserver {
   /// This method exposes notifications from [SystemChannels.lifecycle].
   void didChangeAppLifecycleState(AppLifecycleState state) { }
 
-  /// Receives any requests for application exit that may be received on the
-  /// [SystemChannels.lifecycle] method channel.
+  /// Called when a request is received from the system to exit the application.
   ///
-  /// If any observer returns [AppExitResponse.cancel] it will deny the request
-  /// for exit.
+  /// The first observer to respond [AppExitResponse.cancel] will cancel the
+  /// exit.
   Future<AppExitResponse> didRequestAppExit() async {
     return AppExitResponse.exit;
   }
@@ -543,6 +533,21 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
   ///  * [addObserver], for the method that adds observers in the first place.
   ///  * [WidgetsBindingObserver], which has an example of using this method.
   bool removeObserver(WidgetsBindingObserver observer) => _observers.remove(observer);
+
+  @override
+  Future<AppExitResponse> handleRequestAppExit() async {
+    AppExitResponse response = await super.handleRequestAppExit();
+    if (response == AppExitResponse.cancel) {
+      return AppExitResponse.cancel;
+    }
+    for (final WidgetsBindingObserver observer in _observers) {
+      response = await observer.didRequestAppExit();
+      if (response == AppExitResponse.cancel) {
+        return AppExitResponse.cancel;
+      }
+    }
+    return AppExitResponse.exit;
+  }
 
   @override
   void handleMetricsChanged() {

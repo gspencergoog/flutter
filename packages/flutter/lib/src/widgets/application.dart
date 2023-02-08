@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/widgets.dart';
 
 /// A listener that can be used to configure callbacks that will be called at
@@ -204,58 +205,57 @@ class AppLifecycleListener with WidgetsBindingObserver  {
   }
 }
 
+// void main() {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   final DataModel model = DataModel(WidgetsBinding.instance);
+//   runApp(MyApp(model));
+// }
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final DataModel model = DataModel(WidgetsBinding.instance);
-  runApp(MyApp(model));
-}
+// class DataModel {
+//   DataModel(WidgetsBinding binding)  {
+//     _lifecycleListener = AppLifecycleListener(
+//       binding: binding,
+//       onExitRequested: didRequestExit,
+//     );
+//   }
 
-class DataModel {
-  DataModel(WidgetsBinding binding)  {
-    _lifecycleListener = AppLifecycleListener(
-      binding: binding,
-      onExitRequested: didRequestExit,
-    );
-  }
+//   late AppLifecycleListener _lifecycleListener;
+//   bool _hasUnsavedDocuments = false;
+//   bool _stateSaved = false;
 
-  late AppLifecycleListener _lifecycleListener;
-  bool _hasUnsavedDocuments = false;
-  bool _stateSaved = false;
+//   void _saveState() {
+//     if (_stateSaved) {
+//       return;
+//     }
+//     // TODO: Commit any unsaved application state.
+//     _stateSaved = true;
+//   }
 
-  void _saveState() {
-    if (_stateSaved) {
-      return;
-    }
-    // TODO: Commit any unsaved application state.
-    _stateSaved = true;
-  }
+//   Future<AppExitResponse> didRequestExit() async {
+//     _saveState();
+//     if (_hasUnsavedDocuments) {
+//       if (await showSaveDialog() == SaveDocuments.cancel) {
+//         // The user canceled when asked to save documents, so cancel the exit.
+//         return AppExitResponse.cancel;
+//       }
+//       _hasUnsavedDocuments = false;
+//     }
+//     return AppExitResponse.exit;
+//   }
 
-  Future<AppExitResponse> didRequestExit() async {
-    _saveState();
-    if (_hasUnsavedDocuments) {
-      if (await showSaveDialog() == SaveDocuments.cancel) {
-        // The user canceled when asked to save documents, so cancel the exit.
-        return AppExitResponse.cancel;
-      }
-      _hasUnsavedDocuments = false;
-    }
-    return AppExitResponse.exit;
-  }
+//   @mustCallSuper
+//   void dispose() {
+//     _lifecycleListener.dispose();
+//   }
+// }
 
-  @mustCallSuper
-  void dispose() {
-    _lifecycleListener.dispose();
-  }
-}
+// class MyApp extends StatelessWidget {
+//   const MyApp(this.model);
 
-class MyApp extends StatelessWidget {
-  const MyApp(this.model);
+//   final DataModel model;
 
-  final DataModel model;
-
-  @override
-  Widget build(Object context) {
-    return SizedBox();
-  }
-}
+//   @override
+//   Widget build(Object context) {
+//     return SizedBox();
+//   }
+// }

@@ -263,24 +263,83 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
     return null;
   }
 
-  Future<void> _handlePlatformMessage(MethodCall methodCall) async {
+  Future<dynamic> _handlePlatformMessage(MethodCall methodCall) async {
     final String method = methodCall.method;
-    // There is only one incoming method call currently possible.
-    assert(method == 'SystemChrome.systemUIChange');
-    final List<dynamic> args = methodCall.arguments as List<dynamic>;
-    if (_systemUiChangeCallback != null) {
-      await _systemUiChangeCallback!(args[0] as bool);
+    assert(method == 'SystemChrome.systemUIChange' || method == 'System.requestAppExit');
+    switch (method) {
+      case 'SystemChrome.systemUIChange':
+        final List<dynamic> args = methodCall.arguments as List<dynamic>;
+        if (_systemUiChangeCallback != null) {
+          await _systemUiChangeCallback!(args[0] as bool);
+        }
+        break;
+      case 'System.requestAppExit':
+        return handleRequestAppExit();
+    }
+  }
+
+  /// Handles any requests for application exit that may be received on the
+  /// [SystemChannels.platform] method channel.
+  ///
+  /// By default, returns [ui.AppExitResponse.exit].
+  ///
+  /// See also:
+  ///
+  /// * [WidgetsBindingObserver.didRequestAppExit], which can be overridden to
+  ///   respond to this message.
+  Future<ui.AppExitResponse> handleRequestAppExit() async {
+    return ui.AppExitResponse.exit;
+  }
+
+  /// Exits the application by calling the native application API method for
+  /// exiting an application cleanly.
+  ///
+  /// The [ui.AppExitType] determines what kind of exit to perform. For
+  /// [ui.AppExitType.cancelable] exits, the application is queried through a
+  /// call to [handleRequestAppExit], where the application can optionally
+  /// cancel the request for exit. If the [exitType] is
+  /// [ui.AppExitType.required], then the application exits immediately.
+  ///
+  /// For [ui.AppExitType.cancelable] exits, the returned response value is the
+  /// response obtained from the application as to whether the exit was canceled
+  /// or not. Practically, the response will never be [ui.AppExitResponse.exit],
+  /// since the application will have already exited by the time the result
+  /// would have been received.
+  ///
+  /// The optional [exitCode] argument will be used as the application exit code
+  /// on platforms where an exit code is supported. On other platforms it may be
+  /// ignored. It defaults to zero.
+  @protected
+  @mustCallSuper
+  Future<ui.AppExitResponse> exitApplication(ui.AppExitType exitType, [int errorCode = 0]) async {
+    final String result = await SystemChannels.platform.invokeMethod<String>(
+      'System.exitApplication',
+      <Object>[exitType.toString(), errorCode],
+    ) ?? '';
+
+    switch (result) {
+      case 'AppExitResponse.cancel':
+        return ui.AppExitResponse.cancel;
+      case 'AppExitResponse.exit':
+      default:
+        // In practice, this will never get returned, because the application
+        // will have exited before it returns.
+        return ui.AppExitResponse.exit;
     }
   }
 
   static AppLifecycleState? _parseAppLifecycleMessage(String message) {
     switch (message) {
-      case 'AppLifecycleState.paused':
-        return AppLifecycleState.paused;
+      case 'AppLifecycleState.initializing':
+        return AppLifecycleState.initializing;
       case 'AppLifecycleState.resumed':
         return AppLifecycleState.resumed;
       case 'AppLifecycleState.inactive':
         return AppLifecycleState.inactive;
+      case 'AppLifecycleState.hidden':
+        return AppLifecycleState.hidden;
+      case 'AppLifecycleState.paused':
+        return AppLifecycleState.paused;
       case 'AppLifecycleState.detached':
         return AppLifecycleState.detached;
     }
@@ -326,7 +385,6 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
   void setSystemUiChangeCallback(SystemUiChangeCallback? callback) {
     _systemUiChangeCallback = callback;
   }
-
 }
 
 /// Signature for listening to changes in the [SystemUiMode].
