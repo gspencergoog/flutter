@@ -391,12 +391,12 @@ mixin SchedulerBinding on BindingBase {
       case AppLifecycleState.inactive:
         _setFramesEnabledState(true);
         break;
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.initializing:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
         _setFramesEnabledState(false);
         break;
-      // ignore: no_default_cases
-      default:
     }
   }
 
@@ -412,6 +412,10 @@ mixin SchedulerBinding on BindingBase {
 
   /// Schedules the given `task` with the given `priority`.
   ///
+  /// If `task` returns a future, the future returned by [scheduleTask] will
+  /// complete after the former future has been scheduled to completion.
+  /// Otherwise, the returned future for [scheduleTask] will complete with the
+  /// same value returned by `task` after it has been scheduled.
   ///
   /// The `debugLabel` and `flow` are used to report the task to the [Timeline],
   /// for use when profiling.

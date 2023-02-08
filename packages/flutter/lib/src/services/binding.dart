@@ -263,6 +263,26 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
     return null;
   }
 
+
+  static AppLifecycleState? _parseAppLifecycleMessage(String message) {
+    switch (message) {
+      case 'AppLifecycleState.initializing':
+        return AppLifecycleState.initializing;
+      case 'AppLifecycleState.resumed':
+        return AppLifecycleState.resumed;
+      case 'AppLifecycleState.inactive':
+        return AppLifecycleState.inactive;
+      case 'AppLifecycleState.hidden':
+        return AppLifecycleState.hidden;
+      case 'AppLifecycleState.paused':
+        return AppLifecycleState.paused;
+      case 'AppLifecycleState.detached':
+        return AppLifecycleState.detached;
+    }
+    return null;
+  }
+
+
   Future<dynamic> _handlePlatformMessage(MethodCall methodCall) async {
     final String method = methodCall.method;
     assert(method == 'SystemChrome.systemUIChange' || method == 'System.requestAppExit');
@@ -287,6 +307,8 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
   ///
   /// * [WidgetsBindingObserver.didRequestAppExit], which can be overridden to
   ///   respond to this message.
+  /// * [WidgetsBinding.handleRequestAppExit] which overrides this method to
+  ///   notify its observers.
   Future<ui.AppExitResponse> handleRequestAppExit() async {
     return ui.AppExitResponse.exit;
   }
@@ -326,24 +348,6 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
         // will have exited before it returns.
         return ui.AppExitResponse.exit;
     }
-  }
-
-  static AppLifecycleState? _parseAppLifecycleMessage(String message) {
-    switch (message) {
-      case 'AppLifecycleState.initializing':
-        return AppLifecycleState.initializing;
-      case 'AppLifecycleState.resumed':
-        return AppLifecycleState.resumed;
-      case 'AppLifecycleState.inactive':
-        return AppLifecycleState.inactive;
-      case 'AppLifecycleState.hidden':
-        return AppLifecycleState.hidden;
-      case 'AppLifecycleState.paused':
-        return AppLifecycleState.paused;
-      case 'AppLifecycleState.detached':
-        return AppLifecycleState.detached;
-    }
-    return null;
   }
 
   /// The [RestorationManager] synchronizes the restoration data between

@@ -130,7 +130,7 @@ class SystemChannels {
   ///    application state.
   ///
   ///  * `System.exitApplication`: The the application has requested that it be
-  ///    terminated.
+  ///    terminated. See [ServicesBinding.exitApplication].
   ///
   /// Calls to methods that are not implemented on the shell side are ignored
   /// (so it is safe to call methods when the relevant plugin might be missing).
