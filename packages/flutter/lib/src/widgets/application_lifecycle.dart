@@ -12,7 +12,7 @@ typedef AppExitRequestCallback = Future<AppExitResponse> Function();
 class AppLifecycleListener with WidgetsBindingObserver  {
   /// Creates an [AppLifecycleListener].
   AppLifecycleListener({
-    required this.binding,
+    required this.binding ,
     this.onInitialize,
     this.onStart,
     this.onResume,
@@ -156,6 +156,7 @@ class AppLifecycleListener with WidgetsBindingObserver  {
   @override
   Future<AppExitResponse> didRequestAppExit() async {
     assert(_debugAssertNotDisposed());
+    debugPrint('Requested App Exit');
     if (onExitRequested == null) {
       return AppExitResponse.exit;
     }

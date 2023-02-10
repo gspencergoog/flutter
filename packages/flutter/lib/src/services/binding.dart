@@ -331,18 +331,19 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
   /// The optional [exitCode] argument will be used as the application exit code
   /// on platforms where an exit code is supported. On other platforms it may be
   /// ignored. It defaults to zero.
-  @protected
   @mustCallSuper
   Future<ui.AppExitResponse> exitApplication(ui.AppExitType exitType, [int errorCode = 0]) async {
-    final String result = await SystemChannels.platform.invokeMethod<String>(
+    final Map<String, Object>? result = await SystemChannels.platform.invokeMethod<Map<String, Object>>(
       'System.exitApplication',
-      <Object>[exitType.toString(), errorCode],
-    ) ?? '';
-
-    switch (result) {
-      case 'AppExitResponse.cancel':
+      <String, Object>{'type': exitType.name, 'errorCode': errorCode},
+    );
+    if (result == null ) {
+      return ui.AppExitResponse.cancel;
+    }
+    switch (result['response']) {
+      case 'cancel':
         return ui.AppExitResponse.cancel;
-      case 'AppExitResponse.exit':
+      case 'exit':
       default:
         // In practice, this will never get returned, because the application
         // will have exited before it returns.

@@ -541,6 +541,7 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
       return AppExitResponse.cancel;
     }
     for (final WidgetsBindingObserver observer in _observers) {
+      debugPrint('Checking observer $observer');
       response = await observer.didRequestAppExit();
       if (response == AppExitResponse.cancel) {
         return AppExitResponse.cancel;

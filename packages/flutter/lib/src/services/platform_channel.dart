@@ -297,10 +297,12 @@ class MethodChannel {
   @optionalTypeArgs
   Future<T?> _invokeMethod<T>(String method, { required bool missingOk, dynamic arguments }) async {
     final ByteData input = codec.encodeMethodCall(MethodCall(method, arguments));
+    debugPrint('Invoking $method on $name with $arguments');
     final ByteData? result =
       !kReleaseMode && debugProfilePlatformChannels ?
         await (binaryMessenger as _ProfiledBinaryMessenger).sendWithPostfix(name, '#$method', input) :
         await binaryMessenger.send(name, input);
+    debugPrint('Received $result back from $method');
     if (result == null) {
       if (missingOk) {
         return null;
