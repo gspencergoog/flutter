@@ -544,9 +544,11 @@ mixin WidgetsBinding on BindingBase, ServicesBinding, SchedulerBinding, GestureB
       debugPrint('Checking observer $observer');
       response = await observer.didRequestAppExit();
       if (response == AppExitResponse.cancel) {
-        return AppExitResponse.cancel;
+        debugPrint('Returning response $response');
+        return response;
       }
     }
+    debugPrint('Returning Exit');
     return AppExitResponse.exit;
   }
 

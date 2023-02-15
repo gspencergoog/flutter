@@ -47,6 +47,7 @@ class _BodyState extends State<Body> {
   }
 
   Future<AppExitResponse> _handleExitRequest() async {
+    debugPrint('Sample App responding ${_shouldExit ? AppExitResponse.exit : AppExitResponse.cancel}');
     return _shouldExit ? AppExitResponse.exit : AppExitResponse.cancel;
   }
 

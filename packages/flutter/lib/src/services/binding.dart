@@ -282,7 +282,6 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
     return null;
   }
 
-
   Future<dynamic> _handlePlatformMessage(MethodCall methodCall) async {
     final String method = methodCall.method;
     assert(method == 'SystemChrome.systemUIChange' || method == 'System.requestAppExit');
@@ -294,7 +293,7 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
         }
         break;
       case 'System.requestAppExit':
-        return <String, String>{'response': (await handleRequestAppExit()).toString()};
+        return <String, dynamic>{'response': (await handleRequestAppExit()).name};
     }
   }
 
@@ -454,6 +453,7 @@ class _DefaultBinaryMessenger extends BinaryMessenger {
         ByteData? response;
         try {
           response = await handler(data);
+          debugPrint('Received response from handler: ${utf8.decode(response?.buffer.asInt8List() ?? <int>[])}');
         } catch (exception, stack) {
           FlutterError.reportError(FlutterErrorDetails(
             exception: exception,

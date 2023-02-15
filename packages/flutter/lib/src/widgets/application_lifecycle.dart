@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// A listener that can be used to configure callbacks that will be called at
@@ -9,7 +10,7 @@ typedef AppExitRequestCallback = Future<AppExitResponse> Function();
 
 /// A listener that can be used to configure callbacks that will be called at
 /// various points in the application lifecycle.
-class AppLifecycleListener with WidgetsBindingObserver  {
+class AppLifecycleListener with WidgetsBindingObserver, Diagnosticable {
   /// Creates an [AppLifecycleListener].
   AppLifecycleListener({
     required this.binding ,
@@ -158,6 +159,7 @@ class AppLifecycleListener with WidgetsBindingObserver  {
     assert(_debugAssertNotDisposed());
     debugPrint('Requested App Exit');
     if (onExitRequested == null) {
+      debugPrint('App Exiting');
       return AppExitResponse.exit;
     }
     return onExitRequested!();
@@ -204,5 +206,22 @@ class AppLifecycleListener with WidgetsBindingObserver  {
         break;
     }
     onStateChange?.call(_lifecycleState);
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<WidgetsBinding>('binding', binding));
+    properties.add(FlagProperty('onStateChange', value: onStateChange != null, ifTrue: 'onStateChange'));
+    properties.add(FlagProperty('onInitialize', value: onInitialize != null, ifTrue: 'onInitialize'));
+    properties.add(FlagProperty('onStart', value: onStart != null, ifTrue: 'onStart'));
+    properties.add(FlagProperty('onInactive', value: onInactive != null, ifTrue: 'onInactive'));
+    properties.add(FlagProperty('onResume', value: onResume != null, ifTrue: 'onResume'));
+    properties.add(FlagProperty('onHide', value: onHide != null, ifTrue: 'onHide'));
+    properties.add(FlagProperty('onShow', value: onShow != null, ifTrue: 'onShow'));
+    properties.add(FlagProperty('onPause', value: onPause != null, ifTrue: 'onPause'));
+    properties.add(FlagProperty('onRestart', value: onRestart != null, ifTrue: 'onRestart'));
+    properties.add(FlagProperty('onExitRequested', value: onExitRequested != null, ifTrue: 'onExitRequested'));
+    properties.add(FlagProperty('onDetach', value: onDetach != null, ifTrue: 'onDetach'));
   }
 }
