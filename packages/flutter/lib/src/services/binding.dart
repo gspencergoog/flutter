@@ -263,6 +263,20 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
     return null;
   }
 
+  Future<dynamic> _handlePlatformMessage(MethodCall methodCall) async {
+    final String method = methodCall.method;
+    assert(method == 'SystemChrome.systemUIChange' || method == 'System.requestAppExit');
+    switch (method) {
+      case 'SystemChrome.systemUIChange':
+        final List<dynamic> args = methodCall.arguments as List<dynamic>;
+        if (_systemUiChangeCallback != null) {
+          await _systemUiChangeCallback!(args[0] as bool);
+        }
+        break;
+      case 'System.requestAppExit':
+        return <String, dynamic>{'response': (await handleRequestAppExit()).name};
+    }
+  }
 
   static AppLifecycleState? _parseAppLifecycleMessage(String message) {
     switch (message) {
@@ -280,21 +294,6 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
         return AppLifecycleState.detached;
     }
     return null;
-  }
-
-  Future<dynamic> _handlePlatformMessage(MethodCall methodCall) async {
-    final String method = methodCall.method;
-    assert(method == 'SystemChrome.systemUIChange' || method == 'System.requestAppExit');
-    switch (method) {
-      case 'SystemChrome.systemUIChange':
-        final List<dynamic> args = methodCall.arguments as List<dynamic>;
-        if (_systemUiChangeCallback != null) {
-          await _systemUiChangeCallback!(args[0] as bool);
-        }
-        break;
-      case 'System.requestAppExit':
-        return <String, dynamic>{'response': (await handleRequestAppExit()).name};
-    }
   }
 
   /// Handles any requests for application exit that may be received on the
@@ -453,7 +452,6 @@ class _DefaultBinaryMessenger extends BinaryMessenger {
         ByteData? response;
         try {
           response = await handler(data);
-          debugPrint('Received response from handler: ${utf8.decode(response?.buffer.asInt8List() ?? <int>[])}');
         } catch (exception, stack) {
           FlutterError.reportError(FlutterErrorDetails(
             exception: exception,

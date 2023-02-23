@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
@@ -45,9 +44,6 @@ class _ProfiledBinaryMessenger implements BinaryMessenger {
     task.start('Platform Channel send $channel$postfix');
     final ByteData? result;
     try {
-      if (message != null) {
-        debugPrint('Sending with postfix ${utf8.decode(message.buffer.asUint8List())}');
-      }
       result = await proxy.send(channel, message);
     } finally {
       task.finish();
@@ -301,16 +297,10 @@ class MethodChannel {
   @optionalTypeArgs
   Future<T?> _invokeMethod<T>(String method, { required bool missingOk, dynamic arguments }) async {
     final ByteData input = codec.encodeMethodCall(MethodCall(method, arguments));
-    if (name == 'flutter/platform') {
-      debugPrint('Invoking $method on $name with $arguments');
-    }
     final ByteData? result =
       !kReleaseMode && debugProfilePlatformChannels ?
         await (binaryMessenger as _ProfiledBinaryMessenger).sendWithPostfix(name, '#$method', input) :
         await binaryMessenger.send(name, input);
-    if (name == 'flutter/platform') {
-      debugPrint('Received $result back from $method');
-    }
     if (result == null) {
       if (missingOk) {
         return null;
@@ -557,9 +547,7 @@ class MethodChannel {
   Future<ByteData?> _handleAsMethodCall(ByteData? message, Future<dynamic> Function(MethodCall call) handler) async {
     final MethodCall call = codec.decodeMethodCall(message);
     try {
-      final ByteData data = codec.encodeSuccessEnvelope(await handler(call));
-      debugPrint('Encoding success envelope ${utf8.decode(data.buffer.asUint8List())}');
-      return data;
+      return codec.encodeSuccessEnvelope(await handler(call));
     } on PlatformException catch (e) {
       return codec.encodeErrorEnvelope(
         code: e.code,
