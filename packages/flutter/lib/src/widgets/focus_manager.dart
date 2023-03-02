@@ -1558,6 +1558,12 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     notifyListeners();
   }
 
+  /// Push a new focus manager context.
+  ///
+  /// Pushing a new context will create a new focus root and overall focus
+  /// state, and preserve the current focus state. Subsequently calling
+  /// [popContext] will restore the focus state that was in place before
+  /// [pushContext] was called.
   void pushContext() {
     if (_contextStack.isNotEmpty) {
       _contextStack.last.removeListener(_handleContextChange);
@@ -1567,12 +1573,17 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pop the top focus manager context and restore the previous focus state.
+  ///
+  /// Pushing a new context will create a new focus root and overall focus
+  /// state, and preserve the current focus state. Subsequently calling
+  /// [popContext] will restore the focus state that was in place before
+  /// [pushContext] was called.
   void popContext() {
+    assert(_contextStack.length > 1, "Can't pop the last FocusContext!");
     _contextStack.last.removeListener(_handleContextChange);
     _contextStack.removeLast();
-    if (_contextStack.isNotEmpty) {
-      _contextStack.last.addListener(_handleContextChange);
-    }
+    _contextStack.last.addListener(_handleContextChange);
     notifyListeners();
   }
 
