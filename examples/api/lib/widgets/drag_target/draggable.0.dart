@@ -100,6 +100,15 @@ class _DraggableExampleState extends State<DraggableExample> {
   }
 }
 
+const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
+const String type =
+    '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
+const String whitespace = r'[ \t]*';
+const String quotedString = r'''"(?:[^"\\]|\.)*"''';
+const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
+const String mediaType =
+    type + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
+
 /// The function type for [ExternalDraggable.onProvideData], used to supply the
 /// data for a drag and drop operation when the data is dropped on the target.
 typedef ExternalDraggableDataProvider = Iterable<ExternalData> Function();
@@ -370,6 +379,7 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
 /// Used by [DragTarget.builder].
 typedef ExternalDragTargetBuilder = Widget Function(BuildContext context, List<ExternalData> candidateData);
 
+
 class ExternalDragTarget extends StatefulWidget {
   /// Creates a widget that receives drags.
   ///
@@ -390,18 +400,8 @@ class ExternalDragTarget extends StatefulWidget {
       return false;
     }
 
-    // Validate the MIME type.
-    const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
-    const String type =
-        '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
-    const String whitespace = r'[ \t]*';
-    const String quotedString = r'''"(?:[^"\\]|\.)*"''';
-    const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
-    const String mediaType =
-        type + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
-    final RegExp mediaTypeRe = RegExp(mediaType);
     for (final String type in acceptedTypes) {
-      if (!mediaTypeRe.hasMatch(type)) {
+      if (!isValidMimeType(type)) {
         return false;
       }
     }
@@ -446,6 +446,12 @@ class ExternalDragTarget extends StatefulWidget {
 
   @override
   State<ExternalDragTarget> createState() => _ExternalDragTargetState();
+
+  // Validate the MIME type.
+  static final RegExp mediaTypeRe = RegExp(mediaType);
+  static bool isValidMimeType(String type) {
+    return mediaTypeRe.hasMatch(type);
+  }
 }
 
 List<T> _mapAvatarsToData<T extends Object>(List<_ExternalDragAvatar> avatars) {
@@ -707,17 +713,15 @@ class ExternalData {
   ExternalData({required this.values})
       : assert(values.isNotEmpty),
         assert(values.map<String>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
-            'Supplied ExternalData values must all have unique MIME types.');
-
-  final Iterable<ExternalDataItem<Object>> values;
-
-  Map<String, ExternalDataItem<Object>> get mapping {
-    return Map<String, ExternalDataItem<Object>>.fromEntries(
+            'Supplied ExternalData values must all have unique MIME types.'),
+        mapping = Map<String, ExternalDataItem<Object>>.fromEntries(
       values.map<MapEntry<String, ExternalDataItem<Object>>>(
         (ExternalDataItem<Object> item) => MapEntry<String, ExternalDataItem<Object>>(item.type, item),
       ),
     );
-  }
+
+  final Iterable<ExternalDataItem<Object>> values;
+  final Map<String, ExternalDataItem<Object>> mapping;
 }
 
 class PlainTextExternalData extends ExternalDataItem<String> {
