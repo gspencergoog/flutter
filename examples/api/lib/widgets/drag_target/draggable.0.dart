@@ -100,15 +100,6 @@ class _DraggableExampleState extends State<DraggableExample> {
   }
 }
 
-const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
-const String type =
-    '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
-const String whitespace = r'[ \t]*';
-const String quotedString = r'''"(?:[^"\\]|\.)*"''';
-const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
-const String mediaType =
-    type + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
-
 /// The function type for [ExternalDraggable.onProvideData], used to supply the
 /// data for a drag and drop operation when the data is dropped on the target.
 typedef ExternalDraggableDataProvider = Iterable<ExternalData> Function();
@@ -177,7 +168,7 @@ class ExternalDraggable extends StatefulWidget {
   /// The widget to show under the pointer when a drag is under way.
   ///
   /// See [child] and [childWhenDragging] for information about what is shown
-  /// at the location of the [Draggable] itself when a drag is under way.
+  /// at the location of the [ExternalDraggable] itself when a drag is under way.
   final Widget feedback;
 
   /// Controls how this widget competes with other gestures to initiate a drag.
@@ -419,7 +410,7 @@ class ExternalDragTarget extends StatefulWidget {
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
-  /// Supplies a list of external data objects, each of which has its own map of MIME type to data.
+  /// Supplies a list of external data objects, each of which has its own MIME type and data payload.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
   final DragTargetAccept<List<ExternalData>>? onAccept;
@@ -447,9 +438,17 @@ class ExternalDragTarget extends StatefulWidget {
   @override
   State<ExternalDragTarget> createState() => _ExternalDragTargetState();
 
-  // Validate the MIME type.
-  static final RegExp mediaTypeRe = RegExp(mediaType);
   static bool isValidMimeType(String type) {
+   const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
+   const String baseType =
+      '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
+   const String whitespace = r'[ \t]*';
+   const String quotedString = r'''"(?:[^"\\]|\.)*"''';
+   const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
+   const String mediaType =
+      baseType + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
+   final RegExp mediaTypeRe = RegExp(mediaType);
+
     return mediaTypeRe.hasMatch(type);
   }
 }
@@ -529,7 +528,7 @@ typedef _OnDragEnd = void Function(Velocity velocity, Offset offset, bool wasAcc
 // The lifetime of this object is a little dubious right now. Specifically, it
 // lives as long as the pointer is down. Arguably it should self-immolate if the
 // overlay goes away. _DraggableState has some delicate logic to continue
-// needing this object pointer events even after it has been disposed.
+// needing this object for pointer events even after it has been disposed.
 class _ExternalDragAvatar extends Drag {
   _ExternalDragAvatar({
     required this.overlayState,
@@ -703,7 +702,7 @@ class _ExternalDragAvatar extends Drag {
 @immutable
 class ExternalDataItem<T extends Object> {
   const ExternalDataItem({required this.type, required this.data})
-      : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>, 'Only specific payload types are allowed.');
+      : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>, "Only specific payload types are allowed, and $T isn't one of them.");
 
   final String type;
   final T data;
@@ -713,15 +712,15 @@ class ExternalData {
   ExternalData({required this.values})
       : assert(values.isNotEmpty),
         assert(values.map<String>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
-            'Supplied ExternalData values must all have unique MIME types.'),
-        mapping = Map<String, ExternalDataItem<Object>>.fromEntries(
+            'Supplied $ExternalDataItem values must all have unique MIME types.'),
+        byType = Map<String, ExternalDataItem<Object>>.fromEntries(
       values.map<MapEntry<String, ExternalDataItem<Object>>>(
         (ExternalDataItem<Object> item) => MapEntry<String, ExternalDataItem<Object>>(item.type, item),
       ),
     );
 
   final Iterable<ExternalDataItem<Object>> values;
-  final Map<String, ExternalDataItem<Object>> mapping;
+  final Map<String, ExternalDataItem<Object>> byType;
 }
 
 class PlainTextExternalData extends ExternalDataItem<String> {
