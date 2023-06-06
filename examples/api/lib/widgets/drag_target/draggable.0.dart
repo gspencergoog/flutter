@@ -1,6 +1,9 @@
 // Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -40,9 +43,9 @@ class _DraggableExampleState extends State<DraggableExample> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         ExternalDraggable(
-          data: <ExternalData>[
+          onProvideData: () => <ExternalData>[
             ExternalData(
-              members: <ExternalDataItem<Object>>{
+              values: <ExternalDataItem<Object>>{
                 UrlListExternalData(
                   uris: <Uri>[
                     Uri.parse('http://google.com'),
@@ -75,7 +78,7 @@ class _DraggableExampleState extends State<DraggableExample> {
           ),
         ),
         ExternalDragTarget(
-          acceptedTypes: const <String>{'text/plain', 'text/html'},
+          acceptedTypes: <ContentType>{ContentType.text, ContentType.html},
           builder: (
             BuildContext context,
             List<ExternalData> accepted,
@@ -104,6 +107,22 @@ class _DraggableExampleState extends State<DraggableExample> {
 /// data for a drag and drop operation when the data is dropped on the target.
 typedef ExternalDraggableDataProvider = Iterable<ExternalData> Function();
 
+/// A widget that can be dragged out of an application to be dropped on another
+/// application on the platform.
+///
+/// When a draggable widget recognizes the start of a drag gesture, it displays
+/// a [feedback] widget that tracks the pointer across the screen. If the user
+/// lets go of the pointer while on top of a operating system drag target, that
+/// target is given the data produced when [onProvideData] is called.
+///
+/// This widget displays [child] when no drags are underway. If
+/// [childWhenDragging] is non-null, this widget instead displays
+/// [childWhenDragging] when drags are underway. Otherwise, this widget always
+/// displays [child].
+///
+/// See also:
+///
+/// * [ExternalDragTarget]
 class ExternalDraggable extends StatefulWidget {
   /// Creates a widget that can be dragged out of the application to the desktop
   /// or another application.
@@ -398,12 +417,12 @@ class ExternalDragTarget extends StatefulWidget {
     this.hitTestBehavior = HitTestBehavior.translucent,
   }) : assert(_debugVerifyDataTypes(acceptedTypes), 'Data type list $acceptedTypes contains an invalid MIME type.');
 
-  static bool _debugVerifyDataTypes(Set<String> acceptedTypes) {
-    if (acceptedTypes.isEmpty || acceptedTypes.join().isEmpty) {
+  static bool _debugVerifyDataTypes(Set<ContentType> acceptedTypes) {
+    if (acceptedTypes.isEmpty) {
       return false;
     }
 
-    for (final String type in acceptedTypes) {
+    for (final ContentType type in acceptedTypes) {
       if (!isValidMimeType(type)) {
         return false;
       }
@@ -411,8 +430,8 @@ class ExternalDragTarget extends StatefulWidget {
     return true;
   }
 
-  /// The MIME types of the types of objects accepted for dropping.
-  final Set<String> acceptedTypes;
+  /// The acceptable content types (MIME types) of dropped objects.
+  final Set<ContentType> acceptedTypes;
 
   /// Called to build the contents of this widget.
   ///
@@ -451,18 +470,18 @@ class ExternalDragTarget extends StatefulWidget {
   @override
   State<ExternalDragTarget> createState() => _ExternalDragTargetState();
 
-  static bool isValidMimeType(String type) {
+  static bool isValidMimeType(ContentType type) {
+    // Do some validation that the ContentType class doesn't do.
     const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
-    const String baseType =
+    const String primaryType =
         '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
-    const String whitespace = r'[ \t]*';
-    const String quotedString = r'''"(?:[^"\\]|\.)*"''';
-    const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
-    const String mediaType =
-        baseType + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
-    final RegExp mediaTypeRe = RegExp(mediaType);
-
-    return mediaTypeRe.hasMatch(type);
+    if (!RegExp(primaryType).hasMatch(type.primaryType)) {
+      return false;
+    }
+    if (!RegExp(validName).hasMatch(type.subType)) {
+      return false;
+    }
+    return true;
   }
 }
 
@@ -718,41 +737,41 @@ class ExternalDataItem<T extends Object> {
       : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>,
             "Only specific payload types are allowed, and $T isn't one of them.");
 
-  final String type;
+  final ContentType type;
   final T data;
 }
 
 class ExternalData {
   ExternalData({required this.values})
       : assert(values.isNotEmpty),
-        assert(values.map<String>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
-            'Supplied $ExternalDataItem values must all have unique MIME types.'),
-        byType = Map<String, ExternalDataItem<Object>>.fromEntries(
-          values.map<MapEntry<String, ExternalDataItem<Object>>>(
-            (ExternalDataItem<Object> item) => MapEntry<String, ExternalDataItem<Object>>(item.type, item),
+        assert(values.map<ContentType>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
+            'Supplied $ExternalDataItem values must all have unique content types.'),
+        byType = Map<ContentType, ExternalDataItem<Object>>.fromEntries(
+          values.map<MapEntry<ContentType, ExternalDataItem<Object>>>(
+            (ExternalDataItem<Object> item) => MapEntry<ContentType, ExternalDataItem<Object>>(item.type, item),
           ),
         );
 
   final Iterable<ExternalDataItem<Object>> values;
-  final Map<String, ExternalDataItem<Object>> byType;
+  final Map<ContentType, ExternalDataItem<Object>> byType;
 }
 
 class PlainTextExternalData extends ExternalDataItem<String> {
-  const PlainTextExternalData({required String text}) : super(type: 'text/plain', data: text);
+  PlainTextExternalData({required String text}) : super(type: ContentType.text, data: text);
 }
 
 class HtmlExternalData extends ExternalDataItem<String> {
-  const HtmlExternalData({required String html}) : super(type: 'text/html', data: html);
+  HtmlExternalData({required String html}) : super(type: ContentType.html, data: html);
 }
 
 class PngExternalData extends ExternalDataItem<ByteData> {
-  const PngExternalData({required ByteData pngData}) : super(type: 'image/png', data: pngData);
+  PngExternalData({required ByteData pngData}) : super(type: ContentType('image','png'), data: pngData);
 }
 
 class JpegExternalData extends ExternalDataItem<ByteData> {
-  const JpegExternalData({required ByteData jpegData}) : super(type: 'image/jpeg', data: jpegData);
+  JpegExternalData({required ByteData jpegData}) : super(type: ContentType('image', 'jpeg'), data: jpegData);
 }
 
 class UrlListExternalData extends ExternalDataItem<List<Uri>> {
-  const UrlListExternalData({required List<Uri> uris}) : super(type: 'text/uri-list', data: uris);
+  UrlListExternalData({required List<Uri> uris}) : super(type: ContentType('text', 'uri-list', charset: 'utf-8'), data: uris);
 }
