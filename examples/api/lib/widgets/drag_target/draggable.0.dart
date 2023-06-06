@@ -85,7 +85,7 @@ class _DraggableExampleState extends State<DraggableExample> {
               width: 100.0,
               color: Colors.cyan,
               child: Center(
-                child: Text('Value is: $acceptedData'),
+                child: Text('Value is: $accepted'),
               ),
             );
           },
@@ -136,7 +136,7 @@ class ExternalDraggable extends StatefulWidget {
   /// When axis is set to [Axis.horizontal], this widget can only be dragged
   /// horizontally. Behavior is similar for [Axis.vertical].
   ///
-  /// Defaults to allowing drag on both [Axis.horizontal] and [Axis.vertical].
+  /// Defaults to allow drag on both [Axis.horizontal] and [Axis.vertical].
   ///
   /// When null, allows drag on both [Axis.horizontal] and [Axis.vertical].
   ///
@@ -146,29 +146,29 @@ class ExternalDraggable extends StatefulWidget {
 
   /// The widget below this widget in the tree.
   ///
-  /// This widget displays [child] when zero drags are under way. If
+  /// This widget displays [child] when zero drags are underway. If
   /// [childWhenDragging] is non-null, this widget instead displays
   /// [childWhenDragging] when one or more drags are underway. Otherwise, this
   /// widget always displays [child].
   ///
-  /// The [feedback] widget is shown under the pointer when a drag is under way.
+  /// The [feedback] widget is shown under the pointer when a drag is underway.
   ///
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
-  /// The widget to display instead of [child] when one or more drags are under way.
+  /// The widget to display instead of [child] when one or more drags are
+  /// underway.
   ///
   /// If this is null, then this widget will always display [child] (and so the
-  /// drag source representation will not change while a drag is under
-  /// way).
+  /// drag source representation will not change while a drag is under way).
   ///
-  /// The [feedback] widget is shown under the pointer when a drag is under way.
+  /// The [feedback] widget is shown under the pointer when a drag is underway.
   final Widget? childWhenDragging;
 
-  /// The widget to show under the pointer when a drag is under way.
+  /// The widget to show under the pointer when a drag is underway.
   ///
-  /// See [child] and [childWhenDragging] for information about what is shown
-  /// at the location of the [ExternalDraggable] itself when a drag is under way.
+  /// See [child] and [childWhenDragging] for information about what is shown at
+  /// the location of the [ExternalDraggable] itself when a drag is underway.
   final Widget feedback;
 
   /// Controls how this widget competes with other gestures to initiate a drag.
@@ -215,10 +215,10 @@ class ExternalDraggable extends StatefulWidget {
   ///
   /// This function might be called after this widget has been removed from the
   /// tree. For example, if a drag was in progress when this widget was removed
-  /// from the tree and the drag ended up completing, this callback will
-  /// still be called. For this reason, implementations of this callback might
-  /// need to check [State.mounted] to check whether the state receiving the
-  /// callback is still in the tree.
+  /// from the tree and the drag ended up completing, this callback will still
+  /// be called. For this reason, implementations of this callback might need to
+  /// check [State.mounted] to check whether the state receiving the callback is
+  /// still in the tree.
   final VoidCallback? onDragCompleted;
 
   /// Called when the draggable is dropped.
@@ -360,21 +360,33 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
   }
 }
 
-/// Signature for building children of a [DragTarget].
+/// Signature for building children of a [ExternalDragTarget].
 ///
 /// The `candidateData` argument contains the list of drag data that is hovering
-/// over this [DragTarget] and that has passed [DragTarget.onWillAccept]. The
-/// `rejectedData` argument contains the list of drag data that is hovering over
-/// this [DragTarget] and that will not be accepted by the [DragTarget].
+/// over this [ExternalDragTarget] and that is an accepted type as defined by
+/// [ExternalDragTarget.acceptedTypes].
 ///
-/// Used by [DragTarget.builder].
-typedef ExternalDragTargetBuilder = Widget Function(BuildContext context, List<ExternalData> candidateData);
+/// Used by [ExternalDragTarget.builder].
+typedef ExternalDragTargetBuilder = Widget Function(
+  BuildContext context,
+  List<ExternalData> candidateData,
+);
 
-
+/// A widget that receives data when external data is dropped on an application
+/// by the operating system.
+///
+/// When a external draggable data is dragged on top of a drag target, the drag
+/// target compares the types offered by the external data to the types it will
+/// accept. If the user does drop the draggable on top of the drag target (and
+/// the drag target has indicated that it will accept the draggable's data),
+/// then the drag target is asked to accept the draggable's data.
+///
+/// See also:
+///
+/// * [ExternalDraggable], A widget that defines types for dragging data out of
+///   an application.
 class ExternalDragTarget extends StatefulWidget {
   /// Creates a widget that receives drags.
-  ///
-  /// The [builder] argument must not be null.
   ExternalDragTarget({
     super.key,
     required this.builder,
@@ -410,7 +422,8 @@ class ExternalDragTarget extends StatefulWidget {
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
-  /// Supplies a list of external data objects, each of which has its own MIME type and data payload.
+  /// Supplies a list of external data objects, each of which has its own MIME
+  /// type and data payload.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
   final DragTargetAccept<List<ExternalData>>? onAccept;
@@ -439,15 +452,15 @@ class ExternalDragTarget extends StatefulWidget {
   State<ExternalDragTarget> createState() => _ExternalDragTargetState();
 
   static bool isValidMimeType(String type) {
-   const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
-   const String baseType =
-      '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
-   const String whitespace = r'[ \t]*';
-   const String quotedString = r'''"(?:[^"\\]|\.)*"''';
-   const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
-   const String mediaType =
-      baseType + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
-   final RegExp mediaTypeRe = RegExp(mediaType);
+    const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
+    const String baseType =
+        '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
+    const String whitespace = r'[ \t]*';
+    const String quotedString = r'''"(?:[^"\\]|\.)*"''';
+    const String parameter = r';' + whitespace + validName + r'=(?:' + validName + r'|' + quotedString + r')';
+    const String mediaType =
+        baseType + r'\/(?<subtype>' + validName + r')(?<parameters>(?:' + whitespace + parameter + r')*)';
+    final RegExp mediaTypeRe = RegExp(mediaType);
 
     return mediaTypeRe.hasMatch(type);
   }
@@ -702,7 +715,8 @@ class _ExternalDragAvatar extends Drag {
 @immutable
 class ExternalDataItem<T extends Object> {
   const ExternalDataItem({required this.type, required this.data})
-      : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>, "Only specific payload types are allowed, and $T isn't one of them.");
+      : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>,
+            "Only specific payload types are allowed, and $T isn't one of them.");
 
   final String type;
   final T data;
@@ -714,10 +728,10 @@ class ExternalData {
         assert(values.map<String>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
             'Supplied $ExternalDataItem values must all have unique MIME types.'),
         byType = Map<String, ExternalDataItem<Object>>.fromEntries(
-      values.map<MapEntry<String, ExternalDataItem<Object>>>(
-        (ExternalDataItem<Object> item) => MapEntry<String, ExternalDataItem<Object>>(item.type, item),
-      ),
-    );
+          values.map<MapEntry<String, ExternalDataItem<Object>>>(
+            (ExternalDataItem<Object> item) => MapEntry<String, ExternalDataItem<Object>>(item.type, item),
+          ),
+        );
 
   final Iterable<ExternalDataItem<Object>> values;
   final Map<String, ExternalDataItem<Object>> byType;
