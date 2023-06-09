@@ -103,9 +103,55 @@ class _DraggableExampleState extends State<DraggableExample> {
   }
 }
 
+/// Represents the details when a specific pointer event occurred on
+/// the [ExternalDraggable].
+///
+/// This includes the [Velocity] at which the pointer was moving and [Offset]
+/// when the draggable event occurred, and whether its [ExternalDragTarget] accepted it.
+///
+/// Also, this is the details object for callbacks that use [ExternalDragEndCallback].
+class ExternalDraggableDetails {
+  /// Creates details for a [ExternalDraggableDetails].
+  ///
+  /// If [wasAccepted] is not specified, it will default to `false`.
+  ///
+  /// The [velocity] or [offset] arguments must not be `null`.
+  ExternalDraggableDetails({
+    this.wasAccepted = false,
+    required this.velocity,
+    required this.offset,
+  });
+
+  /// Determines whether the [ExternalDragTarget] accepted this draggable.
+  final bool wasAccepted;
+
+  /// The velocity at which the pointer was moving when the specific pointer
+  /// event occurred on the draggable.
+  final Velocity velocity;
+
+  /// The global position when the specific pointer event occurred on
+  /// the draggable.
+  final Offset offset;
+}
+
+
 /// The function type for [ExternalDraggable.onProvideData], used to supply the
 /// data for a drag and drop operation when the data is dropped on the target.
 typedef ExternalDraggableDataProvider = Iterable<ExternalData> Function();
+
+/// Signature for when a [ExternalDraggable] is dropped without being accepted by a [ExternalDragTarget].
+///
+/// Used by [ExternalDraggable.onDraggableCanceled].
+typedef ExternalDraggableCanceledCallback = void Function(Velocity velocity, Offset offset);
+
+/// Signature for when the draggable is dropped.
+///
+/// The velocity and offset at which the pointer was moving when the draggable
+/// was dropped is available in the [ExternalDraggableDetails]. Also included in the
+/// `details` is whether the draggable's [ExternalDragTarget] accepted it.
+///
+/// Used by [ExternalDraggable.onDragEnd].
+typedef ExternalDragEndCallback = void Function(ExternalDraggableDetails details);
 
 /// A widget that can be dragged out of an application to be dropped on another
 /// application on the platform.
@@ -228,7 +274,7 @@ class ExternalDraggable extends StatefulWidget {
   /// still be called. For this reason, implementations of this callback might
   /// need to check [State.mounted] to check whether the state receiving the
   /// callback is still in the tree.
-  final DraggableCanceledCallback? onDraggableCanceled;
+  final ExternalDraggableCanceledCallback? onDraggableCanceled;
 
   /// Called when the draggable is dropped and accepted by the platform.
   ///
@@ -248,7 +294,7 @@ class ExternalDraggable extends StatefulWidget {
   ///
   /// This function will only be called while this widget is still mounted to
   /// the tree (i.e. [State.mounted] is true).
-  final DragEndCallback? onDragEnd;
+  final ExternalDragEndCallback? onDragEnd;
 
   /// How to behave during hit test.
   ///
@@ -349,7 +395,7 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
           _disposeRecognizerIfInactive();
         }
         if (mounted && widget.onDragEnd != null) {
-          widget.onDragEnd!(DraggableDetails(
+          widget.onDragEnd!(ExternalDraggableDetails(
             wasAccepted: wasAccepted,
             velocity: velocity,
             offset: offset,
