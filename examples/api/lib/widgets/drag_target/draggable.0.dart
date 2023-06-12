@@ -43,17 +43,19 @@ class _DraggableExampleState extends State<DraggableExample> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         ExternalDraggable(
-          onProvideData: () => <ExternalData>[
-            ExternalData(
-              values: <ExternalDataItem<Object>>{
-                UrlListExternalData(
-                  uris: <Uri>[
-                    Uri.parse('http://google.com'),
-                  ],
-                ),
-              },
-            ),
-          ],
+          onProvideData: () {
+            return <ExternalData>[
+              ExternalData(
+                values: <ExternalDataItem<Object>>{
+                  UrlListExternalData(
+                    uris: <Uri>[
+                      Uri.parse('http://google.com'),
+                    ],
+                  ),
+                },
+              ),
+            ];
+          },
           feedback: Container(
             color: Colors.deepOrange,
             height: 100,
@@ -437,6 +439,16 @@ typedef ExternalDragTargetBuilder = Widget Function(
   List<ExternalData> candidateData,
 );
 
+/// Signature for causing a [DragTarget] to accept the given data.
+///
+/// Used by [DragTarget.onAccept].
+typedef ExternalDragTargetAccept = void Function(Iterable<ExternalData> data);
+
+/// Signature for determining information about the acceptance by a [DragTarget].
+///
+/// Used by [DragTarget.onAcceptWithDetails].
+typedef ExternalDragTargetAcceptWithDetails = void Function(ExternalDragTargetDetails details);
+
 /// A widget that receives data when external data is dropped on an application
 /// by the operating system.
 ///
@@ -491,13 +503,13 @@ class ExternalDragTarget extends StatefulWidget {
   /// type and data payload.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
-  final DragTargetAccept<List<ExternalData>>? onAccept;
+  final ExternalDragTargetAccept? onAccept;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
   /// Equivalent to [onAccept], but with information, including the data, in a
   /// [DragTargetDetails].
-  final DragTargetAcceptWithDetails<List<ExternalData>>? onAcceptWithDetails;
+  final ExternalDragTargetAcceptWithDetails? onAcceptWithDetails;
 
   /// Called when a given piece of data being dragged over this target leaves
   /// the target.
@@ -570,7 +582,7 @@ class _ExternalDragTargetState extends State<ExternalDragTarget> {
     });
     widget.onAccept?.call(avatar.data as List<ExternalData>);
     widget.onAcceptWithDetails?.call(
-      DragTargetDetails<List<ExternalData>>(
+      ExternalDragTargetDetails(
         data: avatar.data as List<ExternalData>,
         offset: avatar._lastOffset!,
       ),
@@ -775,6 +787,21 @@ class _ExternalDragAvatar extends Drag {
     }
     return Offset(0.0, offset.dy);
   }
+}
+
+/// Represents the details when a pointer event occurred on the [DragTarget].
+class ExternalDragTargetDetails {
+  /// Creates details for a [DragTarget] callback.
+  ///
+  /// The [offset] must not be null.
+  ExternalDragTargetDetails({required this.data, required this.offset});
+
+  /// The data that was dropped onto this [DragTarget].
+  final Iterable<ExternalData> data;
+
+  /// The global position when the specific pointer event occurred on
+  /// the draggable.
+  final Offset offset;
 }
 
 @immutable
