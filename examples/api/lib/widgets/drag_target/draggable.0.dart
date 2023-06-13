@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:html';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -42,7 +43,7 @@ class _DraggableExampleState extends State<DraggableExample> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
-        ExternalDraggable(
+        DragSource(
           onProvideData: () {
             return <ExternalData>[
               ExternalData(
@@ -75,26 +76,24 @@ class _DraggableExampleState extends State<DraggableExample> {
             width: 100.0,
             color: Colors.lightGreenAccent,
             child: const Center(
-              child: Text('Draggable'),
+              child: Text('Drag Source'),
             ),
           ),
         ),
-        ExternalDragTarget(
-          acceptedTypes: <ContentType>{ContentType.text, ContentType.html},
-          builder: (
-            BuildContext context,
-            List<ExternalData> accepted,
-          ) {
-            return Container(
-              height: 100.0,
-              width: 100.0,
-              color: Colors.cyan,
-              child: Center(
-                child: Text('Value is: $accepted'),
-              ),
-            );
+        DragDestination(
+          acceptedTypes: const <ExternalContentType>{
+            ExternalContentType.plainText,
+            ExternalContentType.html,
           },
-          onAccept: (List<ExternalData> data) {
+          child: Container(
+            height: 100.0,
+            width: 100.0,
+            color: Colors.cyan,
+            child: Center(
+              child: Text('Value is: $acceptedData'),
+            ),
+          ),
+          onAccept: (Iterable<ExternalData> data) {
             setState(() {
               acceptedData = data;
             });
@@ -106,25 +105,25 @@ class _DraggableExampleState extends State<DraggableExample> {
 }
 
 /// Represents the details when a specific pointer event occurred on
-/// the [ExternalDraggable].
+/// the [DragSource].
 ///
 /// This includes the [Velocity] at which the pointer was moving and [Offset]
-/// when the draggable event occurred, and whether its [ExternalDragTarget] accepted it.
+/// when the draggable event occurred, and whether its [DragDestination] accepted it.
 ///
-/// Also, this is the details object for callbacks that use [ExternalDragEndCallback].
-class ExternalDraggableDetails {
-  /// Creates details for a [ExternalDraggableDetails].
+/// Also, this is the details object for callbacks that use [DragSourceEndCallback].
+class DragSourceDetails {
+  /// Creates details for a [DragSourceDetails].
   ///
   /// If [wasAccepted] is not specified, it will default to `false`.
   ///
   /// The [velocity] or [offset] arguments must not be `null`.
-  ExternalDraggableDetails({
+  DragSourceDetails({
     this.wasAccepted = false,
     required this.velocity,
     required this.offset,
   });
 
-  /// Determines whether the [ExternalDragTarget] accepted this draggable.
+  /// Determines whether the [DragDestination] accepted this draggable.
   final bool wasAccepted;
 
   /// The velocity at which the pointer was moving when the specific pointer
@@ -136,24 +135,23 @@ class ExternalDraggableDetails {
   final Offset offset;
 }
 
-
-/// The function type for [ExternalDraggable.onProvideData], used to supply the
+/// The function type for [DragSource.onProvideData], used to supply the
 /// data for a drag and drop operation when the data is dropped on the target.
-typedef ExternalDraggableDataProvider = Iterable<ExternalData> Function();
+typedef DragSourceDataProvider = Iterable<ExternalData> Function();
 
-/// Signature for when a [ExternalDraggable] is dropped without being accepted by a [ExternalDragTarget].
+/// Signature for when a [DragSource] is dropped without being accepted by a [DragDestination].
 ///
-/// Used by [ExternalDraggable.onDraggableCanceled].
-typedef ExternalDraggableCanceledCallback = void Function(Velocity velocity, Offset offset);
+/// Used by [DragSource.onDragCanceled].
+typedef DragSourceCanceledCallback = void Function(Velocity velocity, Offset offset);
 
 /// Signature for when the draggable is dropped.
 ///
 /// The velocity and offset at which the pointer was moving when the draggable
-/// was dropped is available in the [ExternalDraggableDetails]. Also included in the
-/// `details` is whether the draggable's [ExternalDragTarget] accepted it.
+/// was dropped is available in the [DragSourceDetails]. Also included in the
+/// `details` is whether the draggable's [DragDestination] accepted it.
 ///
-/// Used by [ExternalDraggable.onDragEnd].
-typedef ExternalDragEndCallback = void Function(ExternalDraggableDetails details);
+/// Used by [DragSource.onDragEnd].
+typedef DragSourceEndCallback = void Function(DragSourceDetails details);
 
 /// A widget that can be dragged out of an application to be dropped on another
 /// application on the platform.
@@ -170,46 +168,60 @@ typedef ExternalDragEndCallback = void Function(ExternalDraggableDetails details
 ///
 /// See also:
 ///
-/// * [ExternalDragTarget]
-class ExternalDraggable extends StatefulWidget {
+/// * [DragDestination]
+class DragSource extends StatefulWidget {
   /// Creates a widget that can be dragged out of the application to the desktop
   /// or another application.
   ///
   /// The [child] and [feedback] arguments must not be null.
-  const ExternalDraggable({
+  const DragSource({
     super.key,
     required this.child,
     required this.feedback,
     required this.onProvideData,
-    this.axis,
     this.childWhenDragging,
     this.affinity,
     this.onDragStarted,
     this.onDragUpdate,
-    this.onDraggableCanceled,
+    this.onDragCanceled,
     this.onDragEnd,
     this.onDragCompleted,
     this.hitTestBehavior = HitTestBehavior.deferToChild,
     this.allowedButtonsFilter,
   });
 
+  /// Supplies a single plain text, UTF-8 encoded, item for dragging to another
+  /// application.
+  DragSource.plainText({
+    super.key,
+    required this.child,
+    required this.feedback,
+    required String text,
+    this.childWhenDragging,
+    this.affinity,
+    this.onDragStarted,
+    this.onDragUpdate,
+    this.onDragCanceled,
+    this.onDragEnd,
+    this.onDragCompleted,
+    this.hitTestBehavior = HitTestBehavior.deferToChild,
+    this.allowedButtonsFilter,
+  }) : onProvideData = _provideText(text);
+
+  static DragSourceDataProvider _provideText(String text) {
+    return () => <ExternalData>[
+          ExternalData(
+            values: <ExternalDataItem<Object>>[
+              ExternalDataItem<String>(type: ContentType.text, data: text),
+            ],
+          ),
+        ];
+  }
+
   /// The data that will be dropped by this draggable, in selection order.
   ///
   /// Each [ExternalData] object can have multiple MIME type representations.
-  final ExternalDraggableDataProvider onProvideData;
-
-  /// The [Axis] to restrict this draggable's movement, if specified.
-  ///
-  /// When axis is set to [Axis.horizontal], this widget can only be dragged
-  /// horizontally. Behavior is similar for [Axis.vertical].
-  ///
-  /// Defaults to allow drag on both [Axis.horizontal] and [Axis.vertical].
-  ///
-  /// When null, allows drag on both [Axis.horizontal] and [Axis.vertical].
-  ///
-  /// For the direction of gestures this widget competes with to start a drag
-  /// event, see [affinity].
-  final Axis? axis;
+  final DragSourceDataProvider onProvideData;
 
   /// The widget below this widget in the tree.
   ///
@@ -235,7 +247,7 @@ class ExternalDraggable extends StatefulWidget {
   /// The widget to show under the pointer when a drag is underway.
   ///
   /// See [child] and [childWhenDragging] for information about what is shown at
-  /// the location of the [ExternalDraggable] itself when a drag is underway.
+  /// the location of the [DragSource] itself when a drag is underway.
   final Widget feedback;
 
   /// Controls how this widget competes with other gestures to initiate a drag.
@@ -252,9 +264,6 @@ class ExternalDraggable extends StatefulWidget {
   /// affinity, pointer motion in any direction will result in a drag rather
   /// than in a scroll because the draggable widget, being the more specific
   /// widget, will out-compete the [Scrollable] for vertical gestures.
-  ///
-  /// For the directions this widget can be dragged in after the drag event
-  /// starts, see [Draggable.axis].
   final Axis? affinity;
 
   /// Called when the draggable starts being dragged.
@@ -276,7 +285,7 @@ class ExternalDraggable extends StatefulWidget {
   /// still be called. For this reason, implementations of this callback might
   /// need to check [State.mounted] to check whether the state receiving the
   /// callback is still in the tree.
-  final ExternalDraggableCanceledCallback? onDraggableCanceled;
+  final DragSourceCanceledCallback? onDragCanceled;
 
   /// Called when the draggable is dropped and accepted by the platform.
   ///
@@ -296,7 +305,7 @@ class ExternalDraggable extends StatefulWidget {
   ///
   /// This function will only be called while this widget is still mounted to
   /// the tree (i.e. [State.mounted] is true).
-  final ExternalDragEndCallback? onDragEnd;
+  final DragSourceEndCallback? onDragEnd;
 
   /// How to behave during hit test.
   ///
@@ -323,10 +332,10 @@ class ExternalDraggable extends StatefulWidget {
   }
 
   @override
-  State<ExternalDraggable> createState() => _ExternalDraggableState();
+  State<DragSource> createState() => _DragSourceState();
 }
 
-class _ExternalDraggableState extends State<ExternalDraggable> {
+class _DragSourceState extends State<DragSource> {
   @override
   void initState() {
     super.initState();
@@ -369,16 +378,15 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
     _recognizer!.addPointer(event);
   }
 
-  _ExternalDragAvatar? _startDrag(Offset position) {
+  _DragSourceAvatar? _startDrag(Offset position) {
     final Offset dragStartPoint;
     dragStartPoint = position;
     setState(() {
       _activeCount += 1;
     });
-    final _ExternalDragAvatar avatar = _ExternalDragAvatar(
+    final _DragSourceAvatar avatar = _DragSourceAvatar(
       overlayState: Overlay.of(context, debugRequiredFor: widget),
       data: widget.onProvideData(),
-      axis: widget.axis,
       initialPosition: position,
       dragStartPoint: dragStartPoint,
       feedback: widget.feedback,
@@ -397,7 +405,7 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
           _disposeRecognizerIfInactive();
         }
         if (mounted && widget.onDragEnd != null) {
-          widget.onDragEnd!(ExternalDraggableDetails(
+          widget.onDragEnd!(DragSourceDetails(
             wasAccepted: wasAccepted,
             velocity: velocity,
             offset: offset,
@@ -406,8 +414,8 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
         if (wasAccepted && widget.onDragCompleted != null) {
           widget.onDragCompleted!();
         }
-        if (!wasAccepted && widget.onDraggableCanceled != null) {
-          widget.onDraggableCanceled!(velocity, offset);
+        if (!wasAccepted && widget.onDragCanceled != null) {
+          widget.onDragCanceled!(velocity, offset);
         }
       },
     );
@@ -427,75 +435,75 @@ class _ExternalDraggableState extends State<ExternalDraggable> {
   }
 }
 
-/// Signature for building children of a [ExternalDragTarget].
+/// Signature for building children of a [DragDestination].
 ///
 /// The `candidateData` argument contains the list of drag data that is hovering
-/// over this [ExternalDragTarget] and that is an accepted type as defined by
-/// [ExternalDragTarget.acceptedTypes].
+/// over this [DragDestination] and that is an accepted type as defined by
+/// [DragDestination.acceptedTypes].
 ///
-/// Used by [ExternalDragTarget.builder].
-typedef ExternalDragTargetBuilder = Widget Function(
+/// Used by [DragDestination.builder].
+typedef DragDestinationBuilder = Widget Function(
   BuildContext context,
   List<ExternalData> candidateData,
 );
 
+/// A container for details related to a drag to a drag destination.
+// This is a class and not a record or just an Offset so that additional details
+// may be added in the future without breaking the signature of
+// DragDestinationAcceptWithDetails.
+@immutable
+class DragDestinationDetails {
+  const DragDestinationDetails(this.dragLocation);
+
+  final Offset dragLocation;
+}
+
 /// Signature for causing a [DragTarget] to accept the given data.
 ///
 /// Used by [DragTarget.onAccept].
-typedef ExternalDragTargetAccept = void Function(Iterable<ExternalData> data);
+typedef DragDestinationAccept = void Function(Iterable<ExternalData> data);
 
 /// Signature for determining information about the acceptance by a [DragTarget].
 ///
 /// Used by [DragTarget.onAcceptWithDetails].
-typedef ExternalDragTargetAcceptWithDetails = void Function(ExternalDragTargetDetails details);
+typedef DragDestinationAcceptWithDetails = void Function(Iterable<ExternalData> data, DragDestinationDetails dragDetails);
 
-/// A widget that receives data when external data is dropped on an application
-/// by the operating system.
+/// A widget that receives data when data is dropped on an application by the
+/// operating system.
 ///
-/// When a external draggable data is dragged on top of a drag target, the drag
-/// target compares the types offered by the external data to the types it will
-/// accept. If the user does drop the draggable on top of the drag target (and
-/// the drag target has indicated that it will accept the draggable's data),
-/// then the drag target is asked to accept the draggable's data.
+/// When a dragged source data is dragged on top of a drag destination, the drag
+/// destination compares the types offered by the data to the types it will
+/// accept. If the user does drop the drag source on top of the drag destination
+/// (and the drag destination has indicated that it will accept the drag
+/// source's data), then the drag target is asked to accept the drag source's
+/// data.
 ///
 /// See also:
 ///
-/// * [ExternalDraggable], A widget that defines types for dragging data out of
-///   an application.
-class ExternalDragTarget extends StatefulWidget {
+/// * [DragSource], A widget that defines types for dragging data out of an
+///   application.
+class DragDestination extends StatefulWidget {
   /// Creates a widget that receives drags.
-  ExternalDragTarget({
+  const DragDestination({
     super.key,
-    required this.builder,
     required this.acceptedTypes,
+    required this.child,
     this.onAccept,
     this.onAcceptWithDetails,
     this.onLeave,
     this.onMove,
     this.hitTestBehavior = HitTestBehavior.translucent,
-  }) : assert(_debugVerifyDataTypes(acceptedTypes), 'Data type list $acceptedTypes contains an invalid MIME type.');
-
-  static bool _debugVerifyDataTypes(Set<ContentType> acceptedTypes) {
-    if (acceptedTypes.isEmpty) {
-      return false;
-    }
-
-    for (final ContentType type in acceptedTypes) {
-      if (!isValidMimeType(type)) {
-        return false;
-      }
-    }
-    return true;
-  }
+  });
 
   /// The acceptable content types (MIME types) of dropped objects.
-  final Set<ContentType> acceptedTypes;
+  final Set<ExternalContentType> acceptedTypes;
 
-  /// Called to build the contents of this widget.
+  /// The child of this widget, covering the area that can be used as a drag
+  /// target.
   ///
   /// The builder can build different widgets depending on what is being dragged
   /// into this drag target.
-  final ExternalDragTargetBuilder builder;
+  final Widget child;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
@@ -503,55 +511,37 @@ class ExternalDragTarget extends StatefulWidget {
   /// type and data payload.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
-  final ExternalDragTargetAccept? onAccept;
+  final DragDestinationAccept? onAccept;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
   /// Equivalent to [onAccept], but with information, including the data, in a
   /// [DragTargetDetails].
-  final ExternalDragTargetAcceptWithDetails? onAcceptWithDetails;
+  final DragDestinationAcceptWithDetails? onAcceptWithDetails;
 
   /// Called when a given piece of data being dragged over this target leaves
   /// the target.
   final DragTargetLeave<List<ExternalData>>? onLeave;
 
-  /// Called when a [Draggable] moves within this [DragTarget].
+  /// Called when a [DragSource] moves within this [DragTarget].
   ///
   /// This includes entering and leaving the target.
   final DragTargetMove<List<ExternalData>>? onMove;
 
-  /// How to behave during hit testing.
+  /// How to behave during a hit test.
   ///
   /// Defaults to [HitTestBehavior.translucent].
   final HitTestBehavior hitTestBehavior;
 
   @override
-  State<ExternalDragTarget> createState() => _ExternalDragTargetState();
-
-  static bool isValidMimeType(ContentType type) {
-    // Do some validation that the ContentType class doesn't do.
-    const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
-    const String primaryType =
-        '(?<type>application|audio|example|font|image|message|model|multipart|text|video|x-(?:$validName))';
-    if (!RegExp(primaryType).hasMatch(type.primaryType)) {
-      return false;
-    }
-    if (!RegExp(validName).hasMatch(type.subType)) {
-      return false;
-    }
-    return true;
-  }
+  State<DragDestination> createState() => _DragDestinationState();
 }
 
-List<T> _mapAvatarsToData<T extends Object>(List<_ExternalDragAvatar> avatars) {
-  return avatars.map<T>((_ExternalDragAvatar avatar) => avatar.data as T).toList();
-}
+class _DragDestinationState extends State<DragDestination> {
+  final List<_DragSourceAvatar> _candidateAvatars = <_DragSourceAvatar>[];
+  final List<_DragSourceAvatar> _rejectedAvatars = <_DragSourceAvatar>[];
 
-class _ExternalDragTargetState extends State<ExternalDragTarget> {
-  final List<_ExternalDragAvatar> _candidateAvatars = <_ExternalDragAvatar>[];
-  final List<_ExternalDragAvatar> _rejectedAvatars = <_ExternalDragAvatar>[];
-
-  bool didEnter(_ExternalDragAvatar avatar) {
+  bool didEnter(_DragSourceAvatar avatar) {
     assert(!_candidateAvatars.contains(avatar));
     assert(!_rejectedAvatars.contains(avatar));
     setState(() {
@@ -560,7 +550,7 @@ class _ExternalDragTargetState extends State<ExternalDragTarget> {
     return true;
   }
 
-  void didLeave(_ExternalDragAvatar avatar) {
+  void didLeave(_DragSourceAvatar avatar) {
     assert(_candidateAvatars.contains(avatar) || _rejectedAvatars.contains(avatar));
     if (!mounted) {
       return;
@@ -572,7 +562,7 @@ class _ExternalDragTargetState extends State<ExternalDragTarget> {
     widget.onLeave?.call(avatar.data as List<ExternalData>);
   }
 
-  void didDrop(_ExternalDragAvatar avatar) {
+  void didDrop(_DragSourceAvatar avatar) {
     assert(_candidateAvatars.contains(avatar));
     if (!mounted) {
       return;
@@ -580,16 +570,11 @@ class _ExternalDragTargetState extends State<ExternalDragTarget> {
     setState(() {
       _candidateAvatars.remove(avatar);
     });
-    widget.onAccept?.call(avatar.data as List<ExternalData>);
-    widget.onAcceptWithDetails?.call(
-      ExternalDragTargetDetails(
-        data: avatar.data as List<ExternalData>,
-        offset: avatar._lastOffset!,
-      ),
-    );
+    widget.onAccept?.call(avatar.data);
+    widget.onAcceptWithDetails?.call(avatar.data, DragDestinationDetails(avatar._lastOffset!));
   }
 
-  void didMove(_ExternalDragAvatar avatar) {
+  void didMove(_DragSourceAvatar avatar) {
     if (!mounted) {
       return;
     }
@@ -606,7 +591,7 @@ class _ExternalDragTargetState extends State<ExternalDragTarget> {
     return MetaData(
       metaData: this,
       behavior: widget.hitTestBehavior,
-      child: widget.builder(context, _mapAvatarsToData<ExternalData>(_candidateAvatars)),
+      child: widget.child,
     );
   }
 }
@@ -619,12 +604,11 @@ typedef _OnDragEnd = void Function(Velocity velocity, Offset offset, bool wasAcc
 // lives as long as the pointer is down. Arguably it should self-immolate if the
 // overlay goes away. _DraggableState has some delicate logic to continue
 // needing this object for pointer events even after it has been disposed.
-class _ExternalDragAvatar extends Drag {
-  _ExternalDragAvatar({
+class _DragSourceAvatar extends Drag {
+  _DragSourceAvatar({
     required this.overlayState,
     required this.data,
     required this.feedback,
-    this.axis,
     required Offset initialPosition,
     this.dragStartPoint = Offset.zero,
     this.onDragUpdate,
@@ -636,15 +620,14 @@ class _ExternalDragAvatar extends Drag {
   }
 
   final Iterable<ExternalData> data;
-  final Axis? axis;
   final Offset dragStartPoint;
   final Widget feedback;
   final DragUpdateCallback? onDragUpdate;
   final _OnDragEnd? onDragEnd;
   final OverlayState overlayState;
 
-  _ExternalDragTargetState? _activeTarget;
-  final List<_ExternalDragTargetState> _enteredTargets = <_ExternalDragTargetState>[];
+  _DragDestinationState? _activeTarget;
+  final List<_DragDestinationState> _enteredTargets = <_DragDestinationState>[];
   Offset _position;
   Offset? _lastOffset;
   OverlayEntry? _entry;
@@ -652,7 +635,7 @@ class _ExternalDragAvatar extends Drag {
   @override
   void update(DragUpdateDetails details) {
     final Offset oldPosition = _position;
-    _position += _restrictAxis(details.delta);
+    _position += details.delta;
     updateDrag(_position);
     if (onDragUpdate != null && _position != oldPosition) {
       onDragUpdate!(details);
@@ -661,7 +644,7 @@ class _ExternalDragAvatar extends Drag {
 
   @override
   void end(DragEndDetails details) {
-    finishDrag(_DragEndKind.dropped, _restrictVelocityAxis(details.velocity));
+    finishDrag(_DragEndKind.dropped, details.velocity);
   }
 
   @override
@@ -673,14 +656,14 @@ class _ExternalDragAvatar extends Drag {
     _lastOffset = globalPosition - dragStartPoint;
     _entry!.markNeedsBuild();
     final HitTestResult result = HitTestResult();
-    WidgetsBinding.instance.hitTest(result, globalPosition);
+    WidgetsBinding.instance.hitTestInView(result, globalPosition, View.of(overlayState.context).viewId);
 
-    final List<_ExternalDragTargetState> targets = _getDragTargets(result.path).toList();
+    final List<_DragDestinationState> targets = _getDragTargets(result.path).toList();
 
     bool listsMatch = false;
     if (targets.length >= _enteredTargets.length && _enteredTargets.isNotEmpty) {
       listsMatch = true;
-      final Iterator<_ExternalDragTargetState> iterator = targets.iterator;
+      final Iterator<_DragDestinationState> iterator = targets.iterator;
       for (int i = 0; i < _enteredTargets.length; i += 1) {
         iterator.moveNext();
         if (iterator.current != _enteredTargets[i]) {
@@ -692,7 +675,7 @@ class _ExternalDragAvatar extends Drag {
 
     // If everything's the same, report moves, and bail early.
     if (listsMatch) {
-      for (final _ExternalDragTargetState target in _enteredTargets) {
+      for (final _DragDestinationState target in _enteredTargets) {
         target.didMove(this);
       }
       return;
@@ -702,8 +685,8 @@ class _ExternalDragAvatar extends Drag {
     _leaveAllEntered();
 
     // Enter new targets.
-    final _ExternalDragTargetState? newTarget = targets.cast<_ExternalDragTargetState?>().firstWhere(
-      (_ExternalDragTargetState? target) {
+    final _DragDestinationState? newTarget = targets.cast<_DragDestinationState?>().firstWhere(
+      (_DragDestinationState? target) {
         if (target == null) {
           return false;
         }
@@ -714,22 +697,22 @@ class _ExternalDragAvatar extends Drag {
     );
 
     // Report moves to the targets.
-    for (final _ExternalDragTargetState target in _enteredTargets) {
+    for (final _DragDestinationState target in _enteredTargets) {
       target.didMove(this);
     }
 
     _activeTarget = newTarget;
   }
 
-  Iterable<_ExternalDragTargetState> _getDragTargets(Iterable<HitTestEntry> path) {
+  Iterable<_DragDestinationState> _getDragTargets(Iterable<HitTestEntry> path) {
     // Look for the RenderBoxes that corresponds to the hit target (the hit target
     // widgets build RenderMetaData boxes for us for this purpose).
-    final List<_ExternalDragTargetState> targets = <_ExternalDragTargetState>[];
+    final List<_DragDestinationState> targets = <_DragDestinationState>[];
     for (final HitTestEntry entry in path) {
       final HitTestTarget target = entry.target;
       if (target is RenderMetaData) {
         final dynamic metaData = target.metaData;
-        if (metaData is _ExternalDragTargetState) {
+        if (metaData is _DragDestinationState) {
           targets.add(metaData);
         }
       }
@@ -768,83 +751,140 @@ class _ExternalDragAvatar extends Drag {
       child: feedback,
     );
   }
-
-  Velocity _restrictVelocityAxis(Velocity velocity) {
-    if (axis == null) {
-      return velocity;
-    }
-    return Velocity(
-      pixelsPerSecond: _restrictAxis(velocity.pixelsPerSecond),
-    );
-  }
-
-  Offset _restrictAxis(Offset offset) {
-    if (axis == null) {
-      return offset;
-    }
-    if (axis == Axis.horizontal) {
-      return Offset(offset.dx, 0.0);
-    }
-    return Offset(0.0, offset.dy);
-  }
-}
-
-/// Represents the details when a pointer event occurred on the [DragTarget].
-class ExternalDragTargetDetails {
-  /// Creates details for a [DragTarget] callback.
-  ///
-  /// The [offset] must not be null.
-  ExternalDragTargetDetails({required this.data, required this.offset});
-
-  /// The data that was dropped onto this [DragTarget].
-  final Iterable<ExternalData> data;
-
-  /// The global position when the specific pointer event occurred on
-  /// the draggable.
-  final Offset offset;
 }
 
 @immutable
-class ExternalDataItem<T extends Object> {
+abstract interface class ExternalDataItemInterface<T extends Object> {
+  const ExternalDataItemInterface();
+
+  ExternalContentType get type;
+  T get data;
+}
+
+base class ExternalDataItem<T extends Object> implements ExternalDataItemInterface<T> {
   const ExternalDataItem({required this.type, required this.data})
       : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>,
             "Only specific payload types are allowed, and $T isn't one of them.");
 
-  final ContentType type;
+  @override
+  final ExternalContentType type;
+
+  @override
   final T data;
 }
 
 class ExternalData {
   ExternalData({required this.values})
       : assert(values.isNotEmpty),
-        assert(values.map<ContentType>((ExternalDataItem<Object> item) => item.type).toSet().length == values.length,
+        assert(values.map<ExternalContentType>((ExternalDataItemInterface<Object> item) => item.type).toSet().length == values.length,
             'Supplied $ExternalDataItem values must all have unique content types.'),
-        byType = Map<ContentType, ExternalDataItem<Object>>.fromEntries(
-          values.map<MapEntry<ContentType, ExternalDataItem<Object>>>(
-            (ExternalDataItem<Object> item) => MapEntry<ContentType, ExternalDataItem<Object>>(item.type, item),
+        byType = Map<ExternalContentType, ExternalDataItemInterface<Object>>.fromEntries(
+          values.map<MapEntry<ExternalContentType, ExternalDataItemInterface<Object>>>(
+            (ExternalDataItemInterface<Object> item) => MapEntry<ExternalContentType, ExternalDataItemInterface<Object>>(item.type, item),
           ),
         );
 
   final Iterable<ExternalDataItem<Object>> values;
-  final Map<ContentType, ExternalDataItem<Object>> byType;
+  final Map<ExternalContentType, ExternalDataItemInterface<Object>> byType;
 }
 
-class PlainTextExternalData extends ExternalDataItem<String> {
-  PlainTextExternalData({required String text}) : super(type: ContentType.text, data: text);
+final class PlainTextExternalData extends ExternalDataItem<String> {
+  const PlainTextExternalData({required String text}) : super(type: ExternalContentType.plainText, data: text);
 }
 
-class HtmlExternalData extends ExternalDataItem<String> {
-  HtmlExternalData({required String html}) : super(type: ContentType.html, data: html);
+final class HtmlExternalData extends ExternalDataItem<String> {
+  const HtmlExternalData({required String html}) : super(type: ExternalContentType.html, data: html);
 }
 
-class PngExternalData extends ExternalDataItem<ByteData> {
-  PngExternalData({required ByteData pngData}) : super(type: ContentType('image','png'), data: pngData);
+final class PngExternalData extends ExternalDataItem<ByteData> {
+  PngExternalData({required ByteData pngData}) : super(type: ExternalContentType.fromComponents('image', 'png'), data: pngData);
 }
 
-class JpegExternalData extends ExternalDataItem<ByteData> {
-  JpegExternalData({required ByteData jpegData}) : super(type: ContentType('image', 'jpeg'), data: jpegData);
+final class JpegExternalData extends ExternalDataItem<ByteData> {
+  JpegExternalData({required ByteData jpegData}) : super(type: ExternalContentType.fromComponents('image', 'jpeg'), data: jpegData);
 }
 
-class UrlListExternalData extends ExternalDataItem<List<Uri>> {
-  UrlListExternalData({required List<Uri> uris}) : super(type: ContentType('text', 'uri-list', charset: 'utf-8'), data: uris);
+final class BinaryExternalData extends ExternalDataItem<ByteData> {
+  const BinaryExternalData({required ByteData binaryData}) : super(type: ExternalContentType.binary, data: binaryData);
+}
+
+final class UrlListExternalData extends ExternalDataItem<List<Uri>> {
+  UrlListExternalData({required List<Uri> uris})
+      : super(type: ExternalContentType.fromComponents('text', 'uri-list', parameters: const <String, String?>{'charset': 'utf-8'}), data: uris);
+}
+
+/// A MIME/IANA media type used as the type for [ExternalData] data types.
+///
+/// An [ExternalContentType] is immutable.
+@immutable
+class ExternalContentType {
+  factory ExternalContentType(String mimeType) => parse(mimeType);
+
+  /// Creates a new [ExternalContentType] object setting the primary type and
+  /// sub type. Additional parameters can also be set using [parameters]. Keys
+  /// passed in parameters will be converted to lower case, as will some values
+  /// (notably, the "charset" parameter).
+  factory ExternalContentType.fromComponents(String primaryType, String subType,
+      {Map<String, String?> parameters = const <String, String?>{}}) {
+    final ContentType contentType = ContentType(primaryType, subType, parameters: parameters);
+    assert(_isValidMimeType(contentType));
+    return ExternalContentType._(
+      // Use ContentType fields instead of arguments because they could have had
+      // their case changed when parsed.
+      contentType.primaryType,
+      contentType.subType,
+      contentType.parameters,
+      contentType.toString(),
+    );
+  }
+
+  const ExternalContentType._(this._primaryType, this._subType, this._parameters, this._mimeType);
+
+  String get mimeType => _mimeType;
+  String get mimePrimaryType => _primaryType;
+  String get mimeSubType => _subType;
+  String? get charset => _parameters['charset'];
+
+  Map<String, String?> get mimeParameters => _parameters;
+
+  // Doesn't use a ContentType as the internal representation because
+  // ContentType can't be const, so static const common types couldn't be
+  // defined.
+  final String _mimeType;
+  final String _primaryType;
+  final String _subType;
+  final Map<String, String?> _parameters;
+
+  static const ExternalContentType plainText =
+      ExternalContentType._('text', 'plain', <String, String?>{'charset': 'utf-8'}, 'text/plain;charset=utf-8');
+  static const ExternalContentType html =
+      ExternalContentType._('text', 'html', <String, String?>{'charset': 'utf-8'}, 'text/html;charset=utf-8');
+  static const ExternalContentType binary =
+      ExternalContentType._('application', 'octet-stream', <String, String?>{}, 'application/octet-stream');
+
+  static ExternalContentType parse(String value) {
+    final ContentType contentType = ContentType.parse(value);
+    assert(_isValidMimeType(contentType),
+        'MIME type $value is not a valid MIME type. The multipart and message primary MIME types are not supported.');
+    return ExternalContentType._(
+      contentType.primaryType,
+      contentType.subType,
+      contentType.parameters,
+      contentType.toString(),
+    );
+  }
+
+  static bool _isValidMimeType(ContentType type) {
+    // Do some validation that the ContentType class doesn't do.
+    const String validName = r'''[-\w!#$%&'*+.^`|~]+''';
+    // Multipart and message types are not supported.
+    const String primaryType = '(?<type>application|audio|example|font|image|model|text|video|x-(?:$validName))';
+    if (!RegExp(primaryType).hasMatch(type.primaryType)) {
+      return false;
+    }
+    if (!RegExp(validName).hasMatch(type.subType)) {
+      return false;
+    }
+    return true;
+  }
 }
