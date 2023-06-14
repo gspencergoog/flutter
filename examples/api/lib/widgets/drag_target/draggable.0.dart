@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:html';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -49,7 +48,7 @@ class _DraggableExampleState extends State<DraggableExample> {
               ExternalData(
                 values: <ExternalDataItem<Object>>{
                   UrlListExternalData(
-                    uris: <Uri>[
+                    urls: <Uri>[
                       Uri.parse('http://google.com'),
                     ],
                   ),
@@ -190,7 +189,24 @@ class DragSource extends StatefulWidget {
     this.allowedButtonsFilter,
   });
 
-  /// Supplies a single plain text, UTF-8 encoded, item for dragging to another
+  /// Supplies a single item for dragging to another application.
+  DragSource.single({
+    super.key,
+    required this.child,
+    required this.feedback,
+    required ExternalDataItem<Object> data,
+    this.childWhenDragging,
+    this.affinity,
+    this.onDragStarted,
+    this.onDragUpdate,
+    this.onDragCanceled,
+    this.onDragEnd,
+    this.onDragCompleted,
+    this.hitTestBehavior = HitTestBehavior.deferToChild,
+    this.allowedButtonsFilter,
+  }) : onProvideData = _provideSingle(data);
+
+  /// Supplies a single plain text, UTF-8 encoded item for dragging to another
   /// application.
   DragSource.plainText({
     super.key,
@@ -208,14 +224,20 @@ class DragSource extends StatefulWidget {
     this.allowedButtonsFilter,
   }) : onProvideData = _provideText(text);
 
-  static DragSourceDataProvider _provideText(String text) {
-    return () => <ExternalData>[
+  static DragSourceDataProvider _provideSingle(ExternalDataItem<Object> data) {
+    return () {
+      return <ExternalData>[
           ExternalData(
             values: <ExternalDataItem<Object>>[
-              ExternalDataItem<String>(type: ContentType.text, data: text),
+              data,
             ],
           ),
         ];
+    };
+  }
+
+  static DragSourceDataProvider _provideText(String text) {
+    return _provideSingle(PlainTextExternalData(text: text));
   }
 
   /// The data that will be dropped by this draggable, in selection order.
@@ -466,7 +488,18 @@ typedef DragDestinationAccept = void Function(Iterable<ExternalData> data);
 /// Signature for determining information about the acceptance by a [DragTarget].
 ///
 /// Used by [DragTarget.onAcceptWithDetails].
-typedef DragDestinationAcceptWithDetails = void Function(Iterable<ExternalData> data, DragDestinationDetails dragDetails);
+typedef DragDestinationAcceptWithDetails = void Function(
+    Iterable<ExternalData> data, DragDestinationDetails dragDetails);
+
+/// Signature for when a [DragSource] leaves a [DragDestination].
+///
+/// Used by [DragDestination.onLeave].
+typedef DragDestinationLeave = void Function(Iterable<ExternalData>? data);
+
+/// Signature for when a [DragSource] moves within a [DragDestination].
+///
+/// Used by [DragDestination.onMove].
+typedef DragDestinationMove = void Function(Iterable<ExternalData>? data, DragDestinationDetails details);
 
 /// A widget that receives data when data is dropped on an application by the
 /// operating system.
@@ -503,6 +536,8 @@ class DragDestination extends StatefulWidget {
   ///
   /// The builder can build different widgets depending on what is being dragged
   /// into this drag target.
+  ///
+  /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
@@ -515,18 +550,18 @@ class DragDestination extends StatefulWidget {
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
-  /// Equivalent to [onAccept], but with information, including the data, in a
-  /// [DragTargetDetails].
+  /// Equivalent to [onAccept], but in addition to the data, has a
+  /// [DragDestinationDetails] with more information about the drop.
   final DragDestinationAcceptWithDetails? onAcceptWithDetails;
 
-  /// Called when a given piece of data being dragged over this target leaves
-  /// the target.
-  final DragTargetLeave<List<ExternalData>>? onLeave;
+  /// Called when the given data that is being dragged over this destination leaves
+  /// the destination.
+  final DragDestinationLeave? onLeave;
 
-  /// Called when a [DragSource] moves within this [DragTarget].
+  /// Called when a [DragSource] moves within this [DragDestination].
   ///
   /// This includes entering and leaving the target.
-  final DragTargetMove<List<ExternalData>>? onMove;
+  final DragDestinationMove? onMove;
 
   /// How to behave during a hit test.
   ///
@@ -579,9 +614,9 @@ class _DragDestinationState extends State<DragDestination> {
       return;
     }
     widget.onMove?.call(
-      DragTargetDetails<List<ExternalData>>(
-        data: avatar.data as List<ExternalData>,
-        offset: avatar._lastOffset!,
+      avatar.data,
+      DragDestinationDetails(
+        avatar._lastOffset!,
       ),
     );
   }
@@ -658,7 +693,7 @@ class _DragSourceAvatar extends Drag {
     final HitTestResult result = HitTestResult();
     WidgetsBinding.instance.hitTestInView(result, globalPosition, View.of(overlayState.context).viewId);
 
-    final List<_DragDestinationState> targets = _getDragTargets(result.path).toList();
+    final Iterable<_DragDestinationState> targets = _getDragTargets(result.path);
 
     bool listsMatch = false;
     if (targets.length >= _enteredTargets.length && _enteredTargets.isNotEmpty) {
@@ -758,29 +793,31 @@ abstract interface class ExternalDataItemInterface<T extends Object> {
   const ExternalDataItemInterface();
 
   ExternalContentType get type;
-  T get data;
+  Future<T> getData();
 }
 
-base class ExternalDataItem<T extends Object> implements ExternalDataItemInterface<T> {
-  const ExternalDataItem({required this.type, required this.data})
+abstract base class ExternalDataItem<T extends Object> implements ExternalDataItemInterface<T> {
+  const ExternalDataItem({required T data})
       : assert(T is String || T is ByteData || T is Uri || T is List<String> || T is List<ByteData> || T is List<Uri>,
-            "Only specific payload types are allowed, and $T isn't one of them.");
+            "Only specific payload types are allowed, and $T isn't one of them."),
+        _data = data;
 
   @override
-  final ExternalContentType type;
-
-  @override
-  final T data;
+  Future<T> getData() => Future<T>.value(_data);
+  final T _data;
 }
 
 class ExternalData {
   ExternalData({required this.values})
       : assert(values.isNotEmpty),
-        assert(values.map<ExternalContentType>((ExternalDataItemInterface<Object> item) => item.type).toSet().length == values.length,
+        assert(
+            values.map<ExternalContentType>((ExternalDataItemInterface<Object> item) => item.type).toSet().length ==
+                values.length,
             'Supplied $ExternalDataItem values must all have unique content types.'),
         byType = Map<ExternalContentType, ExternalDataItemInterface<Object>>.fromEntries(
           values.map<MapEntry<ExternalContentType, ExternalDataItemInterface<Object>>>(
-            (ExternalDataItemInterface<Object> item) => MapEntry<ExternalContentType, ExternalDataItemInterface<Object>>(item.type, item),
+            (ExternalDataItemInterface<Object> item) =>
+                MapEntry<ExternalContentType, ExternalDataItemInterface<Object>>(item.type, item),
           ),
         );
 
@@ -789,28 +826,63 @@ class ExternalData {
 }
 
 final class PlainTextExternalData extends ExternalDataItem<String> {
-  const PlainTextExternalData({required String text}) : super(type: ExternalContentType.plainText, data: text);
-}
+  const PlainTextExternalData({required String text}) : super(data: text);
 
-final class HtmlExternalData extends ExternalDataItem<String> {
-  const HtmlExternalData({required String html}) : super(type: ExternalContentType.html, data: html);
+  static const ExternalContentType dataType = ExternalContentType.plainText;
+
+  @override
+  ExternalContentType get type => dataType;
 }
 
 final class PngExternalData extends ExternalDataItem<ByteData> {
-  PngExternalData({required ByteData pngData}) : super(type: ExternalContentType.fromComponents('image', 'png'), data: pngData);
-}
+  const PngExternalData({required ByteData pngData}) : super(data: pngData);
 
-final class JpegExternalData extends ExternalDataItem<ByteData> {
-  JpegExternalData({required ByteData jpegData}) : super(type: ExternalContentType.fromComponents('image', 'jpeg'), data: jpegData);
+  static final ExternalContentType dataType = ExternalContentType.fromComponents('image', 'png');
+
+  @override
+  ExternalContentType get type => dataType;
 }
 
 final class BinaryExternalData extends ExternalDataItem<ByteData> {
-  const BinaryExternalData({required ByteData binaryData}) : super(type: ExternalContentType.binary, data: binaryData);
+  const BinaryExternalData({required ByteData binaryData}) : super(data: binaryData);
+
+  static const ExternalContentType dataType = ExternalContentType.binary;
+
+  @override
+  ExternalContentType get type => dataType;
 }
 
 final class UrlListExternalData extends ExternalDataItem<List<Uri>> {
-  UrlListExternalData({required List<Uri> uris})
-      : super(type: ExternalContentType.fromComponents('text', 'uri-list', parameters: const <String, String?>{'charset': 'utf-8'}), data: uris);
+  const UrlListExternalData({required List<Uri> urls}) : super(data: urls);
+
+  static final ExternalContentType dataType = ExternalContentType.fromComponents(
+    'text',
+    'uri-list',
+    parameters: const <String, String?>{
+      'charset': 'utf-8',
+    },
+  );
+
+  @override
+  ExternalContentType get type => dataType;
+}
+
+final class HtmlExternalData extends ExternalDataItem<String> {
+  const HtmlExternalData({required String html}) : super(data: html);
+
+  static const ExternalContentType dataType = ExternalContentType.html;
+
+  @override
+  ExternalContentType get type => dataType;
+}
+
+final class JpegExternalData extends ExternalDataItem<ByteData> {
+  const JpegExternalData({required ByteData jpegData}) : super(data: jpegData);
+
+  static final ExternalContentType dataType = ExternalContentType.fromComponents('image', 'jpeg');
+
+  @override
+  ExternalContentType get type => dataType;
 }
 
 /// A MIME/IANA media type used as the type for [ExternalData] data types.
