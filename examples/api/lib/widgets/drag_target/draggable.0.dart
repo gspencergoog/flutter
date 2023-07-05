@@ -542,17 +542,17 @@ class DragDestination extends StatefulWidget {
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
-  /// Supplies a list of external data objects, each of which has its own MIME
-  /// type and data payload.
+  /// Supplies an iterable of external data objects, each of which has its own
+  /// MIME type and data payload.
   ///
   /// Equivalent to [onAcceptWithDetails], but only includes the data.
   final DragDestinationAccept? onAccept;
 
   /// Called when an acceptable piece of data was dropped over this drag target.
   ///
-  /// Equivalent to [onAccept], but in addition to the data, has a
-  /// [DragDestinationDetails] with more information about the drop.
-  final DragDestinationAcceptWithDetails? onAcceptWithDetails;
+  /// Equivalent to [onAccept], but with information, including the data, in an
+  /// [ExternalDragTargetDetails].
+  final ExternalDragTargetAcceptWithDetails? onAcceptWithDetails;
 
   /// Called when the given data that is being dragged over this destination leaves
   /// the destination.
