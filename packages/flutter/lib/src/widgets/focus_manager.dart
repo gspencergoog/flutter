@@ -712,6 +712,15 @@ class FocusNode with DiagnosticableTreeMixin, ChangeNotifier {
     return _ancestors!;
   }
 
+  /// Returns the root scope of the focus tree that this node is a part of.
+  FocusNode get rootScope {
+    final Iterable<FocusNode> foundAncestors = ancestors;
+    if (foundAncestors.isEmpty) {
+      return this;
+    }
+    return foundAncestors.last;
+  }
+
   /// Whether this node has input focus.
   ///
   /// A [FocusNode] has focus when it is an ancestor of a node that returns true
@@ -1403,6 +1412,18 @@ enum FocusHighlightStrategy {
   alwaysTraditional,
 }
 
+class _FocusTree {
+  /// The root [FocusScopeNode] in this focus tree.
+  ///
+  /// This field is rarely used directly. To find the nearest [FocusScopeNode]
+  /// for a given [FocusNode], call [FocusNode.nearestScope].
+  final FocusScopeNode rootScope = FocusScopeNode(debugLabel: 'Root Focus Scope');
+
+  /// The node in this focus tree that currently has the primary focus.
+  FocusNode? get primaryFocus => _primaryFocus;
+  FocusNode? _primaryFocus;
+}
+
 /// Manages the focus tree.
 ///
 /// The focus tree is a separate, sparser, tree from the widget tree that
@@ -1461,8 +1482,9 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   /// handlers registered to allow it to manage focus. To register those event
   /// handlers, callers must call [registerGlobalHandlers]. See the
   /// documentation in that method for caveats to watch out for.
-  FocusManager() {
+  FocusManager() : _currentFocusTree = _FocusTree() {
     rootScope._manager = this;
+    _focusTrees[_currentFocusTree.rootScope] = _currentFocusTree;
   }
 
   /// Registers global input event handlers that are needed to manage focus.
@@ -1546,11 +1568,13 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   ///
   /// This field is rarely used directly. To find the nearest [FocusScopeNode]
   /// for a given [FocusNode], call [FocusNode.nearestScope].
-  final FocusScopeNode rootScope = FocusScopeNode(debugLabel: 'Root Focus Scope');
+  FocusScopeNode get rootScope => _currentFocusTree.rootScope;
+
+  _FocusTree _currentFocusTree;
+  final Map<FocusScopeNode, _FocusTree> _focusTrees = <FocusScopeNode, _FocusTree>{};
 
   /// The node that currently has the primary focus.
-  FocusNode? get primaryFocus => _primaryFocus;
-  FocusNode? _primaryFocus;
+  FocusNode? get primaryFocus => _currentFocusTree.primaryFocus;
 
   // The set of nodes that need to notify their listeners of changes at the next
   // update.
@@ -1564,8 +1588,8 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     // The node has been removed from the tree, so it no longer needs to be
     // notified of changes.
     assert(_focusDebug(() => 'Node was detached: $node'));
-    if (_primaryFocus == node) {
-      _primaryFocus = null;
+    if (primaryFocus == node) {
+      _currentFocusTree._primaryFocus = null;
     }
     _dirtyNodes.remove(node);
   }
@@ -1577,7 +1601,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   }
 
   void _markNextFocus(FocusNode node) {
-    if (_primaryFocus == node) {
+    if (primaryFocus == node) {
       // The caller asked for the current focus to be the next focus, so just
       // pretend that didn't happen.
       _markedForFocus = null;
@@ -1596,7 +1620,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   // Request that an update be scheduled, optionally requesting focus for the
   // given newFocus node.
   void _markNeedsUpdate() {
-    assert(_focusDebug(() => 'Scheduling update, current focus is $_primaryFocus, next focus will be $_markedForFocus'));
+    assert(_focusDebug(() => 'Scheduling update, current focus is $primaryFocus, next focus will be $_markedForFocus'));
     if (_haveScheduledUpdate) {
       return;
     }
@@ -1606,22 +1630,33 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
 
   void _applyFocusChange() {
     _haveScheduledUpdate = false;
-    final FocusNode? previousFocus = _primaryFocus;
+    final FocusNode? previousFocus = primaryFocus;
+    final _FocusTree previousFocusTree = _currentFocusTree;
 
     for (final _Autofocus autofocus in _pendingAutofocuses) {
       autofocus.applyIfValid(this);
     }
     _pendingAutofocuses.clear();
 
-    if (_primaryFocus == null && _markedForFocus == null) {
+    if (primaryFocus == null && _markedForFocus == null) {
       // If we don't have any current focus, and nobody has asked to focus yet,
       // then revert to the root scope.
       _markedForFocus = rootScope;
     }
     assert(_focusDebug(() => 'Refreshing focus state. Next focus will be $_markedForFocus'));
+
+    // If the newly requested node is part of another focus tree, then switch
+    // the current focus tree for the new one.
+    final FocusNode? rootNode = _markedForFocus?.rootScope;
+    if (rootNode != null && rootNode != _currentFocusTree.rootScope) {
+      // The new node is in a different focus tree. Switch to the new tree
+      // before processing the focus change.
+      _currentFocusTree = _focusTrees[rootNode]!;
+    }
+
     // A node has requested to be the next focus, and isn't already the primary
     // focus.
-    if (_markedForFocus != null && _markedForFocus != _primaryFocus) {
+    if (_markedForFocus != null && (_markedForFocus != primaryFocus || previousFocusTree != _currentFocusTree)) {
       final Set<FocusNode> previousPath = previousFocus?.ancestors.toSet() ?? <FocusNode>{};
       final Set<FocusNode> nextPath = _markedForFocus!.ancestors.toSet();
       // Notify nodes that are newly focused.
@@ -1629,17 +1664,17 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
       // Notify nodes that are no longer focused
       _dirtyNodes.addAll(previousPath.difference(nextPath));
 
-      _primaryFocus = _markedForFocus;
+      _currentFocusTree._primaryFocus = _markedForFocus;
       _markedForFocus = null;
     }
     assert(_markedForFocus == null);
-    if (previousFocus != _primaryFocus) {
-      assert(_focusDebug(() => 'Updating focus from $previousFocus to $_primaryFocus'));
+    if (previousFocus != primaryFocus) {
+      assert(_focusDebug(() => 'Updating focus from $previousFocus to $primaryFocus'));
       if (previousFocus != null) {
         _dirtyNodes.add(previousFocus);
       }
-      if (_primaryFocus != null) {
-        _dirtyNodes.add(_primaryFocus!);
+      if (primaryFocus != null) {
+        _dirtyNodes.add(primaryFocus!);
       }
     }
     for (final FocusNode node in _dirtyNodes) {
@@ -1647,7 +1682,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     }
     assert(_focusDebug(() => 'Notified ${_dirtyNodes.length} dirty nodes:', () => _dirtyNodes));
     _dirtyNodes.clear();
-    if (previousFocus != _primaryFocus) {
+    if (previousFocus != primaryFocus) {
       notifyListeners();
     }
     assert(() {
