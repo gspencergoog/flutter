@@ -857,6 +857,54 @@ class _FocusInheritedScope extends InheritedNotifier<FocusNode> {
   })  : super(notifier: node);
 }
 
+/// Creates a new Focus tree starting at this point in the widget hierarchy.
+///
+/// [Focus] widgets below this point in the tree will all belong to this tree
+/// instead of the default tree.
+class FocusRoot extends StatefulWidget{
+  ///
+  const FocusRoot({super.key, required this.child, this.debugLabel});
+
+  ///
+  final String? debugLabel;
+
+  ///
+  final Widget child;
+
+  @override
+  State<FocusRoot> createState() => _FocusRootState();
+}
+
+class _FocusRootState extends State<FocusRoot> {
+  late FocusScopeNode focusRoot;
+
+  @override
+  void initState() {
+    super.initState();
+    focusRoot = FocusScopeNode(debugLabel: widget.debugLabel);
+    FocusManager.instance.addFocusRoot(focusRoot);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeFocusRoot(focusRoot);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget (FocusRoot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.debugLabel != oldWidget.debugLabel) {
+      focusRoot.debugLabel = widget.debugLabel;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusScope(node: focusRoot, child: widget.child);
+  }
+}
+
 /// A widget that controls whether or not the descendants of this widget are
 /// focusable.
 ///

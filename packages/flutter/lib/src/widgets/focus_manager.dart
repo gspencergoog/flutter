@@ -1413,11 +1413,10 @@ enum FocusHighlightStrategy {
 }
 
 class _FocusTree {
+  _FocusTree([FocusScopeNode? rootScope]) : rootScope = rootScope ?? FocusScopeNode(debugLabel: 'Root Focus Scope');
+
   /// The root [FocusScopeNode] in this focus tree.
-  ///
-  /// This field is rarely used directly. To find the nearest [FocusScopeNode]
-  /// for a given [FocusNode], call [FocusNode.nearestScope].
-  final FocusScopeNode rootScope = FocusScopeNode(debugLabel: 'Root Focus Scope');
+  final FocusScopeNode rootScope;
 
   /// The node in this focus tree that currently has the primary focus.
   FocusNode? get primaryFocus => _primaryFocus;
@@ -1483,6 +1482,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   /// handlers, callers must call [registerGlobalHandlers]. See the
   /// documentation in that method for caveats to watch out for.
   FocusManager() : _currentFocusTree = _FocusTree() {
+    _defaultFocusTree = _currentFocusTree;
     rootScope._manager = this;
     _focusTrees[_currentFocusTree.rootScope] = _currentFocusTree;
   }
@@ -1570,8 +1570,27 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   /// for a given [FocusNode], call [FocusNode.nearestScope].
   FocusScopeNode get rootScope => _currentFocusTree.rootScope;
 
+  late _FocusTree _defaultFocusTree;
   _FocusTree _currentFocusTree;
   final Map<FocusScopeNode, _FocusTree> _focusTrees = <FocusScopeNode, _FocusTree>{};
+
+  ///
+  void addFocusRoot(FocusScopeNode node) {
+    _focusTrees[node] = _FocusTree(node);
+  }
+
+  ///
+  void removeFocusRoot(FocusScopeNode root) {
+    assert(_focusTrees.containsKey(root));
+    if (_focusTrees[root] == _currentFocusTree || _markedForFocus?.rootScope == _currentFocusTree.rootScope) {
+      // TODO(gspencergoog): keep a history of focus trees, and pop the history
+      // instead of always reverting to the default focus tree.
+      _currentFocusTree = _defaultFocusTree;
+      _markedForFocus = primaryFocus;
+      _markNeedsUpdate();
+    }
+    _focusTrees.remove(root);
+  }
 
   /// The node that currently has the primary focus.
   FocusNode? get primaryFocus => _currentFocusTree.primaryFocus;
