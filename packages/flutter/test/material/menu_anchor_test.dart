@@ -258,10 +258,12 @@ void main() {
     );
 
     // menu bar(horizontal menu)
-    Finder menuMaterial = find.ancestor(
-      of: find.byType(TextButton),
-      matching: find.byType(Material),
-    ).first;
+    Finder menuMaterial = find
+        .ancestor(
+          of: find.byType(TextButton),
+          matching: find.byType(Material),
+        )
+        .first;
 
     Material material = tester.widget<Material>(menuMaterial);
     expect(opened, isEmpty);
@@ -271,10 +273,12 @@ void main() {
     expect(material.elevation, 3.0);
     expect(material.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4.0))));
 
-    Finder buttonMaterial = find.descendant(
-      of: find.byType(TextButton),
-      matching: find.byType(Material),
-    ).first;
+    Finder buttonMaterial = find
+        .descendant(
+          of: find.byType(TextButton),
+          matching: find.byType(Material),
+        )
+        .first;
     material = tester.widget<Material>(buttonMaterial);
     expect(material.color, Colors.transparent);
     expect(material.elevation, 0.0);
@@ -287,10 +291,12 @@ void main() {
     await tester.tap(find.text(TestMenu.mainMenu1.label));
     await tester.pump();
 
-    menuMaterial = find.ancestor(
-      of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
-      matching: find.byType(Material),
-    ).first;
+    menuMaterial = find
+        .ancestor(
+          of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
+          matching: find.byType(Material),
+        )
+        .first;
 
     material = tester.widget<Material>(menuMaterial);
     expect(opened.last, equals(TestMenu.mainMenu1));
@@ -300,10 +306,12 @@ void main() {
     expect(material.elevation, 3.0);
     expect(material.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4.0))));
 
-    buttonMaterial = find.descendant(
-      of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
-      matching: find.byType(Material),
-    ).first;
+    buttonMaterial = find
+        .descendant(
+          of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
+          matching: find.byType(Material),
+        )
+        .first;
     material = tester.widget<Material>(buttonMaterial);
     expect(material.color, Colors.transparent);
     expect(material.elevation, 0.0);
@@ -340,10 +348,12 @@ void main() {
     );
 
     // menu bar(horizontal menu)
-    Finder menuMaterial = find.ancestor(
-      of: find.widgetWithText(TextButton, TestMenu.mainMenu5.label),
-      matching: find.byType(Material),
-    ).first;
+    Finder menuMaterial = find
+        .ancestor(
+          of: find.widgetWithText(TextButton, TestMenu.mainMenu5.label),
+          matching: find.byType(Material),
+        )
+        .first;
 
     Material material = tester.widget<Material>(menuMaterial);
     expect(opened, isEmpty);
@@ -353,10 +363,12 @@ void main() {
     expect(material.elevation, 3.0);
     expect(material.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4.0))));
 
-    Finder buttonMaterial = find.descendant(
-      of: find.widgetWithText(TextButton, TestMenu.mainMenu5.label),
-      matching: find.byType(Material),
-    ).first;
+    Finder buttonMaterial = find
+        .descendant(
+          of: find.widgetWithText(TextButton, TestMenu.mainMenu5.label),
+          matching: find.byType(Material),
+        )
+        .first;
     material = tester.widget<Material>(buttonMaterial);
     expect(material.color, Colors.transparent);
     expect(material.elevation, 0.0);
@@ -367,10 +379,12 @@ void main() {
     await tester.tap(find.text(TestMenu.mainMenu2.label));
     await tester.pump();
 
-    menuMaterial = find.ancestor(
-      of: find.widgetWithText(TextButton, TestMenu.subMenu20.label),
-      matching: find.byType(Material),
-    ).first;
+    menuMaterial = find
+        .ancestor(
+          of: find.widgetWithText(TextButton, TestMenu.subMenu20.label),
+          matching: find.byType(Material),
+        )
+        .first;
 
     material = tester.widget<Material>(menuMaterial);
     expect(material.color, themeData.colorScheme.surface);
@@ -379,10 +393,12 @@ void main() {
     expect(material.elevation, 3.0);
     expect(material.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4.0))));
 
-    buttonMaterial = find.descendant(
-      of: find.widgetWithText(TextButton, TestMenu.subMenu20.label),
-      matching: find.byType(Material),
-    ).first;
+    buttonMaterial = find
+        .descendant(
+          of: find.widgetWithText(TextButton, TestMenu.subMenu20.label),
+          matching: find.byType(Material),
+        )
+        .first;
     material = tester.widget<Material>(buttonMaterial);
     expect(material.color, Colors.transparent);
     expect(material.elevation, 0.0);
@@ -1545,8 +1561,12 @@ void main() {
                       child: const Text('Show menu'),
                     );
                   },
-                  onOpen: () { rootOpened = true; },
-                  onClose: () { rootOpened = false; },
+                  onOpen: () {
+                    rootOpened = true;
+                  },
+                  onClose: () {
+                    rootOpened = false;
+                  },
                   menuChildren: createTestMenus(
                     onPressed: onPressed,
                     onOpen: onOpen,
@@ -3190,8 +3210,7 @@ void main() {
             children: <TestSemantics>[
               TestSemantics(
                 rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
-                flags: <SemanticsFlag>[SemanticsFlag.hasEnabledState,
-                  SemanticsFlag.hasExpandedState],
+                flags: <SemanticsFlag>[SemanticsFlag.hasEnabledState, SemanticsFlag.hasExpandedState],
                 label: 'ABC',
                 textDirection: TextDirection.ltr,
               ),
@@ -3212,10 +3231,10 @@ void main() {
           home: Center(
             child: SubmenuButton(
               onHover: (bool value) {},
-              style: SubmenuButton.styleFrom(fixedSize: const Size(88.0, 36.0)),
+              //style: SubmenuButton.styleFrom(fixedSize: const Size(88.0, 36.0)),
               menuChildren: <Widget>[
                 MenuItemButton(
-                  style: SubmenuButton.styleFrom(fixedSize: const Size(120.0, 36.0)),
+                  //style: MenuItemButton.styleFrom(fixedSize: const Size(120.0, 36.0)),
                   child: const Text('Item 0'),
                   onPressed: () {},
                 ),
@@ -3249,35 +3268,45 @@ void main() {
                         children: <TestSemantics> [
                           TestSemantics(
                             id: 4,
-                            flags: <SemanticsFlag>[SemanticsFlag.hasExpandedState, SemanticsFlag.isExpanded, SemanticsFlag.isFocused, SemanticsFlag.hasEnabledState, SemanticsFlag.isEnabled,
-                              SemanticsFlag.isFocusable],
+                            flags: <SemanticsFlag>[
+                              SemanticsFlag.isFocused,
+                              SemanticsFlag.hasEnabledState,
+                              SemanticsFlag.isEnabled,
+                              SemanticsFlag.isFocusable,
+                              SemanticsFlag.hasExpandedState,
+                              SemanticsFlag.isExpanded,
+                            ],
                             actions: <SemanticsAction>[SemanticsAction.tap],
                             label: 'ABC',
                             rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
                           )
-                        ]
+                        ],
                       )
-                    ]
+                    ],
                   ),
                   TestSemantics(
-                      id: 6,
-                      rect: const Rect.fromLTRB(0.0, 0.0, 120.0, 64.0),
-                      children: <TestSemantics> [
-                        TestSemantics(
-                            id: 7,
+                    id: 6,
+                    rect: const Rect.fromLTRB(0.0, 0.0, 120.0, 64.0),
+                    children: <TestSemantics> [
+                      TestSemantics(
+                        id: 7,
+                        rect: const Rect.fromLTRB(0.0, 0.0, 120.0, 48.0),
+                        flags: <SemanticsFlag> [SemanticsFlag.hasImplicitScrolling],
+                        children: <TestSemantics> [
+                          TestSemantics(
+                            id: 8,
+                            label: 'Item 0',
                             rect: const Rect.fromLTRB(0.0, 0.0, 120.0, 48.0),
-                            flags: <SemanticsFlag> [SemanticsFlag.hasImplicitScrolling],
-                            children: <TestSemantics> [
-                              TestSemantics(
-                                  id: 8,
-                                  label: 'Item 0',
-                                  rect: const Rect.fromLTRB(0.0, 0.0, 120.0, 48.0),
-                                  flags: <SemanticsFlag>[SemanticsFlag.hasEnabledState, SemanticsFlag.isEnabled, SemanticsFlag.isFocusable],
-                                  actions: <SemanticsAction>[SemanticsAction.tap],
-                              ),
+                            flags: <SemanticsFlag>[
+                              SemanticsFlag.hasEnabledState,
+                              SemanticsFlag.isEnabled,
+                              SemanticsFlag.isFocusable,
                             ],
-                        ),
-                      ],
+                            actions: <SemanticsAction> [SemanticsAction.tap],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -3298,27 +3327,32 @@ void main() {
               TestSemantics(
                 id: 1,
                 rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
-                children: <TestSemantics> [
+                children: <TestSemantics>[
                   TestSemantics(
-                      id: 2,
-                      rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
-                      children: <TestSemantics> [
-                        TestSemantics(
-                            id: 3,
-                            rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
-                            flags: <SemanticsFlag> [SemanticsFlag.scopesRoute],
-                            children: <TestSemantics> [
-                              TestSemantics(
-                                id: 4,
-                                flags: <SemanticsFlag>[SemanticsFlag.hasExpandedState, SemanticsFlag.isFocused, SemanticsFlag.hasEnabledState, SemanticsFlag.isEnabled,
-                                  SemanticsFlag.isFocusable],
-                                actions: <SemanticsAction>[SemanticsAction.tap],
-                                label: 'ABC',
-                                rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
-                              )
-                            ]
-                        )
-                      ]
+                    id: 2,
+                    rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
+                    children: <TestSemantics>[
+                      TestSemantics(
+                        id: 3,
+                        rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
+                        flags: <SemanticsFlag>[SemanticsFlag.scopesRoute],
+                        children: <TestSemantics>[
+                          TestSemantics(
+                            id: 4,
+                            flags: <SemanticsFlag>[
+                              SemanticsFlag.hasExpandedState,
+                              SemanticsFlag.isFocused,
+                              SemanticsFlag.hasEnabledState,
+                              SemanticsFlag.isEnabled,
+                              SemanticsFlag.isFocusable,
+                            ],
+                            actions: <SemanticsAction>[SemanticsAction.tap],
+                            label: 'ABC',
+                            rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
+                          )
+                        ],
+                      )
+                    ],
                   ),
                 ],
               ),
@@ -3343,7 +3377,7 @@ void main() {
     final ThemeData themeData = ThemeData(
       textTheme: const TextTheme(
         labelLarge: menuTextStyle,
-      )
+      ),
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -3362,10 +3396,12 @@ void main() {
     );
 
     // Test menu button text style uses the TextTheme.labelLarge.
-    Finder buttonMaterial = find.descendant(
-      of: find.byType(TextButton),
-      matching: find.byType(Material),
-    ).first;
+    Finder buttonMaterial = find
+        .descendant(
+          of: find.byType(TextButton),
+          matching: find.byType(Material),
+        )
+        .first;
     Material material = tester.widget<Material>(buttonMaterial);
     expect(material.textStyle?.fontSize, menuTextStyle.fontSize);
     expect(material.textStyle?.fontStyle, menuTextStyle.fontStyle);
@@ -3377,10 +3413,12 @@ void main() {
     await tester.pump();
 
     // Test menu item text style uses the TextTheme.labelLarge.
-    buttonMaterial = find.descendant(
-      of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
-      matching: find.byType(Material),
-    ).first;
+    buttonMaterial = find
+        .descendant(
+          of: find.widgetWithText(TextButton, TestMenu.subMenu10.label),
+          matching: find.byType(Material),
+        )
+        .first;
     material = tester.widget<Material>(buttonMaterial);
     expect(material.textStyle?.fontSize, menuTextStyle.fontSize);
     expect(material.textStyle?.fontStyle, menuTextStyle.fontStyle);
