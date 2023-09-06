@@ -496,9 +496,11 @@ class _MenuAnchorState extends State<MenuAnchor> {
   void _childChangedOpenState() {
     if (mounted) {
       _parent?._childChangedOpenState();
-      setState(() {
-        // Mark dirty, but only if mounted.
-      });
+      if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+        setState(() {
+          // Mark dirty, but only if mounted and not already in a build.
+        });
+      }
     }
   }
 
@@ -573,9 +575,9 @@ class _MenuAnchorState extends State<MenuAnchor> {
       // currently disposing.
       _parent?._childChangedOpenState();
       widget.onClose?.call();
-      if (mounted) {
+      if (mounted && SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
         setState(() {
-          // Mark dirty, but only if mounted.
+          // Mark dirty, but only if mounted and not already in a build.
         });
       }
     }
@@ -1929,7 +1931,6 @@ class _SubmenuButtonState extends State<SubmenuButton> {
             controller._anchor!._focusButton();
           }
         }
-        debugPrint('Rebuilding semantics with isExpanded: ${controller.isOpen}');
         child = MergeSemantics(
           child: Semantics(
             expanded: controller.isOpen,
@@ -2391,10 +2392,6 @@ class _MenuNextFocusAction extends NextFocusAction {
     if (anchor == null || !anchor._root._isOpen) {
       return super.invoke(intent);
     }
-    debugPrint('Primary focus is ${FocusManager.instance.primaryFocus}');
-    debugPrint('Primary focus context is $context');
-    debugPrint('Current anchor is $anchor');
-
     return _moveToNextFocusable(anchor);
   }
 
