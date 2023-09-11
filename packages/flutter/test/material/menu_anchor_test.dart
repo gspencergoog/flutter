@@ -507,7 +507,8 @@ void main() {
     );
   }, variant: TargetPlatformVariant.desktop());
 
-  testWidgetsWithLeakTracking('focus is returned to previous focus before invoking onPressed', (WidgetTester tester) async {
+  testWidgetsWithLeakTracking('focus is returned to previous focus before invoking onPressed',
+      (WidgetTester tester) async {
     final FocusNode buttonFocus = FocusNode(debugLabel: 'Button Focus');
     addTearDown(buttonFocus.dispose);
     FocusNode? focusInOnPressed;
@@ -935,7 +936,8 @@ void main() {
       expect(tester.getRect(find.byType(MenuBar)), equals(const Rect.fromLTRB(22.0, 22.0, 778.0, 70.0)));
     });
 
-    testWidgetsWithLeakTracking('works with Padding around menu and overlay with RTL direction', (WidgetTester tester) async {
+    testWidgetsWithLeakTracking('works with Padding around menu and overlay with RTL direction',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         Padding(
           padding: const EdgeInsets.all(10.0),
@@ -2553,7 +2555,8 @@ void main() {
       );
     });
 
-    testWidgetsWithLeakTracking('constrained menus show up in the right place with offset in LTR', (WidgetTester tester) async {
+    testWidgetsWithLeakTracking('constrained menus show up in the right place with offset in LTR',
+        (WidgetTester tester) async {
       await changeSurfaceSize(tester, const Size(800, 600));
       await tester.pumpWidget(
         MaterialApp(
@@ -2630,7 +2633,8 @@ void main() {
       );
     });
 
-    testWidgetsWithLeakTracking('constrained menus show up in the right place with offset in RTL', (WidgetTester tester) async {
+    testWidgetsWithLeakTracking('constrained menus show up in the right place with offset in RTL',
+        (WidgetTester tester) async {
       await changeSurfaceSize(tester, const Size(800, 600));
       await tester.pumpWidget(
         MaterialApp(
@@ -2707,7 +2711,8 @@ void main() {
       );
     });
 
-    testWidgetsWithLeakTracking('vertically constrained menus are positioned above the anchor by default', (WidgetTester tester) async {
+    testWidgetsWithLeakTracking('vertically constrained menus are positioned above the anchor by default',
+        (WidgetTester tester) async {
       await changeSurfaceSize(tester, const Size(800, 600));
       await tester.pumpWidget(
         MaterialApp(
@@ -3231,10 +3236,10 @@ void main() {
           home: Center(
             child: SubmenuButton(
               onHover: (bool value) {},
-              //style: SubmenuButton.styleFrom(fixedSize: const Size(88.0, 36.0)),
+              style: SubmenuButton.styleFrom(fixedSize: const Size(88.0, 36.0)),
               menuChildren: <Widget>[
                 MenuItemButton(
-                  //style: MenuItemButton.styleFrom(fixedSize: const Size(120.0, 36.0)),
+                  style: MenuItemButton.styleFrom(fixedSize: const Size(120.0, 36.0)),
                   child: const Text('Item 0'),
                   onPressed: () {},
                 ),
@@ -3248,6 +3253,8 @@ void main() {
       // Test expanded state.
       await tester.tap(find.text('ABC'));
       await tester.pumpAndSettle();
+      debugPrint(
+          'Semantics after tap: ${semantics.generateTestSemanticsExpressionForCurrentSemanticsTree(DebugSemanticsDumpOrder.traversalOrder)}');
       expect(
         semantics,
         hasSemantics(
@@ -3255,6 +3262,7 @@ void main() {
             children: <TestSemantics>[
               TestSemantics(
                 id: 1,
+                textDirection: TextDirection.ltr,
                 rect: const Rect.fromLTRB(0.0, 0.0, 800.0, 600.0),
                 children: <TestSemantics> [
                   TestSemantics(
@@ -3268,6 +3276,7 @@ void main() {
                         children: <TestSemantics> [
                           TestSemantics(
                             id: 4,
+                            rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
                             flags: <SemanticsFlag>[
                               SemanticsFlag.isFocused,
                               SemanticsFlag.hasEnabledState,
@@ -3276,12 +3285,12 @@ void main() {
                               SemanticsFlag.hasExpandedState,
                               SemanticsFlag.isExpanded,
                             ],
-                            actions: <SemanticsAction>[SemanticsAction.tap],
                             label: 'ABC',
-                            rect: const Rect.fromLTRB(0.0, 0.0, 88.0, 48.0),
-                          )
+                            actions: <SemanticsAction> [SemanticsAction.tap],
+                            textDirection: TextDirection.ltr,
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                   TestSemantics(
