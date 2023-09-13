@@ -3253,8 +3253,6 @@ void main() {
       // Test expanded state.
       await tester.tap(find.text('ABC'));
       await tester.pumpAndSettle();
-      debugPrint(
-          'Semantics after tap: ${semantics.generateTestSemanticsExpressionForCurrentSemanticsTree(DebugSemanticsDumpOrder.traversalOrder)}');
       expect(
         semantics,
         hasSemantics(
