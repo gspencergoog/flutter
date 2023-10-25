@@ -125,6 +125,7 @@ abstract class KeyEvent with Diagnosticable {
     this.character,
     required this.timeStamp,
     this.synthesized = false,
+    this.deviceType = ui.KeyEventDeviceType.keyboard,
   });
 
   /// Returns an object representing the physical location of this key.
@@ -225,6 +226,9 @@ abstract class KeyEvent with Diagnosticable {
   /// Defaults to false.
   final bool synthesized;
 
+  /// The source device type for the key event.
+  final ui.KeyEventDeviceType deviceType;
+
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
@@ -253,6 +257,7 @@ class KeyDownEvent extends KeyEvent {
     super.character,
     required super.timeStamp,
     super.synthesized,
+    super.deviceType,
   });
 }
 
@@ -272,6 +277,7 @@ class KeyUpEvent extends KeyEvent {
     required super.logicalKey,
     required super.timeStamp,
     super.synthesized,
+    super.deviceType,
   });
 }
 
@@ -295,6 +301,7 @@ class KeyRepeatEvent extends KeyEvent {
     required super.logicalKey,
     super.character,
     required super.timeStamp,
+    super.deviceType,
   });
 }
 
@@ -1173,6 +1180,7 @@ class KeyEventManager {
           timeStamp: timeStamp,
           character: keyData.character,
           synthesized: keyData.synthesized,
+          deviceType: keyData.deviceType,
         );
       case ui.KeyEventType.up:
         assert(keyData.character == null);
@@ -1181,6 +1189,7 @@ class KeyEventManager {
           logicalKey: logicalKey,
           timeStamp: timeStamp,
           synthesized: keyData.synthesized,
+          deviceType: keyData.deviceType,
         );
       case ui.KeyEventType.repeat:
         return KeyRepeatEvent(
@@ -1188,6 +1197,7 @@ class KeyEventManager {
           logicalKey: logicalKey,
           timeStamp: timeStamp,
           character: keyData.character,
+          deviceType: keyData.deviceType,
         );
     }
   }

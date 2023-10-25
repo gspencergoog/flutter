@@ -271,6 +271,7 @@ void main() {
     expect(ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
       timeStamp: Duration.zero,
       type: ui.KeyEventType.down,
+      deviceType: ui.KeyEventDeviceType.keyboard,
       logical: LogicalKeyboardKey.keyA.keyId,
       physical: PhysicalKeyboardKey.keyA.usbHidUsage,
       character: null,
@@ -312,6 +313,7 @@ void main() {
       physical: PhysicalKeyboardKey.capsLock.usbHidUsage,
       character: null,
       synthesized: false,
+      deviceType: ui.KeyEventDeviceType.keyboard,
     )), false);
     expect(ServicesBinding.instance.keyEventManager.handleKeyData(ui.KeyData(
       timeStamp: Duration.zero,
@@ -320,6 +322,7 @@ void main() {
       physical: PhysicalKeyboardKey.capsLock.usbHidUsage,
       character: null,
       synthesized: true,
+      deviceType: ui.KeyEventDeviceType.keyboard,
     )), false);
     expect(await ServicesBinding.instance.keyEventManager.handleRawKeyMessage(<String, dynamic>{
       'type': 'keydown',
@@ -355,6 +358,7 @@ void main() {
       physical: 0,
       character: 'a',
       synthesized: false,
+      deviceType: ui.KeyEventDeviceType.keyboard,
     ));
     tester.binding.keyEventManager.handleRawKeyMessage(<String, dynamic>{
       'type': 'keydown',
@@ -377,6 +381,7 @@ void main() {
       physical: 0x70034,
       character: '"',
       synthesized: false,
+      deviceType: ui.KeyEventDeviceType.keyboard,
     ));
     tester.binding.keyEventManager.handleRawKeyMessage(<String, dynamic>{
       'type': 'keydown',

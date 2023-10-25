@@ -371,6 +371,7 @@ void main() {
         physical: 0,
         character: null,
         synthesized: false,
+        deviceType: ui.KeyEventDeviceType.keyboard,
       ));
       await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
         SystemChannels.keyEvent.name,

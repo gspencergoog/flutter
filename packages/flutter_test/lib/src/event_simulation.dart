@@ -748,6 +748,7 @@ abstract final class KeyEventSimulator {
             timeStamp: Duration.zero,
             character: character ?? _keyLabel(key),
             synthesized: false,
+            deviceType: ui.KeyEventDeviceType.keyboard,
           ),
         );
         return (await simulateByRawEvent()) || resultByKeyEvent;
@@ -792,6 +793,7 @@ abstract final class KeyEventSimulator {
             timeStamp: Duration.zero,
             character: null,
             synthesized: false,
+            deviceType: ui.KeyEventDeviceType.keyboard,
           ),
         );
         return (await simulateByRawEvent()) || resultByKeyEvent;
@@ -837,6 +839,7 @@ abstract final class KeyEventSimulator {
             timeStamp: Duration.zero,
             character: character ?? _keyLabel(key),
             synthesized: false,
+            deviceType: ui.KeyEventDeviceType.keyboard,
           ),
         );
         return (await simulateByRawEvent()) || resultByKeyEvent;
