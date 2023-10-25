@@ -72,6 +72,7 @@ class _HardwareKeyboardDemoState extends State<HardwareKeyboardDemo> {
           ];
           dataText.add(Text('logical: ${_event?.logicalKey}'));
           dataText.add(Text('physical: ${_event?.physicalKey}'));
+          dataText.add(Text('device type: ${_event?.deviceType.label}'));
           if (_event?.character != null) {
             dataText.add(Text('character: ${_event?.character}'));
           }
