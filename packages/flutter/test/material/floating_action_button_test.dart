@@ -425,15 +425,14 @@ void main() {
       return tester.widget<FloatingActionButton>(fabFinder);
     }
 
-    final Finder materialButtonFinder = find.byType(RawMaterialButton);
-
-    RawMaterialButton getRawMaterialButtonWidget() {
-      return tester.widget<RawMaterialButton>(materialButtonFinder);
-    }
+    final Material material = tester.widget(find.descendant(
+      of: find.byType(ElevatedButton),
+      matching: find.byType(Material),
+    ));
 
     expect(getFabWidget().isExtended, false);
     expect(
-      getRawMaterialButtonWidget().shape,
+      material.shape,
       const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16.0)))
     );
 
@@ -454,7 +453,7 @@ void main() {
 
     expect(getFabWidget().isExtended, true);
     expect(
-      getRawMaterialButtonWidget().shape,
+      material.shape,
       const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16.0)))
     );
     expect(find.text('label'), findsOneWidget);
@@ -488,12 +487,6 @@ void main() {
       return tester.widget<FloatingActionButton>(fabFinder);
     }
 
-    final Finder materialButtonFinder = find.byType(RawMaterialButton);
-
-    RawMaterialButton getRawMaterialButtonWidget() {
-      return tester.widget<RawMaterialButton>(materialButtonFinder);
-    }
-
     await tester.pumpWidget(
       MaterialApp(
         theme: material3Theme,
@@ -509,9 +502,14 @@ void main() {
       ),
     );
 
+    final Material material = tester.widget(find.descendant(
+      of: find.byType(ElevatedButton),
+      matching: find.byType(Material),
+    ));
+
     expect(getFabWidget().isExtended, true);
     expect(
-        getRawMaterialButtonWidget().shape,
+        material.shape,
         const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16.0)))
     );
     expect(find.text('label'), findsOneWidget);
@@ -1066,14 +1064,70 @@ void main() {
       ),
     );
 
-    final RawMaterialButton rawMaterialButton = tester.widget<RawMaterialButton>(
-      find.descendant(
-        of: find.byType(FloatingActionButton),
-        matching: find.byType(RawMaterialButton),
+    final Material material = tester.widget(find.descendant(
+      of: find.byType(ElevatedButton),
+      matching: find.byType(Material),
+    ));
+
+    // The color comes from the default color scheme's onSecondary value.
+    expect(material.textStyle, style.copyWith(color: const Color(0xffffffff)));
+  });
+
+  testWidgets(
+    'FloatingActionButton defaults to rectangular shape when Border is provided to the shape parameter',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            floatingActionButton: FloatingActionButton(
+              shape: const Border(),
+              child: const Icon(Icons.add),
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final Material material = tester.widget(find.descendant(
+        of: find.byType(ElevatedButton),
+        matching: find.byType(Material),
+      ));
+
+      expect(material.shape, const RoundedRectangleBorder());
+  });
+
+  testWidgets('FloatingActionButton can customize with Border', (WidgetTester tester) async {
+    const BorderSide borderSide = BorderSide(width: 2.0);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          floatingActionButton: FloatingActionButton(
+            shape: const Border(
+              left: borderSide,
+              top: borderSide,
+              right: borderSide,
+              bottom: borderSide,
+            ),
+            child: const Icon(Icons.add),
+            onPressed: () {},
+          ),
+        ),
       ),
     );
-    // The color comes from the default color scheme's onSecondary value.
-    expect(rawMaterialButton.textStyle, style.copyWith(color: const Color(0xffffffff)));
+
+    final DecoratedBox decoratedBox = tester.widget(find.byType(DecoratedBox));
+
+    final ShapeDecoration decoration = decoratedBox.decoration as ShapeDecoration;
+    expect(
+      decoration.shape,
+      const Border(
+        left: borderSide,
+        top: borderSide,
+        right: borderSide,
+        bottom: borderSide,
+      ),
+    );
   });
 
   group('Material 2', () {
@@ -1229,14 +1283,13 @@ void main() {
         return tester.widget<FloatingActionButton>(fabFinder);
       }
 
-      final Finder materialButtonFinder = find.byType(RawMaterialButton);
-
-      RawMaterialButton getRawMaterialButtonWidget() {
-        return tester.widget<RawMaterialButton>(materialButtonFinder);
-      }
+      final Material material = tester.widget(find.descendant(
+        of: find.byType(ElevatedButton),
+        matching: find.byType(Material),
+      ));
 
       expect(getFabWidget().isExtended, false);
-      expect(getRawMaterialButtonWidget().shape, const CircleBorder());
+      expect(material.shape, const CircleBorder());
 
       await tester.pumpWidget(
         MaterialApp(
@@ -1255,7 +1308,7 @@ void main() {
       );
 
       expect(getFabWidget().isExtended, true);
-      expect(getRawMaterialButtonWidget().shape, const StadiumBorder());
+      expect(material.shape, const CircleBorder());
       expect(find.text('label'), findsOneWidget);
       expect(find.byType(Icon), findsOneWidget);
 
@@ -1287,12 +1340,6 @@ void main() {
         return tester.widget<FloatingActionButton>(fabFinder);
       }
 
-      final Finder materialButtonFinder = find.byType(RawMaterialButton);
-
-      RawMaterialButton getRawMaterialButtonWidget() {
-        return tester.widget<RawMaterialButton>(materialButtonFinder);
-      }
-
       await tester.pumpWidget(
         MaterialApp(
           theme: material2Theme,
@@ -1308,8 +1355,13 @@ void main() {
         ),
       );
 
+      final Material material = tester.widget(find.descendant(
+        of: find.byType(ElevatedButton),
+        matching: find.byType(Material),
+      ));
+
       expect(getFabWidget().isExtended, true);
-      expect(getRawMaterialButtonWidget().shape, const StadiumBorder());
+      expect(material.shape, const StadiumBorder());
       expect(find.text('label'), findsOneWidget);
       expect(find.byType(Icon), findsNothing);
 
@@ -1353,12 +1405,64 @@ void main() {
 
       await tester.press(find.byKey(key));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pump(const Duration(milliseconds: 300));
       await expectLater(
         find.byKey(key),
         matchesGoldenFile('floating_action_button_test_m2.clip.png'),
       );
     });
+  });
+
+  testWidgets('Floating Action Button golden test m3', (WidgetTester tester) async {
+    final GlobalKey key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: material3Theme,
+        home: Scaffold(
+          body: Center(
+            child: RepaintBoundary(
+              key: key,
+              child: FloatingActionButton(
+                onPressed: () { },
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await expectLater(
+      find.byKey(key),
+      matchesGoldenFile('floating_action_button_test_m3.plain.png'),
+    );
+  });
+
+  testWidgets('Floating Action Button golden test m2', (WidgetTester tester) async {
+    final GlobalKey key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: material2Theme,
+        home: Scaffold(
+          body: Center(
+            child: RepaintBoundary(
+              key: key,
+              child: FloatingActionButton(
+                onPressed: () { },
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await expectLater(
+      find.byKey(key),
+      matchesGoldenFile('floating_action_button_test_m2.plain.png'),
+    );
   });
 
   group('feedback', () {
@@ -1383,7 +1487,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.byType(RawMaterialButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(seconds: 1));
       expect(feedback.clickSoundCount, 1);
       expect(feedback.hapticCount, 0);
@@ -1400,7 +1504,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.byType(RawMaterialButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(seconds: 1));
       expect(feedback.clickSoundCount, 0);
       expect(feedback.hapticCount, 0);
@@ -1414,7 +1518,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.byType(RawMaterialButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(seconds: 1));
       expect(feedback.clickSoundCount, 1);
       expect(feedback.hapticCount, 0);
@@ -1438,7 +1542,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.byType(RawMaterialButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(seconds: 1));
       expect(feedback.clickSoundCount, 0);
       expect(feedback.hapticCount, 0);
@@ -1464,7 +1568,7 @@ void main() {
         ),
       ));
 
-      await tester.tap(find.byType(RawMaterialButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(seconds: 1));
       expect(feedback.clickSoundCount, 1);
       expect(feedback.hapticCount, 0);
