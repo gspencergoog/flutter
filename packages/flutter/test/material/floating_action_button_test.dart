@@ -406,7 +406,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byKey(key2)), const Size(40.0, 40.0));
+    expect(tester.getSize(find.byKey(key2)), const Size(48.0, 48.0));
   });
 
   testWidgetsWithLeakTracking('FloatingActionButton.isExtended', (WidgetTester tester) async {
@@ -459,9 +459,9 @@ void main() {
     expect(find.text('label'), findsOneWidget);
     expect(find.byType(Icon), findsOneWidget);
 
-    // Verify that the widget's height is 56 and that its internal
+    // Verify that the widget's height is 64 and that its internal
     /// horizontal layout is: 16 icon 8 label 20
-    expect(tester.getSize(fabFinder).height, 56.0);
+    expect(tester.getSize(fabFinder).height, 64.0);
 
     final double fabLeft = tester.getTopLeft(fabFinder).dx;
     final double fabRight = tester.getTopRight(fabFinder).dx;
@@ -515,9 +515,9 @@ void main() {
     expect(find.text('label'), findsOneWidget);
     expect(find.byType(Icon), findsNothing);
 
-    // Verify that the widget's height is 56 and that its internal
+    // Verify that the widget's height is 64 and that its internal
     /// horizontal layout is: 20 label 20
-    expect(tester.getSize(fabFinder).height, 56.0);
+    expect(tester.getSize(fabFinder).height, 64.0);
 
     final double fabLeft = tester.getTopLeft(fabFinder).dx;
     final double fabRight = tester.getTopRight(fabFinder).dx;
@@ -1002,7 +1002,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byKey(key)), const Size(40.0, 40.0));
+    expect(tester.getSize(find.byKey(key)), const Size(48.0, 48.0));
   });
 
   testWidgetsWithLeakTracking('FloatingActionButton.large configures correct size', (WidgetTester tester) async {
@@ -1018,7 +1018,7 @@ void main() {
       ),
     );
 
-    expect(tester.getSize(find.byKey(key)), const Size(96.0, 96.0));
+    expect(tester.getSize(find.byKey(key)), const Size(104.0, 104.0));
   });
 
   testWidgetsWithLeakTracking('FloatingActionButton.extended can customize spacing', (WidgetTester tester) async {
@@ -1312,9 +1312,9 @@ void main() {
       expect(find.text('label'), findsOneWidget);
       expect(find.byType(Icon), findsOneWidget);
 
-      // Verify that the widget's height is 48 and that its internal
+      // Verify that the widget's height is 64 and that its internal
       /// horizontal layout is: 16 icon 8 label 20
-      expect(tester.getSize(fabFinder).height, 48.0);
+      expect(tester.getSize(fabFinder).height, 64.0);
 
       final double fabLeft = tester.getTopLeft(fabFinder).dx;
       final double fabRight = tester.getTopRight(fabFinder).dx;
@@ -1365,9 +1365,9 @@ void main() {
       expect(find.text('label'), findsOneWidget);
       expect(find.byType(Icon), findsNothing);
 
-      // Verify that the widget's height is 48 and that its internal
+      // Verify that the widget's height is 64 and that its internal
       /// horizontal layout is: 20 label 20
-      expect(tester.getSize(fabFinder).height, 48.0);
+      expect(tester.getSize(fabFinder).height, 64.0);
 
       final double fabLeft = tester.getTopLeft(fabFinder).dx;
       final double fabRight = tester.getTopRight(fabFinder).dx;
