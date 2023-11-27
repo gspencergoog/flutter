@@ -57,6 +57,25 @@ void main() {
     order += 1;
   });
 
+  testWidgets('HardwareKeyboard gets reset after each widget test (setup)', (WidgetTester tester) async {
+    assert(order == 3);
+    binding.debugSetTestKeyboard(FakeHardwareKeyboard(isAltPressed: true, isMetaPressed: true, isControlPressed: true, isShiftPressed: true));
+    expect(HardwareKeyboard.instance.isAltPressed, isTrue);
+    expect(HardwareKeyboard.instance.isControlPressed, isTrue);
+    expect(HardwareKeyboard.instance.isMetaPressed, isTrue);
+    expect(HardwareKeyboard.instance.isShiftPressed, isTrue);
+    order += 1;
+  });
+
+  testWidgets('HardwareKeyboard gets reset after each widget test (check)', (WidgetTester tester) async {
+    assert(order == 4);
+    expect(HardwareKeyboard.instance.isAltPressed, isFalse);
+    expect(HardwareKeyboard.instance.isControlPressed, isFalse);
+    expect(HardwareKeyboard.instance.isMetaPressed, isFalse);
+    expect(HardwareKeyboard.instance.isShiftPressed, isFalse);
+    order += 1;
+  });
+
   testWidgets('timeStamp should be accurate to microsecond precision', (WidgetTester tester) async {
     final WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
@@ -111,4 +130,33 @@ void main() {
     });
     expect(responded, true);
   });
+}
+
+class FakeHardwareKeyboard extends HardwareKeyboard {
+  FakeHardwareKeyboard({
+    this.isAltPressed = false,
+    this.isControlPressed = false,
+    this.isMetaPressed = false,
+    this.isShiftPressed = false,
+  });
+
+  @override
+  bool isMetaPressed;
+  @override
+  bool isControlPressed;
+  @override
+  bool isAltPressed;
+  @override
+  bool isShiftPressed;
+
+  @override
+  bool isLogicalKeyPressed(LogicalKeyboardKey key) {
+    return switch (key) {
+      LogicalKeyboardKey.shift || LogicalKeyboardKey.shiftLeft || LogicalKeyboardKey.shiftRight => isShiftPressed,
+      LogicalKeyboardKey.alt || LogicalKeyboardKey.altLeft || LogicalKeyboardKey.altRight => isAltPressed,
+      LogicalKeyboardKey.control || LogicalKeyboardKey.controlLeft || LogicalKeyboardKey.controlRight => isControlPressed,
+      LogicalKeyboardKey.meta || LogicalKeyboardKey.metaLeft || LogicalKeyboardKey.metaRight => isMetaPressed,
+      _ => HardwareKeyboard.instance.isLogicalKeyPressed(key)
+    };
+  }
 }

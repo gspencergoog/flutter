@@ -60,18 +60,29 @@ mixin ServicesBinding on BindingBase, SchedulerBinding {
 
   /// The global singleton instance of [HardwareKeyboard], which can be used to
   /// query keyboard states.
-  HardwareKeyboard get keyboard => _keyboard;
-  late final HardwareKeyboard _keyboard;
+  HardwareKeyboard get keyboard => _keyboard!;
+  HardwareKeyboard? _keyboard;
+
+  /// Set a keyboard to return from [keyboard] instead of the initially
+  /// constructed one.
+  ///
+  /// This is meant for use in unit tests that need to test functionality
+  /// dependent upon the keyboard state.
+  @visibleForTesting
+  void debugSetTestKeyboard(HardwareKeyboard testKeyboard) {
+    _keyboard = testKeyboard;
+    _initKeyboard();
+  }
 
   /// The global singleton instance of [KeyEventManager], which is used
   /// internally to dispatch key messages.
-  KeyEventManager get keyEventManager => _keyEventManager;
-  late final KeyEventManager _keyEventManager;
+  KeyEventManager get keyEventManager => _keyEventManager!;
+  late KeyEventManager _keyEventManager;
 
   void _initKeyboard() {
-    _keyboard = HardwareKeyboard();
-    _keyEventManager = KeyEventManager(_keyboard, RawKeyboard.instance);
-    _keyboard.syncKeyboardState().then((_) {
+    _keyboard ??= HardwareKeyboard();
+    _keyEventManager = KeyEventManager(_keyboard!, RawKeyboard.instance);
+    _keyboard!.syncKeyboardState().then((_) {
       platformDispatcher.onKeyData = _keyEventManager.handleKeyData;
       SystemChannels.keyEvent.setMessageHandler(_keyEventManager.handleRawKeyMessage);
     });

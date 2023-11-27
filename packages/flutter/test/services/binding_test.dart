@@ -161,4 +161,51 @@ void main() {
     expect(physicalKeys.first, const PhysicalKeyboardKey(1));
     expect(logicalKeys.first, const LogicalKeyboardKey(1));
   });
+
+  test('can override keyboard in tests', () async {
+    final HardwareKeyboard previous = ServicesBinding.instance.keyboard;
+    expect(HardwareKeyboard.instance.isAltPressed, isFalse);
+    expect(HardwareKeyboard.instance.isControlPressed, isFalse);
+    expect(HardwareKeyboard.instance.isMetaPressed, isFalse);
+    expect(HardwareKeyboard.instance.isShiftPressed, isFalse);
+    ServicesBinding.instance.debugSetTestKeyboard(FakeHardwareKeyboard(isMetaPressed: true, isControlPressed: true, isAltPressed: true, isShiftPressed: true));
+    expect(HardwareKeyboard.instance.isAltPressed, isTrue);
+    expect(HardwareKeyboard.instance.isControlPressed, isTrue);
+    expect(HardwareKeyboard.instance.isMetaPressed, isTrue);
+    expect(HardwareKeyboard.instance.isShiftPressed, isTrue);
+    ServicesBinding.instance.debugSetTestKeyboard(previous);
+    expect(HardwareKeyboard.instance.isAltPressed, isFalse);
+    expect(HardwareKeyboard.instance.isControlPressed, isFalse);
+    expect(HardwareKeyboard.instance.isMetaPressed, isFalse);
+    expect(HardwareKeyboard.instance.isShiftPressed, isFalse);
+  });
+}
+
+class FakeHardwareKeyboard extends HardwareKeyboard {
+  FakeHardwareKeyboard({
+    this.isAltPressed = false,
+    this.isControlPressed = false,
+    this.isMetaPressed = false,
+    this.isShiftPressed = false,
+  });
+
+  @override
+  bool isMetaPressed;
+  @override
+  bool isControlPressed;
+  @override
+  bool isAltPressed;
+  @override
+  bool isShiftPressed;
+
+  @override
+  bool isLogicalKeyPressed(LogicalKeyboardKey key) {
+    return switch (key) {
+      LogicalKeyboardKey.shift || LogicalKeyboardKey.shiftLeft || LogicalKeyboardKey.shiftRight => isShiftPressed,
+      LogicalKeyboardKey.alt || LogicalKeyboardKey.altLeft || LogicalKeyboardKey.altRight => isAltPressed,
+      LogicalKeyboardKey.control || LogicalKeyboardKey.controlLeft || LogicalKeyboardKey.controlRight => isControlPressed,
+      LogicalKeyboardKey.meta || LogicalKeyboardKey.metaLeft || LogicalKeyboardKey.metaRight => isMetaPressed,
+      _ => HardwareKeyboard.instance.isLogicalKeyPressed(key)
+    };
+  }
 }
