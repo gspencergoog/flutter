@@ -7,8 +7,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show timeDilation;
 
-void main() => runApp(const LoadingAnimation());
+void main() {
+  timeDilation = 1.5;
+  runApp(const LoadingAnimation());
+}
 
 typedef DivideBoxBuilder = Widget Function(BuildContext context, Animation<double> animation, Color color);
 
@@ -57,11 +61,12 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
                       return random.nextBool() ? Axis.horizontal : Axis.vertical;
                     },
                     getCount: (int depth, int prevCount) {
-                      if (random.nextBool()) {
-                        return math.min(depth, prevCount + 1);
-                      } else {
-                        return math.max(1, prevCount - 1);
-                      }
+                      return depth;
+                      // if (random.nextBool()) {
+                      //   return math.min(depth, prevCount + 1);
+                      // } else {
+                      //   return math.max(1, prevCount - 1);
+                      // }
                     },
                     getColor: _getColor,
                     builder: (
@@ -69,10 +74,6 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
                       Animation<double> animation,
                       Color color,
                     ) {
-                      // return BasicBox(
-                      //   color: color,
-                      //   padding: const EdgeInsetsDirectional.all(8),
-                      // );
                       return MitosisBox(
                         cornerRadius: 12,
                         color: color,
@@ -146,9 +147,9 @@ class _DividedBoxNestState extends RandomizerState<DividedBoxNest> {
     }
     return AnimatedDividedBox(
       direction: direction,
-      children: count,
+      children: widget.getCount(depth, count),
       builder: (BuildContext context, Animation<double> animation, Color color) {
-        return _buildToDepth(context, depth + 1, direction.swap(), animation, widget.getColor(depth));
+        return _buildToDepth(context, depth + 1, direction, animation, widget.getColor(depth));
       },
     );
   }
@@ -192,6 +193,7 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
   void dispose() {
     <int, AnimationController>{...controllers, ...exitingControllers}.forEach(
       (int index, AnimationController controller) {
+        controller.removeListener(_redraw);
         controller.stop();
         controller.dispose();
       },
@@ -209,7 +211,7 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
     while (controllers.length < widget.children) {
       final int serial = childSerial++;
       controllers[serial] = AnimationController(
-        value: 0,
+        value: 0.001,
         vsync: this,
         duration: widget.duration,
       )
@@ -364,7 +366,7 @@ class MitosisBox extends StatefulWidget {
 
 class _MitosisBoxState extends RandomizerState<MitosisBox> {
   late final Animation<double> animation;
-  static const double crossover = 0.8;
+  static const double crossover = 0.25;
   Axis _direction = Axis.horizontal;
 
   @override
@@ -397,6 +399,7 @@ class _MitosisBoxState extends RandomizerState<MitosisBox> {
         decoration: ShapeDecoration(
           color: widget.color,
           shape: RoundedRectangleBorder(
+            side: BorderSide(color: widget.color),
             borderRadius: BorderRadiusDirectional.all(
               Radius.circular(widget.cornerRadius),
             ),
@@ -459,6 +462,7 @@ class _MitosisBoxState extends RandomizerState<MitosisBox> {
             decoration: ShapeDecoration(
               color: widget.color,
               shape: RoundedRectangleBorder(
+                side: BorderSide(color: widget.color),
                 borderRadius: startRadius,
               ),
             ),
@@ -470,6 +474,7 @@ class _MitosisBoxState extends RandomizerState<MitosisBox> {
             decoration: ShapeDecoration(
               color: widget.color,
               shape: RoundedRectangleBorder(
+                side: BorderSide(color: widget.color),
                 borderRadius: endRadius,
               ),
             ),
