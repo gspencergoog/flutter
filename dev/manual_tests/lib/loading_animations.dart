@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(const LoadingAnimation());
 
+typedef DivideBoxBuilder = Widget Function(BuildContext context, Animation<double> animation, Color color);
+
 class LoadingAnimation extends StatefulWidget {
   const LoadingAnimation({super.key});
 
@@ -17,41 +19,30 @@ class LoadingAnimation extends StatefulWidget {
   State<LoadingAnimation> createState() => _LoadingAnimationState();
 }
 
-class _LoadingAnimationState extends State<LoadingAnimation> {
+class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
   int _count = 1;
-  final math.Random random = math.Random();
+  final List<int> _levels = <int>[1, 2, 3, 2, 1, 2, 1, 3, 2];
+  int _currentLevel = 0;
+
+  @override
+  void updateSettings() {
+    setState(() {
+      _currentLevel = (_currentLevel + 1) % _levels.length;
+      _count = _levels[_currentLevel];
+    });
+  }
+
+  Color _getColor(int index) {
+    return Colors.primaries[index % Colors.primaries.length];
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        floatingActionButton: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text('$_count'),
-            const SizedBox(width: 10),
-            FloatingActionButton(
-              onPressed: () {
-                setState(() {
-                  _count += 1;
-                });
-              },
-              child: const Icon(Icons.add),
-            ),
-            const SizedBox(width: 10),
-            FloatingActionButton(
-              onPressed: () {
-                setState(() {
-                  _count = math.max(1, _count - 1);
-                });
-              },
-              child: const Icon(Icons.remove),
-            ),
-          ],
-        ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(6.0),
+            padding: const EdgeInsets.all(8.0),
             child: AnimatedDividedBox(
                 children: _count,
                 direction: Axis.vertical,
@@ -62,16 +53,17 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
                 ) {
                   return DividedBoxNest(
                     depth: _count,
-                    direction: (int depth, Axis direction) {
+                    getDirection: (int depth, Axis direction) {
                       return random.nextBool() ? Axis.horizontal : Axis.vertical;
                     },
-                    count: (int depth, int prevCount) {
+                    getCount: (int depth, int prevCount) {
                       if (random.nextBool()) {
                         return math.min(depth, prevCount + 1);
                       } else {
                         return math.max(1, prevCount - 1);
                       }
                     },
+                    getColor: _getColor,
                     builder: (
                       BuildContext context,
                       Animation<double> animation,
@@ -82,10 +74,9 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
                       //   padding: const EdgeInsetsDirectional.all(8),
                       // );
                       return MitosisBox(
-                        cornerRadius: 10,
+                        cornerRadius: 12,
                         color: color,
-                        padding: const EdgeInsetsDirectional.all(10),
-                        animation: animation,
+                        margin: const EdgeInsetsDirectional.all(8),
                       );
                     },
                   );
@@ -97,34 +88,14 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
   }
 }
 
-class BasicBox extends StatelessWidget {
-  const BasicBox({super.key, required this.color, required this.padding, this.cornerRadius = 10});
-
-  final Color color;
-  final double cornerRadius;
-  final EdgeInsetsDirectional padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: Container(
-        decoration: ShapeDecoration(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(cornerRadius)),
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
 class DividedBoxNest extends StatefulWidget {
   const DividedBoxNest({
     super.key,
     this.startDirection = Axis.horizontal,
     this.depth = 2,
-    required this.count,
-    required this.direction,
+    required this.getCount,
+    required this.getDirection,
+    required this.getColor,
     required this.builder,
   });
 
@@ -132,91 +103,61 @@ class DividedBoxNest extends StatefulWidget {
   // Number of recursive levels.
   final int depth;
   // Number of children at each level.
-  final int Function(int, int) count;
-  final Axis Function(int, Axis direction) direction;
+  final Color Function(int index) getColor;
+  final int Function(int index, int lastCount) getCount;
+  final Axis Function(int index, Axis lastDirection) getDirection;
   final DivideBoxBuilder builder;
 
   @override
   State<DividedBoxNest> createState() => _DividedBoxNestState();
 }
 
-class _DividedBoxNestState extends State<DividedBoxNest> with TickerProviderStateMixin {
-  late final AnimationController controller;
+class _DividedBoxNestState extends RandomizerState<DividedBoxNest> {
   late final Animation<double> nestAnimation;
   int count = 0;
   Axis direction = Axis.horizontal;
 
-  void _updateParameters(AnimationStatus status) {
-    switch (status) {
-      case AnimationStatus.forward:
-      case AnimationStatus.reverse:
-      case AnimationStatus.dismissed:
-        return;
-      case AnimationStatus.completed:
-        controller.reset();
-        controller.forward();
-        setState(() {
-          final int newCount = widget.count(widget.depth, count);
-          if (count < newCount) {
-            setState(() {
-              count += 1;
-            });
-          } else if (count > newCount) {
-            setState(() {
-              count -= 1;
-            });
-          }
-          direction = widget.direction(widget.depth, direction);
-        });
-    }
+  @override
+  void onTick() {
+    setState(() {
+      // Redraw
+    });
+  }
+
+  @override
+  void updateSettings() {
+    setState(() {
+      count = widget.getCount(widget.depth, count);
+      direction = widget.getDirection(widget.depth, direction);
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    count = widget.count(0, 0);
-    direction = widget.direction(0, Axis.horizontal);
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )
-      ..addStatusListener(_updateParameters)
-      ..forward();
+    count = widget.getCount(0, 0);
+    direction = widget.getDirection(0, Axis.horizontal);
     nestAnimation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
   }
 
-  @override
-  void dispose() {
-    controller.removeStatusListener(_updateParameters);
-    controller.stop();
-    controller.dispose();
-    super.dispose();
-  }
-
-  Widget _buildToDepth(BuildContext context, int toDepth, Axis direction, Animation<double> animation, Color color) {
-    if (toDepth == 0) {
+  Widget _buildToDepth(BuildContext context, int depth, Axis direction, Animation<double> animation, Color color) {
+    if (depth == widget.depth) {
       return widget.builder(context, animation, color);
     }
     return AnimatedDividedBox(
       direction: direction,
       children: count,
       builder: (BuildContext context, Animation<double> animation, Color color) {
-        return _buildToDepth(context, toDepth - 1, direction.swap(), animation, _getColor(widget.depth));
+        return _buildToDepth(context, depth + 1, direction.swap(), animation, widget.getColor(depth));
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return _buildToDepth(context, widget.depth, widget.startDirection, nestAnimation, _getColor(0));
+    return _buildToDepth(context, 0, widget.startDirection, nestAnimation, widget.getColor(0));
   }
 }
-
-Color _getColor(int index) {
-  return Colors.primaries[index % Colors.primaries.length];
-}
-
-typedef DivideBoxBuilder = Widget Function(BuildContext context, Animation<double> animation, Color color);
 
 class AnimatedDividedBox extends StatefulWidget {
   const AnimatedDividedBox({
@@ -308,6 +249,10 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
     }
   }
 
+  Color _getColor(int index) {
+    return Colors.primaries[index % Colors.primaries.length];
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<int, AnimationController> allControllers = <int, AnimationController>{
@@ -348,7 +293,7 @@ class _SpreadLayoutDelegate extends MultiChildLayoutDelegate {
       (double sum, Animation<double> animation) => sum + animation.value,
     );
     if (animationSum == 0) {
-      animationSum = 1.0;
+      animationSum = 0.0001;
     }
     Offset childPosition = Offset.zero;
 
@@ -399,81 +344,193 @@ class _SpreadLayoutDelegate extends MultiChildLayoutDelegate {
 class MitosisBox extends StatefulWidget {
   const MitosisBox({
     super.key,
-    this.duration = const Duration(seconds: 1),
     required this.cornerRadius,
-    this.padding = EdgeInsetsDirectional.zero,
+    this.margin = EdgeInsetsDirectional.zero,
     required this.color,
-    required this.animation,
   });
-
-  /// The duration of the animation.
-  final Duration duration;
 
   /// The corner radius of the boxes.
   final double cornerRadius;
 
   /// The padding around the boxes.
-  final EdgeInsetsDirectional padding;
+  final EdgeInsetsDirectional margin;
 
   /// The color of the boxes.
   final Color color;
-
-  /// The animation that drives the mitosis effect.
-  final Animation<double> animation;
 
   @override
   State<MitosisBox> createState() => _MitosisBoxState();
 }
 
-class _MitosisBoxState extends State<MitosisBox> {
-  static const double crossover = 0.5;
+class _MitosisBoxState extends RandomizerState<MitosisBox> {
+  late final Animation<double> animation;
+  static const double crossover = 0.8;
+  Axis _direction = Axis.horizontal;
+
+  @override
+  void updateSettings() {
+    setState(() {
+      _direction = random.nextBool() ? Axis.horizontal : Axis.vertical;
+    });
+  }
+
+  @override
+  void onTick() {
+    setState(() {
+      // Redraw
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _direction = random.nextBool() ? Axis.horizontal : Axis.vertical;
+    animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Things are simpler if it hasn't split yet.
+    if (animation.value == 0) {
+      return Container(
+        margin: widget.margin,
+        decoration: ShapeDecoration(
+          color: widget.color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadiusDirectional.all(
+              Radius.circular(widget.cornerRadius),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Until crossover, show two boxes touching each other while the corner
     // radius at the join grows.
-    final double cornerParam = math.max(math.min(widget.animation.value / crossover, 1), 0);
+    final double cornerParam = math.max(math.min(animation.value / crossover, 1), 0);
     // After crossover, show two boxes initially touching, where the gap
     // between them grows to padding value.
-    final double paddingParam = math.max(math.min((widget.animation.value - crossover) / (1.0 - crossover), 1), 0);
+    final double paddingParam = math.max(math.min((animation.value - crossover) / (1.0 - crossover), 1), 0);
     final double innerCornerRadius = widget.cornerRadius * cornerParam;
-    return Row(
+
+    BorderRadiusDirectional startRadius;
+    BorderRadiusDirectional endRadius;
+    EdgeInsetsDirectional startMargin;
+    EdgeInsetsDirectional endMargin;
+    switch (_direction) {
+      case Axis.horizontal:
+        startMargin = widget.margin.copyWith(end: widget.margin.end * paddingParam);
+        endMargin = widget.margin.copyWith(start: widget.margin.end * paddingParam);
+        startRadius = BorderRadiusDirectional.only(
+          topStart: Radius.circular(widget.cornerRadius),
+          bottomStart: Radius.circular(widget.cornerRadius),
+          topEnd: Radius.circular(innerCornerRadius),
+          bottomEnd: Radius.circular(innerCornerRadius),
+        );
+        endRadius = BorderRadiusDirectional.only(
+          topStart: Radius.circular(innerCornerRadius),
+          bottomStart: Radius.circular(innerCornerRadius),
+          topEnd: Radius.circular(widget.cornerRadius),
+          bottomEnd: Radius.circular(widget.cornerRadius),
+        );
+      case Axis.vertical:
+        startMargin = widget.margin.copyWith(bottom: widget.margin.end * paddingParam);
+        endMargin = widget.margin.copyWith(top: widget.margin.end * paddingParam);
+        startRadius = BorderRadiusDirectional.only(
+          topStart: Radius.circular(widget.cornerRadius),
+          bottomStart: Radius.circular(innerCornerRadius),
+          topEnd: Radius.circular(widget.cornerRadius),
+          bottomEnd: Radius.circular(innerCornerRadius),
+        );
+        endRadius = BorderRadiusDirectional.only(
+          topStart: Radius.circular(innerCornerRadius),
+          bottomStart: Radius.circular(widget.cornerRadius),
+          topEnd: Radius.circular(innerCornerRadius),
+          bottomEnd: Radius.circular(widget.cornerRadius),
+        );
+    }
+
+    return Flex(
+      direction: _direction,
       children: <Widget>[
         Expanded(
           child: Container(
-            margin: widget.padding.copyWith(end: widget.padding.end * paddingParam),
+            margin: startMargin,
             decoration: ShapeDecoration(
               color: widget.color,
               shape: RoundedRectangleBorder(
-                //side: const BorderSide(),
-                borderRadius: BorderRadiusDirectional.only(
-                  topStart: Radius.circular(widget.cornerRadius),
-                  bottomStart: Radius.circular(widget.cornerRadius),
-                  topEnd: Radius.circular(innerCornerRadius),
-                  bottomEnd: Radius.circular(innerCornerRadius),
-                ),
+                borderRadius: startRadius,
               ),
             ),
           ),
         ),
         Expanded(
           child: Container(
-            margin: widget.padding.copyWith(start: widget.padding.start * paddingParam),
+            margin: endMargin,
             decoration: ShapeDecoration(
               color: widget.color,
               shape: RoundedRectangleBorder(
-                //side: const BorderSide(),
-                borderRadius: BorderRadiusDirectional.only(
-                  topStart: Radius.circular(innerCornerRadius),
-                  bottomStart: Radius.circular(innerCornerRadius),
-                  topEnd: Radius.circular(widget.cornerRadius),
-                  bottomEnd: Radius.circular(widget.cornerRadius),
-                ),
+                borderRadius: endRadius,
               ),
             ),
           ),
         ),
       ],
     );
+  }
+}
+
+abstract class RandomizerState<T extends StatefulWidget> extends State<T> with TickerProviderStateMixin {
+  late final AnimationController controller;
+  final math.Random random = math.Random();
+  Timer? pauseTimer;
+
+  // Override this to change settings while the animation is at zero.
+  void updateSettings() {}
+
+  void _intermittentLooping(AnimationStatus status) {
+    switch (status) {
+      case AnimationStatus.forward:
+      case AnimationStatus.reverse:
+        return;
+      case AnimationStatus.dismissed:
+        pauseTimer = Timer(Duration(milliseconds: random.nextInt(1000) + 500), () {
+          updateSettings();
+          controller.forward();
+          pauseTimer!.cancel();
+          pauseTimer = null;
+        });
+        return;
+      case AnimationStatus.completed:
+        pauseTimer = Timer(Duration(milliseconds: random.nextInt(1000) + 500), () {
+          controller.reverse();
+          pauseTimer!.cancel();
+          pauseTimer = null;
+        });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )
+      ..forward()
+      ..addStatusListener(_intermittentLooping)
+      ..addListener(onTick);
+  }
+
+  void onTick() {}
+
+  @override
+  void dispose() {
+    pauseTimer?.cancel();
+    pauseTimer = null;
+    controller.removeListener(onTick);
+    controller.stop();
+    controller.dispose();
+    super.dispose();
   }
 }
