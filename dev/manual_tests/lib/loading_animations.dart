@@ -55,7 +55,11 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
             child: AnimatedDividedBox(
                 children: _count,
                 direction: Axis.vertical,
-                builder: (BuildContext context, int index) {
+                builder: (
+                  BuildContext context,
+                  Animation<double> animation,
+                  Color color,
+                ) {
                   return DividedBoxNest(
                     depth: _count,
                     direction: (int depth, Axis direction) {
@@ -68,7 +72,22 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
                         return math.max(1, prevCount - 1);
                       }
                     },
-                    builder: (BuildContext context, int index) => BasicBox(index: index),
+                    builder: (
+                      BuildContext context,
+                      Animation<double> animation,
+                      Color color,
+                    ) {
+                      // return BasicBox(
+                      //   color: color,
+                      //   padding: const EdgeInsetsDirectional.all(8),
+                      // );
+                      return MitosisBox(
+                        cornerRadius: 10,
+                        color: color,
+                        padding: const EdgeInsetsDirectional.all(10),
+                        animation: animation,
+                      );
+                    },
                   );
                 }),
           ),
@@ -79,19 +98,22 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
 }
 
 class BasicBox extends StatelessWidget {
-  const BasicBox({super.key, required this.index});
+  const BasicBox({super.key, required this.color, required this.padding, this.cornerRadius = 10});
 
-  final int index;
+  final Color color;
+  final double cornerRadius;
+  final EdgeInsetsDirectional padding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: padding,
       child: Container(
-          decoration: ShapeDecoration(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        color: _getColor(index),
-      )),
+        decoration: ShapeDecoration(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(cornerRadius)),
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -118,55 +140,75 @@ class DividedBoxNest extends StatefulWidget {
   State<DividedBoxNest> createState() => _DividedBoxNestState();
 }
 
-class _DividedBoxNestState extends State<DividedBoxNest> {
-  Timer? timer;
+class _DividedBoxNestState extends State<DividedBoxNest> with TickerProviderStateMixin {
+  late final AnimationController controller;
+  late final Animation<double> nestAnimation;
   int count = 0;
   Axis direction = Axis.horizontal;
+
+  void _updateParameters(AnimationStatus status) {
+    switch (status) {
+      case AnimationStatus.forward:
+      case AnimationStatus.reverse:
+      case AnimationStatus.dismissed:
+        return;
+      case AnimationStatus.completed:
+        controller.reset();
+        controller.forward();
+        setState(() {
+          final int newCount = widget.count(widget.depth, count);
+          if (count < newCount) {
+            setState(() {
+              count += 1;
+            });
+          } else if (count > newCount) {
+            setState(() {
+              count -= 1;
+            });
+          }
+          direction = widget.direction(widget.depth, direction);
+        });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    count = widget.count(0, 0);
     direction = widget.direction(0, Axis.horizontal);
-    timer = Timer.periodic(
-      const Duration(milliseconds: 1000),
-      (Timer timer) {
-        final int newCount = widget.count(widget.depth, count);
-        if (count < newCount) {
-          setState(() {
-            count += 1;
-          });
-        } else if (count > newCount) {
-          setState(() {
-            count -= 1;
-          });
-        }
-        direction = widget.direction(widget.depth, direction);
-      },
-    );
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )
+      ..addStatusListener(_updateParameters)
+      ..forward();
+    nestAnimation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    controller.removeStatusListener(_updateParameters);
+    controller.stop();
+    controller.dispose();
     super.dispose();
   }
 
-  Widget _buildToDepth(BuildContext context, int toDepth, Axis direction, int index) {
+  Widget _buildToDepth(BuildContext context, int toDepth, Axis direction, Animation<double> animation, Color color) {
     if (toDepth == 0) {
-      return widget.builder(context, index);
+      return widget.builder(context, animation, color);
     }
     return AnimatedDividedBox(
       direction: direction,
       children: count,
-      builder: (BuildContext context, int index) {
-        return _buildToDepth(context, toDepth - 1, direction.swap(), widget.depth * 10 + index);
+      builder: (BuildContext context, Animation<double> animation, Color color) {
+        return _buildToDepth(context, toDepth - 1, direction.swap(), animation, _getColor(widget.depth));
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return _buildToDepth(context, widget.depth, widget.startDirection, 0);
+    return _buildToDepth(context, widget.depth, widget.startDirection, nestAnimation, _getColor(0));
   }
 }
 
@@ -174,7 +216,7 @@ Color _getColor(int index) {
   return Colors.primaries[index % Colors.primaries.length];
 }
 
-typedef DivideBoxBuilder = Widget Function(BuildContext context, int index);
+typedef DivideBoxBuilder = Widget Function(BuildContext context, Animation<double> animation, Color color);
 
 class AnimatedDividedBox extends StatefulWidget {
   const AnimatedDividedBox({
@@ -278,10 +320,10 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
         direction: widget.direction,
       ),
       children: <Widget>[
-        for (final int serial in allControllers.keys)
+        for (final MapEntry<int, AnimationController> controller in allControllers.entries)
           LayoutId(
-            id: serial,
-            child: widget.builder(context, serial),
+            id: controller.key,
+            child: widget.builder(context, controller.value, _getColor(controller.key)),
           ),
       ],
     );
@@ -350,5 +392,88 @@ class _SpreadLayoutDelegate extends MultiChildLayoutDelegate {
     final List<double> animationValues =
         animations.values.map<double>((AnimationController controller) => controller.value).toList();
     return direction != oldDelegate.direction || !listEquals(animationValues, oldDelegate._layoutAnimationValues);
+  }
+}
+
+/// A widget that animates a mitosis effect.
+class MitosisBox extends StatefulWidget {
+  const MitosisBox({
+    super.key,
+    this.duration = const Duration(seconds: 1),
+    required this.cornerRadius,
+    this.padding = EdgeInsetsDirectional.zero,
+    required this.color,
+    required this.animation,
+  });
+
+  /// The duration of the animation.
+  final Duration duration;
+
+  /// The corner radius of the boxes.
+  final double cornerRadius;
+
+  /// The padding around the boxes.
+  final EdgeInsetsDirectional padding;
+
+  /// The color of the boxes.
+  final Color color;
+
+  /// The animation that drives the mitosis effect.
+  final Animation<double> animation;
+
+  @override
+  State<MitosisBox> createState() => _MitosisBoxState();
+}
+
+class _MitosisBoxState extends State<MitosisBox> {
+  static const double crossover = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    // Until crossover, show two boxes touching each other while the corner
+    // radius at the join grows.
+    final double cornerParam = math.max(math.min(widget.animation.value / crossover, 1), 0);
+    // After crossover, show two boxes initially touching, where the gap
+    // between them grows to padding value.
+    final double paddingParam = math.max(math.min((widget.animation.value - crossover) / (1.0 - crossover), 1), 0);
+    final double innerCornerRadius = widget.cornerRadius * cornerParam;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Container(
+            margin: widget.padding.copyWith(end: widget.padding.end * paddingParam),
+            decoration: ShapeDecoration(
+              color: widget.color,
+              shape: RoundedRectangleBorder(
+                //side: const BorderSide(),
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: Radius.circular(widget.cornerRadius),
+                  bottomStart: Radius.circular(widget.cornerRadius),
+                  topEnd: Radius.circular(innerCornerRadius),
+                  bottomEnd: Radius.circular(innerCornerRadius),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            margin: widget.padding.copyWith(start: widget.padding.start * paddingParam),
+            decoration: ShapeDecoration(
+              color: widget.color,
+              shape: RoundedRectangleBorder(
+                //side: const BorderSide(),
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: Radius.circular(innerCornerRadius),
+                  bottomStart: Radius.circular(innerCornerRadius),
+                  topEnd: Radius.circular(widget.cornerRadius),
+                  bottomEnd: Radius.circular(widget.cornerRadius),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
