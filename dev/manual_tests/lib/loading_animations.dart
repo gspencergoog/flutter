@@ -14,7 +14,7 @@ void main() {
   runApp(const LoadingAnimation());
 }
 
-typedef DivideBoxBuilder = Widget Function(BuildContext context, Animation<double> animation, Color color);
+typedef DivideBoxBuilder = Widget Function(BuildContext context, Color color);
 
 class LoadingAnimation extends StatefulWidget {
   const LoadingAnimation({super.key});
@@ -24,15 +24,17 @@ class LoadingAnimation extends StatefulWidget {
 }
 
 class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
-  int _count = 1;
-  final List<int> _levels = <int>[1, 2, 3, 2, 1, 2, 1, 3, 2];
+  int _depth = 1;
+  Axis _topDirection = Axis.vertical;
+  final List<int> _levels = <int>[1, 2, 3, 4, 3, 2, 1, 2, 1, 3, 2];
   int _currentLevel = 0;
 
   @override
   void updateSettings() {
     setState(() {
       _currentLevel = (_currentLevel + 1) % _levels.length;
-      _count = _levels[_currentLevel];
+      _depth = _levels[_currentLevel];
+      _topDirection = _topDirection.swap();
     });
   }
 
@@ -48,30 +50,23 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: AnimatedDividedBox(
-                children: _count,
-                direction: Axis.vertical,
+                children: _depth,
+                direction: _topDirection,
                 builder: (
                   BuildContext context,
-                  Animation<double> animation,
                   Color color,
                 ) {
                   return DividedBoxNest(
-                    depth: _count,
+                    depth: _depth,
                     getDirection: (int depth, Axis direction) {
                       return random.nextBool() ? Axis.horizontal : Axis.vertical;
                     },
                     getCount: (int depth, int prevCount) {
-                      return depth;
-                      // if (random.nextBool()) {
-                      //   return math.min(depth, prevCount + 1);
-                      // } else {
-                      //   return math.max(1, prevCount - 1);
-                      // }
+                      return _depth - depth;
                     },
                     getColor: _getColor,
                     builder: (
                       BuildContext context,
-                      Animation<double> animation,
                       Color color,
                     ) {
                       return MitosisBox(
@@ -141,22 +136,22 @@ class _DividedBoxNestState extends RandomizerState<DividedBoxNest> {
     nestAnimation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
   }
 
-  Widget _buildToDepth(BuildContext context, int depth, Axis direction, Animation<double> animation, Color color) {
+  Widget _buildToDepth(BuildContext context, int depth, Axis direction, Color color) {
     if (depth == widget.depth) {
-      return widget.builder(context, animation, color);
+      return widget.builder(context, color);
     }
     return AnimatedDividedBox(
       direction: direction,
       children: widget.getCount(depth, count),
-      builder: (BuildContext context, Animation<double> animation, Color color) {
-        return _buildToDepth(context, depth + 1, direction, animation, widget.getColor(depth));
+      builder: (BuildContext context, Color color) {
+        return _buildToDepth(context, depth + 1, direction, widget.getColor(depth));
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return _buildToDepth(context, 0, widget.startDirection, nestAnimation, widget.getColor(0));
+    return _buildToDepth(context, 0, widget.startDirection, widget.getColor(0));
   }
 }
 
@@ -167,9 +162,9 @@ class AnimatedDividedBox extends StatefulWidget {
     required this.builder,
     this.direction = Axis.horizontal,
     this.duration = const Duration(milliseconds: 500),
-  }) : children = children > 1 ? children : 1;
+  }) : numChildren = children > 1 ? children : 1;
 
-  final int children;
+  final int numChildren;
   final DivideBoxBuilder builder;
   final Axis direction;
   final Duration duration;
@@ -179,8 +174,8 @@ class AnimatedDividedBox extends StatefulWidget {
 }
 
 class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProviderStateMixin {
-  Map<int, AnimationController> controllers = <int, AnimationController>{};
-  Map<int, AnimationController> exitingControllers = <int, AnimationController>{};
+  List<ValueKey<int>> children = <ValueKey<int>>[];
+  List<ValueKey<int>> exitingChildren = <ValueKey<int>>[];
   int childSerial = 0;
 
   @override
@@ -189,61 +184,25 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
     addChildren();
   }
 
-  @override
-  void dispose() {
-    <int, AnimationController>{...controllers, ...exitingControllers}.forEach(
-      (int index, AnimationController controller) {
-        controller.removeListener(_redraw);
-        controller.stop();
-        controller.dispose();
-      },
-    );
-    super.dispose();
-  }
-
-  void _redraw() {
-    setState(() {
-      // force a frame.
-    });
-  }
-
   void addChildren() {
-    while (controllers.length < widget.children) {
+    while (children.length < widget.numChildren) {
       final int serial = childSerial++;
-      controllers[serial] = AnimationController(
-        value: 0.001,
-        vsync: this,
-        duration: widget.duration,
-      )
-        ..addListener(_redraw)
-        ..forward();
+      children.add(ValueKey<int>(serial));
     }
   }
 
   void removeChildren() {
-    Future<void> removeChild(int removeSerial) async {
-      final AnimationController remove = controllers[removeSerial]!;
-      exitingControllers[removeSerial] = remove;
-      controllers.remove(removeSerial);
-      await remove.reverse();
-      remove.removeListener(_redraw);
-      exitingControllers.remove(removeSerial);
-      remove.dispose();
-    }
-
-    final int removeCount = controllers.length - widget.children;
+    final int removeCount = children.length - widget.numChildren;
     for (int i = 0; i < removeCount; ++i) {
-      final List<int> sortedSerials = controllers.keys.toList()..sort();
-      final int removeSerial = sortedSerials.first;
-      removeChild(removeSerial);
+      exitingChildren.add(children.removeAt(0));
     }
   }
 
   @override
   void didUpdateWidget(AnimatedDividedBox oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.children != widget.children) {
-      if (widget.children > controllers.length) {
+    if (oldWidget.numChildren != widget.numChildren) {
+      if (widget.numChildren > children.length) {
         addChildren();
       } else {
         removeChildren();
@@ -257,88 +216,106 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final Map<int, AnimationController> allControllers = <int, AnimationController>{
-      ...exitingControllers,
-      ...controllers,
-    };
-    return CustomMultiChildLayout(
-      delegate: _SpreadLayoutDelegate(
-        animations: allControllers,
-        direction: widget.direction,
-      ),
+    return Flex(
+      mainAxisSize: MainAxisSize.min,
+      direction: widget.direction,
       children: <Widget>[
-        for (final MapEntry<int, AnimationController> controller in allControllers.entries)
-          LayoutId(
-            id: controller.key,
-            child: widget.builder(context, controller.value, _getColor(controller.key)),
+        for (final ValueKey<int> child in children)
+          ExpandingBox(
+            key: child,
+            child: Builder(
+              builder: (BuildContext context) {
+                return widget.builder(context, _getColor(child.value));
+              },
+            ),
           ),
+        for (final ValueKey<int> child in exitingChildren)
+          ExpandingBox(
+            key: child,
+            onRemove: () {
+              exitingChildren.remove(child);
+            },
+            child: Builder(
+              builder: (BuildContext context) {
+                return widget.builder(context, _getColor(child.value));
+              },
+            ),
+          )
       ],
     );
   }
 }
 
-class _SpreadLayoutDelegate extends MultiChildLayoutDelegate {
-  _SpreadLayoutDelegate({
-    required this.animations,
-    this.direction = Axis.horizontal,
+class ExpandingBox extends StatefulWidget {
+  const ExpandingBox({
+    super.key,
+    this.duration = const Duration(milliseconds: 500),
+    required this.child,
+    this.onRemove,
   });
 
-  final Map<int, AnimationController> animations;
-  final Axis direction;
-  List<double> _layoutAnimationValues = <double>[];
+  final VoidCallback? onRemove;
+  final Duration duration;
+  final Widget child;
 
-  // Perform layout will be called when re-layout is needed.
   @override
-  void performLayout(Size size) {
-    double animationSum = animations.values.fold<double>(
-      0.0,
-      (double sum, Animation<double> animation) => sum + animation.value,
-    );
-    if (animationSum == 0) {
-      animationSum = 0.0001;
-    }
-    Offset childPosition = Offset.zero;
+  State<ExpandingBox> createState() => _ExpandingBoxState();
+}
 
-    for (final MapEntry<int, AnimationController> entry in animations.entries) {
-      // layoutChild must be called exactly once for each child.
+class _ExpandingBoxState extends State<ExpandingBox> with TickerProviderStateMixin {
+  late final AnimationController controller;
+  late final Animation<double> animation;
 
-      final double scaledValue = entry.value.value / animationSum;
-      switch (direction) {
-        case Axis.horizontal:
-          final Size currentSize = layoutChild(
-            entry.key,
-            BoxConstraints.tightFor(
-              height: size.height,
-              width: size.width * scaledValue,
-            ),
-          );
-          positionChild(entry.key, childPosition);
-          childPosition += Offset(currentSize.width, 0);
-        case Axis.vertical:
-          final Size currentSize = layoutChild(
-            entry.key,
-            BoxConstraints.tightFor(
-              height: size.height * scaledValue,
-              width: size.width,
-            ),
-          );
-          positionChild(entry.key, childPosition);
-          childPosition += Offset(0, currentSize.height);
-      }
-    }
-    _layoutAnimationValues =
-        animations.values.map<double>((AnimationController controller) => controller.value).toList();
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      vsync: this,
+      value: 0,
+      duration: widget.duration,
+    )
+      ..forward()
+      ..addListener(_redraw);
+    animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
   }
 
-  // shouldRelayout is called to see if the delegate has changed and requires a
-  // layout to occur. Should only return true if the delegate state itself
-  // changes: changes in the CustomMultiChildLayout attributes will
-  // automatically cause a relayout, like any other widget.
   @override
-  bool shouldRelayout(_SpreadLayoutDelegate oldDelegate) {
-    final List<double> animationValues =
-        animations.values.map<double>((AnimationController controller) => controller.value).toList();
-    return direction != oldDelegate.direction || !listEquals(animationValues, oldDelegate._layoutAnimationValues);
+  void dispose() {
+    controller.removeListener(_redraw);
+    controller.stop();
+    controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startLeaving() async {
+    await controller.reverse();
+    widget.onRemove?.call();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExpandingBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.onRemove != widget.onRemove) {
+      if (widget.onRemove != null) {
+        _startLeaving();
+      } else {
+        controller.forward();
+      }
+    }
+  }
+
+  void _redraw() {
+    setState(() {
+      // force a frame.
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      flex: (1000 * animation.value + 1).round(),
+      child: widget.child,
+    );
   }
 }
 
