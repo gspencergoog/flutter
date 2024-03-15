@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,8 @@ class LoadingAnimation extends StatefulWidget {
 }
 
 class _LoadingAnimationState extends State<LoadingAnimation> {
-  int _count = 0;
+  int _count = 1;
+  final math.Random random = math.Random();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +42,7 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
             FloatingActionButton(
               onPressed: () {
                 setState(() {
-                  _count = math.max(0, _count - 1);
+                  _count = math.max(1, _count - 1);
                 });
               },
               child: const Icon(Icons.remove),
@@ -48,22 +50,143 @@ class _LoadingAnimationState extends State<LoadingAnimation> {
           ],
         ),
         body: Center(
-          child: AnimatedDividedBox(children: _count),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: AnimatedDividedBox(
+                children: _count,
+                direction: Axis.vertical,
+                builder: (BuildContext context, int index) {
+                  return DividedBoxNest(
+                    depth: _count,
+                    direction: (int depth, Axis direction) {
+                      return random.nextBool() ? Axis.horizontal : Axis.vertical;
+                    },
+                    count: (int depth, int prevCount) {
+                      if (random.nextBool()) {
+                        return math.min(depth, prevCount + 1);
+                      } else {
+                        return math.max(1, prevCount - 1);
+                      }
+                    },
+                    builder: (BuildContext context, int index) => BasicBox(index: index),
+                  );
+                }),
+          ),
         ),
       ),
     );
   }
 }
 
+class BasicBox extends StatelessWidget {
+  const BasicBox({super.key, required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+          decoration: ShapeDecoration(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        color: _getColor(index),
+      )),
+    );
+  }
+}
+
+class DividedBoxNest extends StatefulWidget {
+  const DividedBoxNest({
+    super.key,
+    this.startDirection = Axis.horizontal,
+    this.depth = 2,
+    required this.count,
+    required this.direction,
+    required this.builder,
+  });
+
+  final Axis startDirection;
+  // Number of recursive levels.
+  final int depth;
+  // Number of children at each level.
+  final int Function(int, int) count;
+  final Axis Function(int, Axis direction) direction;
+  final DivideBoxBuilder builder;
+
+  @override
+  State<DividedBoxNest> createState() => _DividedBoxNestState();
+}
+
+class _DividedBoxNestState extends State<DividedBoxNest> {
+  Timer? timer;
+  int count = 0;
+  Axis direction = Axis.horizontal;
+
+  @override
+  void initState() {
+    super.initState();
+    direction = widget.direction(0, Axis.horizontal);
+    timer = Timer.periodic(
+      const Duration(milliseconds: 1000),
+      (Timer timer) {
+        final int newCount = widget.count(widget.depth, count);
+        if (count < newCount) {
+          setState(() {
+            count += 1;
+          });
+        } else if (count > newCount) {
+          setState(() {
+            count -= 1;
+          });
+        }
+        direction = widget.direction(widget.depth, direction);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Widget _buildToDepth(BuildContext context, int toDepth, Axis direction, int index) {
+    if (toDepth == 0) {
+      return widget.builder(context, index);
+    }
+    return AnimatedDividedBox(
+      direction: direction,
+      children: count,
+      builder: (BuildContext context, int index) {
+        return _buildToDepth(context, toDepth - 1, direction.swap(), widget.depth * 10 + index);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildToDepth(context, widget.depth, widget.startDirection, 0);
+  }
+}
+
+Color _getColor(int index) {
+  return Colors.primaries[index % Colors.primaries.length];
+}
+
+typedef DivideBoxBuilder = Widget Function(BuildContext context, int index);
+
 class AnimatedDividedBox extends StatefulWidget {
   const AnimatedDividedBox({
     super.key,
-    required this.children,
+    required int children,
+    required this.builder,
     this.direction = Axis.horizontal,
     this.duration = const Duration(milliseconds: 500),
-  });
+  }) : children = children > 1 ? children : 1;
 
   final int children;
+  final DivideBoxBuilder builder;
   final Axis direction;
   final Duration duration;
 
@@ -80,6 +203,17 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
   void initState() {
     super.initState();
     addChildren();
+  }
+
+  @override
+  void dispose() {
+    <int, AnimationController>{...controllers, ...exitingControllers}.forEach(
+      (int index, AnimationController controller) {
+        controller.stop();
+        controller.dispose();
+      },
+    );
+    super.dispose();
   }
 
   void _redraw() {
@@ -99,7 +233,6 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
         ..addListener(_redraw)
         ..forward();
     }
-    debugPrint('Added: ${controllers.length} controllers with ${exitingControllers.length} exiting');
   }
 
   void removeChildren() {
@@ -107,11 +240,9 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
       final AnimationController remove = controllers[removeSerial]!;
       exitingControllers[removeSerial] = remove;
       controllers.remove(removeSerial);
-      debugPrint('Removing: ${controllers.length} controllers with ${exitingControllers.length} exiting');
       await remove.reverse();
       remove.removeListener(_redraw);
       exitingControllers.remove(removeSerial);
-      debugPrint('Remove Done: ${controllers.length} controllers with ${exitingControllers.length} exiting');
       remove.dispose();
     }
 
@@ -135,10 +266,6 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
     }
   }
 
-  Color _getColor(int index) {
-    return Colors.primaries[index % Colors.primaries.length];
-  }
-
   @override
   Widget build(BuildContext context) {
     final Map<int, AnimationController> allControllers = <int, AnimationController>{
@@ -154,7 +281,7 @@ class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProv
         for (final int serial in allControllers.keys)
           LayoutId(
             id: serial,
-            child: Container(height: 100, color: _getColor(serial)),
+            child: widget.builder(context, serial),
           ),
       ],
     );
