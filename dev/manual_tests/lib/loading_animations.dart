@@ -5,16 +5,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show timeDilation;
 
 void main() {
-  timeDilation = 1.5;
+  timeDilation = 0.5;
   runApp(const LoadingAnimation());
 }
-
-typedef DivideBoxBuilder = Widget Function(BuildContext context, Color color);
 
 class LoadingAnimation extends StatefulWidget {
   const LoadingAnimation({super.key});
@@ -24,18 +21,27 @@ class LoadingAnimation extends StatefulWidget {
 }
 
 class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
-  int _depth = 1;
+  int _topDivisions = 1;
+  List<int> _childDivisions = <int>[2];
   Axis _topDirection = Axis.vertical;
-  final List<int> _levels = <int>[1, 2, 3, 4, 3, 2, 1, 2, 1, 3, 2];
+  final List<int> _levels = <int>[1, 2, 3, 2];
   int _currentLevel = 0;
 
   @override
   void updateSettings() {
     setState(() {
       _currentLevel = (_currentLevel + 1) % _levels.length;
-      _depth = _levels[_currentLevel];
-      _topDirection = _topDirection.swap();
+      final int oldDivisions = _topDivisions;
+      _topDivisions = _levels[_currentLevel];
+      // Only change the direction when we only have one top level, to avoid
+      // jarring rotations.
+      _topDirection = oldDivisions == 1 ? _getDirection() : _topDirection;
+      _childDivisions = List<int>.generate(_topDivisions, (int index) => random.nextInt(2) + 1);
     });
+  }
+
+  Axis _getDirection() {
+    return random.nextBool() ? Axis.horizontal : Axis.vertical;
   }
 
   Color _getColor(int index) {
@@ -50,33 +56,28 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: AnimatedDividedBox(
-                children: _depth,
-                direction: _topDirection,
-                builder: (
-                  BuildContext context,
-                  Color color,
-                ) {
-                  return DividedBoxNest(
-                    depth: _depth,
-                    getDirection: (int depth, Axis direction) {
-                      return random.nextBool() ? Axis.horizontal : Axis.vertical;
-                    },
-                    getCount: (int depth, int prevCount) {
-                      return _depth - depth;
-                    },
-                    getColor: _getColor,
-                    builder: (
-                      BuildContext context,
-                      Color color,
-                    ) {
-                      return MitosisBox(
-                        cornerRadius: 12,
-                        color: color,
-                        margin: const EdgeInsetsDirectional.all(8),
-                      );
-                    },
-                  );
-                }),
+              direction: _topDirection,
+              children: <DividedBoxChild>[
+                for (int i = 0; i < _topDivisions; ++i)
+                  DividedBoxChild(
+                    id: i,
+                    child: AnimatedDividedBox(
+                      direction: _topDirection.swap(),
+                      children: <DividedBoxChild>[
+                        for (int j = 0; j < _childDivisions[i]; ++j)
+                          DividedBoxChild(
+                            id: j,
+                            child: MitosisBox(
+                              cornerRadius: 20,
+                              color: _getColor(i * _childDivisions[i] + j),
+                              margin: const EdgeInsetsDirectional.all(8),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -84,163 +85,66 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
   }
 }
 
-class DividedBoxNest extends StatefulWidget {
-  const DividedBoxNest({
-    super.key,
-    this.startDirection = Axis.horizontal,
-    this.depth = 2,
-    required this.getCount,
-    required this.getDirection,
-    required this.getColor,
-    required this.builder,
-  });
+class DividedBoxChild extends StatelessWidget {
+  const DividedBoxChild({super.key, required this.id, required this.child});
 
-  final Axis startDirection;
-  // Number of recursive levels.
-  final int depth;
-  // Number of children at each level.
-  final Color Function(int index) getColor;
-  final int Function(int index, int lastCount) getCount;
-  final Axis Function(int index, Axis lastDirection) getDirection;
-  final DivideBoxBuilder builder;
-
-  @override
-  State<DividedBoxNest> createState() => _DividedBoxNestState();
-}
-
-class _DividedBoxNestState extends RandomizerState<DividedBoxNest> {
-  late final Animation<double> nestAnimation;
-  int count = 0;
-  Axis direction = Axis.horizontal;
-
-  @override
-  void onTick() {
-    setState(() {
-      // Redraw
-    });
-  }
-
-  @override
-  void updateSettings() {
-    setState(() {
-      count = widget.getCount(widget.depth, count);
-      direction = widget.getDirection(widget.depth, direction);
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    count = widget.getCount(0, 0);
-    direction = widget.getDirection(0, Axis.horizontal);
-    nestAnimation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
-  }
-
-  Widget _buildToDepth(BuildContext context, int depth, Axis direction, Color color) {
-    if (depth == widget.depth) {
-      return widget.builder(context, color);
-    }
-    return AnimatedDividedBox(
-      direction: direction,
-      children: widget.getCount(depth, count),
-      builder: (BuildContext context, Color color) {
-        return _buildToDepth(context, depth + 1, direction, widget.getColor(depth));
-      },
-    );
-  }
+  final Object id;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return _buildToDepth(context, 0, widget.startDirection, widget.getColor(0));
+    return child;
   }
 }
 
 class AnimatedDividedBox extends StatefulWidget {
   const AnimatedDividedBox({
     super.key,
-    required int children,
-    required this.builder,
+    required this.children,
     this.direction = Axis.horizontal,
-    this.duration = const Duration(milliseconds: 500),
-  }) : numChildren = children > 1 ? children : 1;
+  }) : assert(children.length > 0);
 
-  final int numChildren;
-  final DivideBoxBuilder builder;
+  final List<DividedBoxChild> children;
   final Axis direction;
-  final Duration duration;
 
   @override
   State<AnimatedDividedBox> createState() => _AnimatedDividedBoxState();
 }
 
 class _AnimatedDividedBoxState extends State<AnimatedDividedBox> with TickerProviderStateMixin {
-  List<ValueKey<int>> children = <ValueKey<int>>[];
-  List<ValueKey<int>> exitingChildren = <ValueKey<int>>[];
-  int childSerial = 0;
+  List<DividedBoxChild> children = <DividedBoxChild>[];
 
   @override
   void initState() {
     super.initState();
-    addChildren();
-  }
-
-  void addChildren() {
-    while (children.length < widget.numChildren) {
-      final int serial = childSerial++;
-      children.add(ValueKey<int>(serial));
-    }
-  }
-
-  void removeChildren() {
-    final int removeCount = children.length - widget.numChildren;
-    for (int i = 0; i < removeCount; ++i) {
-      exitingChildren.add(children.removeAt(0));
-    }
+    children = widget.children;
   }
 
   @override
   void didUpdateWidget(AnimatedDividedBox oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.numChildren != widget.numChildren) {
-      if (widget.numChildren > children.length) {
-        addChildren();
-      } else {
-        removeChildren();
-      }
+    if (oldWidget.children != widget.children) {
+      final Set<Object> ids = children.map<Object>((DividedBoxChild child) => child.id).toSet();
+      // Only add in the new ids, since the old ones will be removed over time
+      // as they shrink out. Append all the new ones.
+      children.addAll(widget.children.where((DividedBoxChild child) => !ids.contains(child.id)));
     }
-  }
-
-  Color _getColor(int index) {
-    return Colors.primaries[index % Colors.primaries.length];
   }
 
   @override
   Widget build(BuildContext context) {
+    final Set<Object> widgetIds = widget.children.map<Object>((DividedBoxChild child) => child.id).toSet();
+
     return Flex(
       mainAxisSize: MainAxisSize.min,
       direction: widget.direction,
       children: <Widget>[
-        for (final ValueKey<int> child in children)
+        for (final DividedBoxChild child in children)
           ExpandingBox(
-            key: child,
-            child: Builder(
-              builder: (BuildContext context) {
-                return widget.builder(context, _getColor(child.value));
-              },
-            ),
+            key: ValueKey<Object>(child.id),
+            onRemove: !widgetIds.contains(child.id) ? () => children.remove(child) : null,
+            child: child,
           ),
-        for (final ValueKey<int> child in exitingChildren)
-          ExpandingBox(
-            key: child,
-            onRemove: () {
-              exitingChildren.remove(child);
-            },
-            child: Builder(
-              builder: (BuildContext context) {
-                return widget.builder(context, _getColor(child.value));
-              },
-            ),
-          )
       ],
     );
   }
@@ -312,7 +216,7 @@ class _ExpandingBoxState extends State<ExpandingBox> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
+    return Expanded(
       flex: (1000 * animation.value + 1).round(),
       child: widget.child,
     );
@@ -342,6 +246,13 @@ class MitosisBox extends StatefulWidget {
 }
 
 class _MitosisBoxState extends RandomizerState<MitosisBox> {
+  _MitosisBoxState()
+      : super(
+          duration: const Duration(milliseconds: 500),
+          maxPause: const Duration(milliseconds: 2000),
+          minPause: const Duration(milliseconds: 250),
+        );
+
   late final Animation<double> animation;
   static const double crossover = 0.25;
   Axis _direction = Axis.horizontal;
@@ -463,6 +374,15 @@ class _MitosisBoxState extends RandomizerState<MitosisBox> {
 }
 
 abstract class RandomizerState<T extends StatefulWidget> extends State<T> with TickerProviderStateMixin {
+  RandomizerState({
+    this.duration = const Duration(milliseconds: 500),
+    this.minPause = const Duration(milliseconds: 250),
+    this.maxPause = const Duration(milliseconds: 1000),
+  });
+
+  Duration duration;
+  Duration minPause;
+  Duration maxPause;
   late final AnimationController controller;
   final math.Random random = math.Random();
   Timer? pauseTimer;
@@ -471,12 +391,13 @@ abstract class RandomizerState<T extends StatefulWidget> extends State<T> with T
   void updateSettings() {}
 
   void _intermittentLooping(AnimationStatus status) {
+    final Duration pause = Duration(milliseconds: random.nextInt(maxPause.inMilliseconds) + minPause.inMilliseconds) * timeDilation;
     switch (status) {
       case AnimationStatus.forward:
       case AnimationStatus.reverse:
         return;
       case AnimationStatus.dismissed:
-        pauseTimer = Timer(Duration(milliseconds: random.nextInt(1000) + 500), () {
+        pauseTimer = Timer(pause, () {
           updateSettings();
           controller.forward();
           pauseTimer!.cancel();
@@ -484,7 +405,7 @@ abstract class RandomizerState<T extends StatefulWidget> extends State<T> with T
         });
         return;
       case AnimationStatus.completed:
-        pauseTimer = Timer(Duration(milliseconds: random.nextInt(1000) + 500), () {
+        pauseTimer = Timer(pause, () {
           controller.reverse();
           pauseTimer!.cancel();
           pauseTimer = null;
@@ -497,7 +418,7 @@ abstract class RandomizerState<T extends StatefulWidget> extends State<T> with T
     super.initState();
     controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: duration,
     )
       ..forward()
       ..addStatusListener(_intermittentLooping)
