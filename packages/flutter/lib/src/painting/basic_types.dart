@@ -128,15 +128,7 @@ enum Axis {
   horizontal,
 
   /// Up and down.
-  vertical;
-
-  /// Swaps the orientation of this enum.
-  Axis swap() {
-    return switch(this) {
-      horizontal => vertical,
-      vertical => horizontal,
-    };
-  }
+  vertical,
 }
 
 /// Returns the opposite of the given [Axis].

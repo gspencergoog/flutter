@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show timeDilation;
 
 void main() {
-  timeDilation = 0.5;
+  timeDilation = 1;
   runApp(const LoadingAnimation());
 }
 
@@ -23,6 +23,7 @@ class LoadingAnimation extends StatefulWidget {
 class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
   int _topDivisions = 1;
   List<int> _childDivisions = <int>[2];
+  List<Axis> _childDirections = <Axis>[Axis.horizontal];
   Axis _topDirection = Axis.vertical;
   final List<int> _levels = <int>[1, 2, 3, 2];
   int _currentLevel = 0;
@@ -37,6 +38,7 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
       // jarring rotations.
       _topDirection = oldDivisions == 1 ? _getDirection() : _topDirection;
       _childDivisions = List<int>.generate(_topDivisions, (int index) => random.nextInt(2) + 1);
+      _childDirections= List<Axis>.generate(_topDivisions, (int index) => Axis.values[random.nextInt(Axis.values.length)]);
     });
   }
 
@@ -45,7 +47,8 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
   }
 
   Color _getColor(int index) {
-    return Colors.primaries[index % Colors.primaries.length];
+    return Colors.grey.shade300;
+    // return Colors.primaries[index % Colors.primaries.length];
   }
 
   @override
@@ -62,13 +65,13 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
                   DividedBoxChild(
                     id: i,
                     child: AnimatedDividedBox(
-                      direction: _topDirection.swap(),
+                      direction: _childDirections[i],
                       children: <DividedBoxChild>[
                         for (int j = 0; j < _childDivisions[i]; ++j)
                           DividedBoxChild(
                             id: j,
                             child: MitosisBox(
-                              cornerRadius: 20,
+                              cornerRadius: 18,
                               color: _getColor(i * _childDivisions[i] + j),
                               margin: const EdgeInsetsDirectional.all(8),
                             ),
