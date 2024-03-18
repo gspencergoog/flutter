@@ -47,8 +47,8 @@ class _LoadingAnimationState extends RandomizerState<LoadingAnimation> {
   }
 
   Color _getColor(int index) {
-    return Colors.grey.shade300;
-    // return Colors.primaries[index % Colors.primaries.length];
+    // return Colors.grey.shade300;
+    return Colors.primaries[index % Colors.primaries.length];
   }
 
   @override
