@@ -2172,11 +2172,25 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       return null;
     }
     final StringBuffer buffer = StringBuffer();
+    final StringBuffer fullText = StringBuffer();
+    int length = 0;
+    int selectionStart = 0;
+    int selectionEnd = 0;
     for (final SelectedContent selection in selections) {
       buffer.write(selection.plainText);
+      fullText.write(selection.fullText);
+      if (selection.range.textBefore(selection.fullText).isNotEmpty) {
+          selectionStart = length + selection.range.start;
+      } else if (selection.range.textAfter(selection.fullText).isNotEmpty) {
+          selectionEnd = length + selection.range.end;
+      }
+      length += fullText.length;
     }
+    final TextRange range = TextRange(start: selectionStart, end: selectionEnd);
     return SelectedContent(
       plainText: buffer.toString(),
+      fullText: fullText.toString(),
+      range: range,
     );
   }
 
