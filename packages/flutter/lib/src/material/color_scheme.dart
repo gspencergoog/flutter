@@ -27,6 +27,9 @@ enum DynamicSchemeVariant {
   /// Default for Material theme colors. Builds pastel palettes with a low chroma.
   tonalSpot,
 
+  /// Builds Material theme colors from more than just a single seed.
+  multipleTonalSpot,
+
   /// The resulting color palettes match seed color, even if the seed color
   /// is very bright (high chroma).
   fidelity,
@@ -304,6 +307,8 @@ class ColorScheme with Diagnosticable {
   ///    used to generate the tonal palettes needed for the scheme.
   factory ColorScheme.fromSeed({
     required Color seedColor,
+    Color? secondarySeedColor,
+    Color? tertiarySeedColor,
     Brightness brightness = Brightness.light,
     DynamicSchemeVariant dynamicSchemeVariant = DynamicSchemeVariant.tonalSpot,
     double contrastLevel = 0.0,
@@ -369,7 +374,14 @@ class ColorScheme with Diagnosticable {
     )
     Color? surfaceVariant,
   }) {
-    final DynamicScheme scheme = _buildDynamicScheme(brightness, seedColor, dynamicSchemeVariant, contrastLevel);
+    final DynamicScheme scheme = _buildDynamicScheme(
+      brightness,
+      seedColor,
+      dynamicSchemeVariant,
+      contrastLevel,
+      secondarySeed: secondarySeedColor,
+      tertiarySeed: tertiarySeedColor,
+    );
 
     return ColorScheme(
       primary: primary ?? Color(MaterialDynamicColors.primary.getArgb(scheme)),
@@ -1896,11 +1908,21 @@ class ColorScheme with Diagnosticable {
     Brightness brightness,
     Color seedColor,
     DynamicSchemeVariant schemeVariant,
-    double contrastLevel,
-  ) {
+    double contrastLevel, {
+    Color? secondarySeed,
+    Color? tertiarySeed,
+  }) {
     final bool isDark = brightness == Brightness.dark;
     final Hct sourceColor =  Hct.fromInt(seedColor.value);
+    final Hct secondaryColor = secondarySeed == null ? sourceColor : Hct.fromInt(secondarySeed.value);
+    final Hct? tertiaryColor = tertiarySeed == null ? null : Hct.fromInt(tertiarySeed.value);
     return switch (schemeVariant) {
+      DynamicSchemeVariant.multipleTonalSpot => SchemeMultipleTonalSpot(
+        sourceColorHct: sourceColor,
+        secondaryColorHct: secondaryColor,
+        tertiaryColorHct: tertiaryColor,
+        isDark: isDark, contrastLevel: contrastLevel,
+      ),
       DynamicSchemeVariant.tonalSpot => SchemeTonalSpot(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
       DynamicSchemeVariant.fidelity => SchemeFidelity(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
       DynamicSchemeVariant.content => SchemeContent(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
@@ -1912,4 +1934,28 @@ class ColorScheme with Diagnosticable {
       DynamicSchemeVariant.fruitSalad => SchemeFruitSalad(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
     };
   }
+}
+
+/// A Dynamic Color theme with low to medium colorfulness and a Tertiary
+/// [TonalPalette] with a hue related to the source color.
+class SchemeMultipleTonalSpot extends DynamicScheme {
+  ///
+  SchemeMultipleTonalSpot({
+    required Hct sourceColorHct,
+    required super.isDark,
+    required super.contrastLevel,
+    required Hct secondaryColorHct,
+    required Hct? tertiaryColorHct,
+  }) : super(
+          sourceColorArgb: sourceColorHct.toInt(),
+          variant: Variant.tonalSpot,
+          primaryPalette: TonalPalette.of(sourceColorHct.hue, 36.0),
+          secondaryPalette: TonalPalette.of(secondaryColorHct.hue, 16.0),
+          tertiaryPalette: TonalPalette.of(
+            MathUtils.sanitizeDegreesDouble(tertiaryColorHct == null ? sourceColorHct.hue + 60 : tertiaryColorHct.hue),
+            24.0,
+          ),
+          neutralPalette: TonalPalette.of(sourceColorHct.hue, 6.0),
+          neutralVariantPalette: TonalPalette.of(secondaryColorHct.hue, 8.0),
+        );
 }
