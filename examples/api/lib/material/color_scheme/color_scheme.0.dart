@@ -89,11 +89,15 @@ class Settings extends StatefulWidget {
     required this.selectedBrightness,
     required this.selectedContrast,
     required this.selectedColor,
+    required this.selectedSecondaryColor,
+    required this.selectedTertiaryColor,
   });
 
   final Brightness selectedBrightness;
   final double selectedContrast;
   final Color selectedColor;
+  final Color selectedSecondaryColor;
+  final Color selectedTertiaryColor;
 
   final void Function(Brightness, Color, double) updateTheme;
 
@@ -104,6 +108,8 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   late Brightness selectedBrightness = widget.selectedBrightness;
   late Color selectedColor = widget.selectedColor;
+  late Color selectedSecondaryColor = widget.selectedColor;
+  late Color selectedTertiaryColor = widget.selectedColor;
   late double selectedContrast = widget.selectedContrast;
 
   @override
@@ -131,31 +137,29 @@ class _SettingsState extends State<Settings> {
                       setState(() {
                         selectedBrightness = value ? Brightness.light : Brightness.dark;
                       });
-                      widget.updateTheme.call(selectedBrightness, selectedColor, selectedContrast);
+                      widget.updateTheme(selectedBrightness, selectedColor, selectedContrast);
                     },
                   )
                 ],
               ),
-              Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: <Widget>[
-                const Text('Seed color: '),
-                ...List<Widget>.generate(
-                  ColorSeed.values.length,
-                  (int index) {
-                    final Color itemColor = ColorSeed.values[index].color;
-                    return IconButton(
-                      icon: selectedColor == ColorSeed.values[index].color
-                          ? Icon(Icons.circle, color: itemColor)
-                          : Icon(Icons.circle_outlined, color: itemColor),
-                      onPressed: () {
-                        setState(() {
-                          selectedColor = itemColor;
-                        });
-                        widget.updateTheme.call(selectedBrightness, selectedColor, selectedContrast);
-                      },
-                    );
-                  },
-                ),
-              ]),
+              SeedColorSelector(
+                selectedColor: selectedColor,
+                updateTheme: widget.updateTheme,
+                selectedBrightness: selectedBrightness,
+                selectedContrast: selectedContrast,
+              ),
+              SeedColorSelector(
+                selectedColor: selectedSecondaryColor,
+                updateTheme: widget.updateTheme,
+                selectedBrightness: selectedBrightness,
+                selectedContrast: selectedContrast,
+              ),
+              SeedColorSelector(
+                selectedColor: selectedTertiaryColor,
+                updateTheme: widget.updateTheme,
+                selectedBrightness: selectedBrightness,
+                selectedContrast: selectedContrast,
+              ),
               Row(
                 children: <Widget>[
                   const Text('Contrast level: '),
@@ -451,6 +455,45 @@ class SettingsButton extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class SeedColorSelector extends StatelessWidget {
+  const SeedColorSelector({
+    super.key,
+    required this.selectedColor,
+    required this.updateTheme,
+    required this.selectedBrightness,
+    required this.selectedContrast,
+  });
+
+  final Color selectedColor;
+  final void Function(Brightness, Color, double) updateTheme;
+  final Brightness selectedBrightness;
+  final double selectedContrast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        const Text('Seed color: '),
+        ...List<Widget>.generate(
+          ColorSeed.values.length,
+          (int index) {
+            final Color itemColor = ColorSeed.values[index].color;
+            return IconButton(
+              icon: selectedColor == ColorSeed.values[index].color
+                  ? Icon(Icons.circle, color: itemColor)
+                  : Icon(Icons.circle_outlined, color: itemColor),
+              onPressed: () {
+                updateTheme.call(selectedBrightness, itemColor, selectedContrast);
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }
