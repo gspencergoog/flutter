@@ -8,6 +8,14 @@ import 'package:flutter/material.dart';
 
 const Widget divider = SizedBox(height: 10);
 
+typedef ColorSchemeVariantCallback = void Function(
+  Brightness,
+  Color,
+  double, {
+  Color? secondaryColor,
+  Color? tertiaryColor,
+});
+
 void main() => runApp(const ColorSchemeExample());
 
 class ColorSchemeExample extends StatefulWidget {
@@ -19,14 +27,25 @@ class ColorSchemeExample extends StatefulWidget {
 
 class _ColorSchemeExampleState extends State<ColorSchemeExample> {
   Color selectedColor = ColorSeed.baseColor.color;
+  Color selectedSecondaryColor = ColorSeed.baseColor.color;
+  Color selectedTertiaryColor = ColorSeed.baseColor.color;
   Brightness selectedBrightness = Brightness.light;
   double selectedContrast = 0.0;
   static const List<DynamicSchemeVariant> schemeVariants = DynamicSchemeVariant.values;
 
-  void updateTheme(Brightness brightness, Color color, double contrastLevel) {
+  void updateTheme(
+    Brightness brightness,
+    Color color,
+    double contrastLevel, {
+    Color? secondaryColor,
+    Color? tertiaryColor,
+  }) {
     setState(() {
+      debugPrint('updateTheme: $brightness, $color, $contrastLevel, $secondaryColor, $tertiaryColor');
       selectedBrightness = brightness;
       selectedColor = color;
+      selectedSecondaryColor = secondaryColor ?? selectedSecondaryColor;
+      selectedTertiaryColor = tertiaryColor ?? selectedTertiaryColor;
       selectedContrast = contrastLevel;
     });
   }
@@ -40,6 +59,8 @@ class _ColorSchemeExampleState extends State<ColorSchemeExample> {
           seedColor: selectedColor,
           brightness: selectedBrightness,
           contrastLevel: selectedContrast,
+          secondarySeedColor: selectedSecondaryColor,
+          tertiarySeedColor: selectedTertiaryColor,
         ),
       ),
       home: Scaffold(
@@ -48,6 +69,8 @@ class _ColorSchemeExampleState extends State<ColorSchemeExample> {
           actions: <Widget>[
             SettingsButton(
               selectedColor: selectedColor,
+              selectedSecondaryColor: selectedSecondaryColor,
+              selectedTertiaryColor: selectedTertiaryColor,
               selectedBrightness: selectedBrightness,
               selectedContrast: selectedContrast,
               updateTheme: updateTheme,
@@ -66,6 +89,8 @@ class _ColorSchemeExampleState extends State<ColorSchemeExample> {
                     children: List<Widget>.generate(schemeVariants.length, (int index) {
                       return ColorSchemeVariantColumn(
                         selectedColor: selectedColor,
+                        selectedSecondaryColor: selectedSecondaryColor,
+                        selectedTertiaryColor: selectedTertiaryColor,
                         brightness: selectedBrightness,
                         schemeVariant: schemeVariants[index],
                         contrastLevel: selectedContrast,
@@ -99,18 +124,40 @@ class Settings extends StatefulWidget {
   final Color selectedSecondaryColor;
   final Color selectedTertiaryColor;
 
-  final void Function(Brightness, Color, double) updateTheme;
+  final ColorSchemeVariantCallback updateTheme;
 
   @override
   State<Settings> createState() => _SettingsState();
 }
 
 class _SettingsState extends State<Settings> {
-  late Brightness selectedBrightness = widget.selectedBrightness;
-  late Color selectedColor = widget.selectedColor;
-  late Color selectedSecondaryColor = widget.selectedColor;
-  late Color selectedTertiaryColor = widget.selectedColor;
-  late double selectedContrast = widget.selectedContrast;
+  late Brightness selectedBrightness;
+  late double selectedContrast;
+  late Color selectedColor;
+  late Color selectedSecondaryColor;
+  late Color selectedTertiaryColor;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedBrightness = widget.selectedBrightness;
+    selectedContrast = widget.selectedContrast;
+    selectedColor = widget.selectedColor;
+    selectedSecondaryColor = widget.selectedSecondaryColor;
+    selectedTertiaryColor = widget.selectedTertiaryColor;
+  }
+
+  void updateTheme() {
+    setState(() {
+      widget.updateTheme(
+        selectedBrightness,
+        selectedColor,
+        selectedContrast,
+        secondaryColor: selectedSecondaryColor,
+        tertiaryColor: selectedTertiaryColor,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +167,11 @@ class _SettingsState extends State<Settings> {
         seedColor: selectedColor,
         contrastLevel: selectedContrast,
         brightness: selectedBrightness,
+        secondarySeedColor: selectedSecondaryColor,
+        tertiarySeedColor: selectedTertiaryColor,
       )),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 200),
+        constraints: const BoxConstraints(maxHeight: 300),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: ListView(
@@ -134,31 +183,44 @@ class _SettingsState extends State<Settings> {
                   Switch(
                     value: selectedBrightness == Brightness.light,
                     onChanged: (bool value) {
-                      setState(() {
-                        selectedBrightness = value ? Brightness.light : Brightness.dark;
-                      });
-                      widget.updateTheme(selectedBrightness, selectedColor, selectedContrast);
+                      selectedBrightness = value ? Brightness.light : Brightness.dark;
+                      updateTheme();
                     },
                   )
                 ],
               ),
               SeedColorSelector(
-                selectedColor: selectedColor,
-                updateTheme: widget.updateTheme,
-                selectedBrightness: selectedBrightness,
-                selectedContrast: selectedContrast,
+                selectedColor: widget.selectedColor,
+                updateColor: (Color color) {
+                  selectedColor = color;
+                  updateTheme();
+                },
+                label: const SizedBox(
+                  width: 120,
+                  child: Text('Seed color: '),
+                ),
               ),
               SeedColorSelector(
-                selectedColor: selectedSecondaryColor,
-                updateTheme: widget.updateTheme,
-                selectedBrightness: selectedBrightness,
-                selectedContrast: selectedContrast,
+                selectedColor: widget.selectedSecondaryColor,
+                updateColor: (Color color) {
+                  selectedSecondaryColor = color;
+                  updateTheme();
+                },
+                label: const SizedBox(
+                  width: 120,
+                  child: Text('Secondary color: '),
+                ),
               ),
               SeedColorSelector(
-                selectedColor: selectedTertiaryColor,
-                updateTheme: widget.updateTheme,
-                selectedBrightness: selectedBrightness,
-                selectedContrast: selectedContrast,
+                selectedColor: widget.selectedTertiaryColor,
+                updateColor: (Color color) {
+                  selectedTertiaryColor = color;
+                  updateTheme();
+                },
+                label: const SizedBox(
+                  width: 120,
+                  child: Text('Tertiary color: '),
+                ),
               ),
               Row(
                 children: <Widget>[
@@ -166,14 +228,12 @@ class _SettingsState extends State<Settings> {
                   Expanded(
                     child: Slider(
                       divisions: 4,
-                      label: selectedContrast.toString(),
+                      label: widget.selectedContrast.toString(),
                       min: -1,
-                      value: selectedContrast,
+                      value: widget.selectedContrast,
                       onChanged: (double value) {
-                        setState(() {
-                          selectedContrast = value;
-                        });
-                        widget.updateTheme.call(selectedBrightness, selectedColor, selectedContrast);
+                        selectedContrast = value;
+                        updateTheme();
                       },
                     ),
                   ),
@@ -194,12 +254,16 @@ class ColorSchemeVariantColumn extends StatelessWidget {
     this.brightness = Brightness.light,
     this.contrastLevel = 0.0,
     required this.selectedColor,
+    required this.selectedSecondaryColor,
+    required this.selectedTertiaryColor,
   });
 
   final DynamicSchemeVariant schemeVariant;
   final Brightness brightness;
   final double contrastLevel;
   final Color selectedColor;
+  final Color selectedSecondaryColor;
+  final Color selectedTertiaryColor;
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +286,8 @@ class ColorSchemeVariantColumn extends StatelessWidget {
                 brightness: brightness,
                 contrastLevel: contrastLevel,
                 dynamicSchemeVariant: schemeVariant,
+                secondarySeedColor: selectedSecondaryColor,
+                tertiarySeedColor: selectedTertiaryColor,
               ),
             ),
           ),
@@ -430,13 +496,17 @@ class SettingsButton extends StatelessWidget {
     required this.selectedBrightness,
     required this.selectedContrast,
     required this.selectedColor,
+    required this.selectedSecondaryColor,
+    required this.selectedTertiaryColor,
   });
 
   final Brightness selectedBrightness;
   final double selectedContrast;
   final Color selectedColor;
+  final Color selectedSecondaryColor;
+  final Color selectedTertiaryColor;
 
-  final void Function(Brightness, Color, double) updateTheme;
+  final ColorSchemeVariantCallback updateTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -449,6 +519,8 @@ class SettingsButton extends StatelessWidget {
           builder: (BuildContext context) {
             return Settings(
                 selectedColor: selectedColor,
+                selectedSecondaryColor: selectedSecondaryColor,
+                selectedTertiaryColor: selectedTertiaryColor,
                 selectedBrightness: selectedBrightness,
                 selectedContrast: selectedContrast,
                 updateTheme: updateTheme);
@@ -459,37 +531,52 @@ class SettingsButton extends StatelessWidget {
   }
 }
 
-class SeedColorSelector extends StatelessWidget {
+class SeedColorSelector extends StatefulWidget {
   const SeedColorSelector({
     super.key,
     required this.selectedColor,
-    required this.updateTheme,
-    required this.selectedBrightness,
-    required this.selectedContrast,
+    required this.updateColor,
+    required this.label,
   });
 
+  final Widget label;
   final Color selectedColor;
-  final void Function(Brightness, Color, double) updateTheme;
-  final Brightness selectedBrightness;
-  final double selectedContrast;
+  final void Function(Color) updateColor;
+
+  @override
+  State<SeedColorSelector> createState() => _SeedColorSelectorState();
+}
+
+class _SeedColorSelectorState extends State<SeedColorSelector> {
+  late Color selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedColor = widget.selectedColor;
+  }
+
+  void _updateColor(Color color) {
+    setState(() => selectedColor = color);
+    widget.updateColor(selectedColor);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        const Text('Seed color: '),
+        widget.label,
         ...List<Widget>.generate(
           ColorSeed.values.length,
           (int index) {
             final Color itemColor = ColorSeed.values[index].color;
             return IconButton(
-              icon: selectedColor == ColorSeed.values[index].color
-                  ? Icon(Icons.circle, color: itemColor)
-                  : Icon(Icons.circle_outlined, color: itemColor),
-              onPressed: () {
-                updateTheme.call(selectedBrightness, itemColor, selectedContrast);
-              },
+              icon: Icon(
+                selectedColor == itemColor ? Icons.circle : Icons.circle_outlined,
+                color: itemColor,
+              ),
+              onPressed: () => _updateColor(itemColor),
             );
           },
         ),

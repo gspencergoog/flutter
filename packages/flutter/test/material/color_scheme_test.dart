@@ -688,9 +688,25 @@ void main() {
 
   testWidgets('Color values in ColorScheme.fromSeed with different variants matches values in DynamicScheme', (WidgetTester tester) async {
     const Color seedColor = Colors.orange;
+    const Color seedSecondaryColor = Colors.purple;
+    const Color seedTertiaryColor = Colors.green;
     final Hct sourceColor =  Hct.fromInt(seedColor.value);
+    final Hct secondaryColor =  Hct.fromInt(seedSecondaryColor.value);
+    final Hct tertiaryColor =  Hct.fromInt(seedTertiaryColor.value);
     for (final DynamicSchemeVariant schemeVariant in DynamicSchemeVariant.values) {
       final DynamicScheme dynamicScheme = switch (schemeVariant) {
+        DynamicSchemeVariant.multipleTonalSpot => SchemeMultipleTonalSpot(
+          sourceColorHct: sourceColor,
+          secondaryColorHct: secondaryColor,
+          tertiaryColorHct: tertiaryColor,
+          isDark: false, contrastLevel: 0,
+        ),
+        DynamicSchemeVariant.multipleFidelity => SchemeMultipleFidelity(
+          sourceColorHct: sourceColor,
+          secondaryColorHct: secondaryColor,
+          tertiaryColorHct: tertiaryColor,
+          isDark: false, contrastLevel: 0,
+        ),
         DynamicSchemeVariant.tonalSpot => SchemeTonalSpot(sourceColorHct: sourceColor, isDark: false, contrastLevel: 0.0),
         DynamicSchemeVariant.fidelity => SchemeFidelity(sourceColorHct: sourceColor, isDark: false, contrastLevel: 0.0),
         DynamicSchemeVariant.content => SchemeContent(sourceColorHct: sourceColor, isDark: false, contrastLevel: 0.0),
@@ -704,6 +720,8 @@ void main() {
       final ColorScheme colorScheme = ColorScheme.fromSeed(
         seedColor: seedColor,
         dynamicSchemeVariant: schemeVariant,
+        secondarySeedColor: seedSecondaryColor,
+        tertiarySeedColor: seedTertiaryColor,
       );
 
       expect(colorScheme.primary.value, MaterialDynamicColors.primary.getArgb(dynamicScheme));
@@ -801,11 +819,27 @@ void main() {
 
   testWidgets('Colors in high-contrast color scheme matches colors in DynamicScheme', (WidgetTester tester) async {
     const Color seedColor = Colors.blue;
+    const Color seedSecondaryColor = Colors.purple;
+    const Color seedTertiaryColor = Colors.green;
     final Hct sourceColor =  Hct.fromInt(seedColor.value);
+    final Hct secondaryColor =  Hct.fromInt(seedSecondaryColor.value);
+    final Hct tertiaryColor =  Hct.fromInt(seedTertiaryColor.value);
 
     void colorsMatchDynamicSchemeColors(DynamicSchemeVariant schemeVariant, Brightness brightness, double contrastLevel) {
       final bool isDark = brightness == Brightness.dark;
       final DynamicScheme dynamicScheme = switch (schemeVariant) {
+        DynamicSchemeVariant.multipleTonalSpot => SchemeMultipleTonalSpot(
+          sourceColorHct: sourceColor,
+          secondaryColorHct: secondaryColor,
+          tertiaryColorHct: tertiaryColor,
+          isDark: isDark, contrastLevel: contrastLevel,
+        ),
+        DynamicSchemeVariant.multipleFidelity => SchemeMultipleFidelity(
+          sourceColorHct: sourceColor,
+          secondaryColorHct: secondaryColor,
+          tertiaryColorHct: tertiaryColor,
+          isDark: isDark, contrastLevel: contrastLevel,
+        ),
         DynamicSchemeVariant.tonalSpot => SchemeTonalSpot(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
         DynamicSchemeVariant.fidelity => SchemeFidelity(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
         DynamicSchemeVariant.content => SchemeContent(sourceColorHct: sourceColor, isDark: isDark, contrastLevel: contrastLevel),
