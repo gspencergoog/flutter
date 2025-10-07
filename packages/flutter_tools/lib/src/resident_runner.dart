@@ -1458,9 +1458,18 @@ abstract class ResidentRunner extends ResidentHandlers {
       );
 
       final DartDevelopmentService dds = device.device!.dds;
-      final Uri? dtdUri = dds.dtdUri;
-      if (debuggingOptions.printDtd && dtdUri != null) {
-        globals.printStatus('The Dart Tooling Daemon is available at: $dtdUri');
+      if (debuggingOptions.printDtd) {
+        if (device.targetPlatform == TargetPlatform.web_javascript) {
+          final Uri? dwdsUri = device.vmService?.httpAddress;
+          if (dwdsUri != null) {
+            globals.printStatus('The Dart Web Development Service is available at: $dwdsUri');
+          }
+        } else {
+          final Uri? dtdUri = dds.dtdUri;
+          if (dtdUri != null) {
+            globals.printStatus('The Dart Tooling Daemon is available at: $dtdUri');
+          }
+        }
       }
       final Uri? devToolsUri = device.device!.devToolsUri;
       if (devToolsUri != null) {

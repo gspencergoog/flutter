@@ -804,6 +804,20 @@ class AppDomain extends Domain {
           if (info.baseUri != null) {
             params['baseUri'] = info.baseUri;
           }
+          if (runner.debuggingOptions.printDtd) {
+            final FlutterDevice flutterDevice = runner.flutterDevices.first;
+            if (flutterDevice.targetPlatform == TargetPlatform.web_javascript) {
+              final Uri? dwdsUri = flutterDevice.vmService?.httpAddress;
+              if (dwdsUri != null) {
+                params['dwdsUri'] = dwdsUri.toString();
+              }
+            } else {
+              final Uri? dtdUri = device.dds.dtdUri;
+              if (dtdUri != null) {
+                params['dtdUri'] = dtdUri.toString();
+              }
+            }
+          }
           _sendAppEvent(app, 'debugPort', params);
         }),
       );
